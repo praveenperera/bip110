@@ -1,0 +1,34 @@
+---
+import { Card, CardContent } from '@/components/ui/card';
+import { keyPoints } from '@/lib/content';
+
+const icons = {
+  clock: `<svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`,
+  shield: `<svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>`,
+  check: `<svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`,
+  target: `<svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>`,
+};
+---
+
+<section class="py-24 px-6">
+  <div class="max-w-6xl mx-auto">
+    <h2 class="text-3xl font-bold text-center mb-4">Key Points</h2>
+    <p class="text-muted-foreground text-center mb-12 max-w-2xl mx-auto">
+      A temporary, focused intervention to protect Bitcoin's core mission
+    </p>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {keyPoints.map((point) => (
+        <Card className="h-full border-border/50 bg-card/50 backdrop-blur hover:border-primary/30 transition-colors">
+          <CardContent className="pt-6">
+            <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+              <Fragment set:html={icons[point.icon as keyof typeof icons]} />
+            </div>
+            <h3 class="font-semibold mb-2">{point.title}</h3>
+            <p class="text-sm text-muted-foreground">{point.description}</p>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  </div>
+</section>

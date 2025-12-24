@@ -1,0 +1,17 @@
+---
+import { motivation } from '@/lib/content';
+---
+
+<section class="py-24 px-6 bg-muted/30">
+  <div class="max-w-4xl mx-auto">
+    <h2 class="text-3xl font-bold text-center mb-12">{motivation.headline}</h2>
+
+    <div class="space-y-6">
+      {motivation.paragraphs.map((paragraph) => (
+        <p class="text-lg text-muted-foreground leading-relaxed">
+          {paragraph}
+        </p>
+      ))}
+    </div>
+  </div>
+</section>

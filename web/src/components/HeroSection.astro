@@ -1,0 +1,64 @@
+---
+import { Badge } from '@/components/ui/badge';
+import { ThemeToggle } from './ThemeToggle';
+import { bipMeta, abstract } from '@/lib/content';
+---
+
+<section class="relative min-h-[80vh] flex items-center justify-center overflow-hidden">
+  <!-- Background gradient -->
+  <div class="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-primary/10"></div>
+  <div class="absolute top-1/4 -left-32 w-96 h-96 bg-primary/20 rounded-full blur-3xl"></div>
+  <div class="absolute bottom-1/4 -right-32 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
+
+  <!-- Theme toggle -->
+  <div class="absolute top-6 right-6">
+    <ThemeToggle client:load />
+  </div>
+
+  <div class="relative z-10 max-w-4xl mx-auto px-6 text-center">
+    <Badge variant="outline" className="mb-6 text-sm px-4 py-1.5">
+      {bipMeta.status} • {bipMeta.layer}
+    </Badge>
+
+    <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight mb-6">
+      <span class="text-primary">BIP-{bipMeta.number}:</span>
+      <br />
+      <span class="bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+        Protecting Bitcoin's Purpose
+      </span>
+    </h1>
+
+    <p class="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+      {abstract}
+    </p>
+
+    <div class="mt-8">
+      <a
+        href="https://github.com/dathonohm/bips/blob/reduced-data/bip-0110.mediawiki"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background px-6 py-3 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+      >
+        Read the Full BIP
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+        </svg>
+      </a>
+    </div>
+
+    <div class="mt-6 flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
+      <span>By {bipMeta.author}</span>
+      <span class="hidden sm:inline">•</span>
+      <span>Created {bipMeta.created}</span>
+      <span class="hidden sm:inline">•</span>
+      <span>{bipMeta.license}</span>
+    </div>
+
+    <!-- Scroll indicator -->
+    <div class="mt-16 animate-bounce">
+      <svg class="w-6 h-6 mx-auto text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+      </svg>
+    </div>
+  </div>
+</section>

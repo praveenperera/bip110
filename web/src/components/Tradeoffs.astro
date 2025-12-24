@@ -1,0 +1,58 @@
+---
+import { Card, CardContent } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { tradeoffs } from '@/lib/content';
+
+const severityColors = {
+  low: 'border-green-500/50 bg-green-500/5',
+  medium: 'border-yellow-500/50 bg-yellow-500/5',
+  high: 'border-red-500/50 bg-red-500/5',
+};
+
+const severityLabels = {
+  low: 'Low Impact',
+  medium: 'Medium Impact',
+  high: 'High Impact',
+};
+---
+
+<section class="py-24 px-6 bg-muted/30">
+  <div class="max-w-4xl mx-auto">
+    <h2 class="text-3xl font-bold text-center mb-4">{tradeoffs.headline}</h2>
+    <p class="text-muted-foreground text-center mb-12 max-w-2xl mx-auto">
+      Temporary restrictions come with some tradeoffs, but they're acceptable for the benefits gained
+    </p>
+
+    <div class="space-y-4 mb-8">
+      {tradeoffs.items.map((item) => (
+        <Card className={`border-l-4 ${severityColors[item.severity as keyof typeof severityColors]}`}>
+          <CardContent className="pt-6">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <h3 class="font-semibold mb-2">{item.title}</h3>
+                <p class="text-muted-foreground">{item.description}</p>
+              </div>
+              <span class={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${
+                item.severity === 'low' ? 'bg-green-500/10 text-green-600 dark:text-green-400' :
+                item.severity === 'medium' ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400' :
+                'bg-red-500/10 text-red-600 dark:text-red-400'
+              }`}>
+                {severityLabels[item.severity as keyof typeof severityLabels]}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+
+    <Alert className="border-primary/50 bg-primary/5">
+      <svg class="h-4 w-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+      </svg>
+      <AlertDescription>
+        <strong class="text-foreground">{tradeoffs.safety.headline}:</strong>{' '}
+        <span class="text-muted-foreground">{tradeoffs.safety.content}</span>
+      </AlertDescription>
+    </Alert>
+  </div>
+</section>

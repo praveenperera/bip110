@@ -1,0 +1,24 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import HeroSection from '@/components/HeroSection.astro';
+import KeyPoints from '@/components/KeyPoints.astro';
+import ProblemSection from '@/components/ProblemSection.astro';
+import { HowItWorks } from '@/components/HowItWorks';
+import { FAQ } from '@/components/FAQ';
+import Timeline from '@/components/Timeline.astro';
+import Tradeoffs from '@/components/Tradeoffs.astro';
+import Footer from '@/components/Footer.astro';
+---
+
+<Layout title="BIP-110: Reduced Data Temporary Softfork">
+  <main>
+    <HeroSection />
+    <KeyPoints />
+    <ProblemSection />
+    <HowItWorks client:visible />
+    <Timeline />
+    <Tradeoffs />
+    <FAQ client:visible />
+    <Footer />
+  </main>
+</Layout>

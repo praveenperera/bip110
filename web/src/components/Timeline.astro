@@ -1,0 +1,57 @@
+---
+import { timeline } from '@/lib/content';
+---
+
+<section class="py-24 px-6 bg-muted/30">
+  <div class="max-w-4xl mx-auto">
+    <h2 class="text-3xl font-bold text-center mb-4">
+      Deployment Timeline
+    </h2>
+    <p class="text-muted-foreground text-center mb-12 max-w-2xl mx-auto">
+      Key dates and milestones for BIP-110 activation
+    </p>
+
+    <div class="relative">
+      <!-- Timeline line -->
+      <div class="absolute left-4 md:left-1/2 top-0 bottom-0 w-0.5 bg-border md:-translate-x-0.5"></div>
+
+      <div class="space-y-8">
+        {timeline.map((item, i) => (
+          <div
+            class={`relative flex items-start gap-6 ${
+              i % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'
+            }`}
+          >
+            <!-- Dot -->
+            <div class="absolute left-4 md:left-1/2 w-4 h-4 rounded-full bg-primary border-4 border-background -translate-x-1.5 md:-translate-x-2 mt-1.5"></div>
+
+            <!-- Content -->
+            <div
+              class={`ml-12 md:ml-0 md:w-[calc(50%-2rem)] ${
+                i % 2 === 0 ? 'md:pr-8 md:text-right' : 'md:pl-8'
+              }`}
+            >
+              <div class="bg-card border border-border/50 rounded-lg p-5">
+                <span class="text-sm text-primary font-medium">
+                  {item.date}
+                </span>
+                <h3 class="font-semibold mt-1">{item.event}</h3>
+                <p class="text-sm text-muted-foreground mt-2">
+                  {item.description}
+                </p>
+              </div>
+            </div>
+
+            <!-- Spacer for alternating layout -->
+            <div class="hidden md:block md:w-[calc(50%-2rem)]"></div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <p class="text-sm text-muted-foreground text-center mt-12">
+      Signaling uses bit 4 • Activation requires 55% threshold
+      (1109/2016 blocks)
+    </p>
+  </div>
+</section>
