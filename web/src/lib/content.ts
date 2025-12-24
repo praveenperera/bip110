@@ -58,7 +58,8 @@ export const specifications = [
   },
   {
     title: "Data Push Limits",
-    simple: "Data pushes and witness elements are limited to 256 bytes maximum.",
+    simple:
+      "Data pushes and witness elements are limited to 256 bytes maximum.",
     technical:
       "OP_PUSHDATA* payloads and witness stack elements exceeding 256 bytes are invalid (except BIP16 redeemScript).",
   },
@@ -144,8 +145,7 @@ export const timeline = [
   {
     date: "2 weeks post lock-in",
     event: "Activation",
-    description:
-      "New rules take effect. Grace period allows users to prepare.",
+    description: "New rules take effect. Grace period allows users to prepare.",
   },
   {
     date: "~1 year after activation",

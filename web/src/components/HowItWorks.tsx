@@ -3,9 +3,9 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@/components/ui/accordion';
-import { Card, CardContent } from '@/components/ui/card';
-import { specifications } from '@/lib/content';
+} from "@/components/ui/accordion";
+import { Card, CardContent } from "@/components/ui/card";
+import { specifications } from "@/lib/content";
 
 export function HowItWorks() {
   return (
@@ -40,8 +40,8 @@ export function HowItWorks() {
         </div>
 
         <p className="text-sm text-muted-foreground text-center mt-8">
-          Inputs spending UTXOs created before activation are exempt from
-          these rules.
+          Inputs spending UTXOs created before activation are exempt from these
+          rules.
         </p>
       </div>
     </section>
