@@ -1,0 +1,8 @@
+name = "bip110-redirect"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+routes = [
+  { pattern = "bip-110.com/*", zone_name = "bip-110.com" },
+  { pattern = "www.bip-110.com/*", zone_name = "bip-110.com" }
+]
