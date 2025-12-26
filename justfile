@@ -12,4 +12,4 @@ deploy: build
 
 # deploy preview
 preview: build
-    cd web && npx wrangler pages deploy dist --project-name bip110 --branch preview
+    cd web && npx wrangler pages deploy dist --project-name bip110 --branch "$(git branch --show-current)"

@@ -26,4 +26,4 @@ just deploy
 just preview
 ```
 
-Preview deployments are available at `preview.bip110.pages.dev`
+Preview deployments are available at `<branch-name>.bip110.pages.dev`
