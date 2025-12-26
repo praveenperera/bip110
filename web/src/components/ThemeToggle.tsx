@@ -12,6 +12,16 @@ export function ThemeToggle() {
       "(prefers-color-scheme: dark)",
     ).matches;
     setTheme(stored || (prefersDark ? "dark" : "light"));
+
+    // listen for system preference changes when no manual preference set
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleChange = (e: MediaQueryListEvent) => {
+      if (!localStorage.getItem("theme")) {
+        setTheme(e.matches ? "dark" : "light");
+      }
+    };
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
   }, []);
 
   useEffect(() => {
