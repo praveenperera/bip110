@@ -1,0 +1,50 @@
+name: Comment Preview URL
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment Preview URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = context.payload.pull_request.head.ref;
+            // Sanitize branch name (Cloudflare replaces special chars with -)
+            const sanitized = branch.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+            const previewUrl = `https://${sanitized}.bip110.pages.dev`;
+
+            const body = `## 🔗 Preview Deployment\n\n**Preview URL:** ${previewUrl}\n\n_Deployed automatically by Cloudflare Pages_`;
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(c => 
+              c.user.type === 'Bot' && c.body.includes('Preview Deployment')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body
+              });
+            }
