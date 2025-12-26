@@ -5,10 +5,10 @@ import { bipMeta, abstract } from '@/lib/content';
 ---
 
 <section class="relative min-h-[80vh] flex items-center justify-center overflow-hidden">
-  <!-- Background gradient -->
-  <div class="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-primary/10"></div>
-  <div class="absolute top-1/4 -left-32 w-96 h-96 bg-primary/20 rounded-full blur-3xl"></div>
-  <div class="absolute bottom-1/4 -right-32 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
+  <!-- Background gradient (pointer-events-none prevents iOS touch issues) -->
+  <div class="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-primary/10 pointer-events-none"></div>
+  <div class="absolute top-1/4 -left-32 w-96 h-96 bg-primary/20 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="absolute bottom-1/4 -right-32 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
 
   <!-- Theme toggle -->
   <div class="absolute top-6 right-6 z-20">
