@@ -14,16 +14,16 @@ npm run dev
 
 ## Deploy
 
-Build and deploy to Cloudflare Pages:
-
-```bash
-cd web
-npm run build
-npx wrangler pages deploy dist --project-name bip110
-```
-
-Or using just:
+### Production
 
 ```bash
 just deploy
 ```
+
+### Preview
+
+```bash
+just preview
+```
+
+Preview deployments are available at `preview.bip110.pages.dev`
