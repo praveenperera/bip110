@@ -24,7 +24,7 @@ export function HowItWorks() {
                 <h3 className="font-semibold text-lg mb-3">{spec.title}</h3>
                 <p className="text-muted-foreground mb-4">{spec.simple}</p>
 
-                <Accordion type="single" collapsible>
+                <Accordion type="multiple" defaultValue={["technical"]}>
                   <AccordionItem value="technical" className="border-none">
                     <AccordionTrigger className="text-sm text-primary hover:no-underline py-2">
                       Technical Details
