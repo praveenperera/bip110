@@ -17,12 +17,12 @@ export function FAQ() {
           Answers to frequently asked questions about BIP-110
         </p>
 
-        <Accordion type="multiple" defaultValue={faqItems.map((_, i) => `faq-${i}`)} className="space-y-4">
+        <Accordion className="space-y-4">
           {faqItems.map((item, i) => (
             <AccordionItem
               key={i}
-              value={`faq-${i}`}
-              className="bg-card border border-border/50 rounded-lg px-6 data-[state=open]:border-primary/30"
+              value={i}
+              className="bg-card border border-border/50 rounded-lg px-6 data-[open]:border-primary/30"
             >
               <AccordionTrigger className="text-left font-medium hover:no-underline py-5">
                 {item.question}

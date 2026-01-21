@@ -40,11 +40,21 @@ const ogImageHeight = "1312";
     <style is:inline>
       html:not(.theme-ready) { visibility: hidden; }
     </style>
+    <style is:inline>
+      /* pre-hydration: show all accordion panels before JS loads */
+      [data-slot="accordion"]:not([data-hydrated]) [data-slot="accordion-panel"] {
+        display: block !important;
+        height: auto !important;
+        overflow: visible !important;
+      }
+      [data-slot="accordion"]:not([data-hydrated]) [data-slot="accordion-trigger"] svg {
+        display: none !important;
+      }
+    </style>
     <noscript>
       <style>
         html:not(.theme-ready) { visibility: visible !important; }
-        [data-slot="accordion-content"] { display: block !important; height: auto !important; overflow: visible !important; animation: none !important; }
-        [data-slot="accordion-content"][data-state="closed"] { display: block !important; height: auto !important; overflow: visible !important; animation: none !important; }
+        [data-slot="accordion-panel"] { display: block !important; height: auto !important; overflow: visible !important; }
         [data-slot="accordion-trigger"] svg { display: none !important; }
       </style>
     </noscript>
