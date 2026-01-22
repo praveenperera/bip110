@@ -162,14 +162,14 @@ export const installOptions = [
   {
     platform: "Bitcoin Knots",
     description: "Direct download of the BIP-110 enabled Bitcoin Knots release",
-    link: "https://github.com/dathonohm/bitcoin/releases/tag/v29.2.knots20251110%2Bbip110-v0.1rc2",
+    link: "https://github.com/dathonohm/bitcoin/releases/",
     status: "available",
     icon: "download",
   },
   {
     platform: "Start9",
     description: "One-click install for Start9 v0.3 and v0.4",
-    link: "https://github.com/dathonohm/knots-startos/releases/tag/v29.2.knots20251110%2Bbip110-v0.1rc2",
+    link: "https://github.com/dathonohm/knots-startos/releases/",
     status: "available",
     icon: "server",
   },
