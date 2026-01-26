@@ -1,14 +1,8 @@
 name = "bip110"
 compatibility_date = "2025-01-26"
-main = "worker.js"
 
-routes = [
-  { pattern = "bip110.org", custom_domain = true },
-  { pattern = "www.bip110.org", custom_domain = true },
-  { pattern = "bip-110.com", custom_domain = true },
-  { pattern = "www.bip-110.com", custom_domain = true },
-]
+[observability]
+enabled = true
 
 [assets]
 directory = "./dist"
-binding = "ASSETS"

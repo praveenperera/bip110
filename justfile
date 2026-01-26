@@ -21,3 +21,15 @@ deploy: build
 # local preview with wrangler dev
 preview: build
     cd web && npx --yes wrangler dev
+
+# initialize terraform
+tf-init:
+    cd terraform && terraform init
+
+# plan terraform changes
+tf-plan:
+    cd terraform && terraform plan
+
+# apply terraform changes
+tf-apply:
+    cd terraform && terraform apply

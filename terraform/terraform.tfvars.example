@@ -1,0 +1,6 @@
+# Copy to terraform.tfvars and fill in values
+# Get zone IDs from: Cloudflare Dashboard → Zone → Overview → API section (right sidebar)
+
+cloudflare_api_token = "your-api-token-here"
+bip110_org_zone_id   = "your-zone-id-here"
+bip_110_com_zone_id  = "your-zone-id-here"
