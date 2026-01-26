@@ -125,17 +125,19 @@
   }
 }
 
-/* Accordion panel animation */
-[data-slot="accordion-panel"] {
-  transition: height 300ms ease-out, opacity 200ms ease-out;
+/* Accordion animation - only after JS hydration */
+[data-slot="accordion"][data-hydrated] [data-slot="accordion-panel"] {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 300ms ease-out;
 }
 
-[data-slot="accordion-panel"][data-starting-style],
-[data-slot="accordion-panel"][data-ending-style] {
-  height: 0;
-  opacity: 0;
+[data-slot="accordion"][data-hydrated] [data-slot="accordion-panel"] > div {
+  overflow: hidden;
 }
 
-[data-slot="accordion-panel"][data-open] {
-  opacity: 1;
+[data-slot="accordion"][data-hydrated] [data-slot="accordion-panel"][data-starting-style],
+[data-slot="accordion"][data-hydrated] [data-slot="accordion-panel"][data-ending-style] {
+  grid-template-rows: 0fr;
 }
+
