@@ -120,4 +120,22 @@
   body {
     @apply bg-background text-foreground;
   }
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Accordion panel animation */
+[data-slot="accordion-panel"] {
+  transition: height 300ms ease-out, opacity 200ms ease-out;
+}
+
+[data-slot="accordion-panel"][data-starting-style],
+[data-slot="accordion-panel"][data-ending-style] {
+  height: 0;
+  opacity: 0;
+}
+
+[data-slot="accordion-panel"][data-open] {
+  opacity: 1;
 }
