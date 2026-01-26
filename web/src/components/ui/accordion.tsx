@@ -5,7 +5,6 @@ import { ChevronDownIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 function Accordion({
-  children,
   className,
   ...props
 }: React.ComponentProps<typeof AccordionPrimitive.Root>) {
@@ -18,9 +17,7 @@ function Accordion({
       data-hydrated={hydrated ? "" : undefined}
       className={className}
       {...props}
-    >
-      {children}
-    </AccordionPrimitive.Root>
+    />
   );
 }
 

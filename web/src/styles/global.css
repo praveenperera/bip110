@@ -125,19 +125,38 @@
   }
 }
 
-/* Accordion animation - only after JS hydration */
-[data-slot="accordion"][data-hydrated] [data-slot="accordion-panel"] {
-  display: grid;
-  grid-template-rows: 1fr;
-  transition: grid-template-rows 300ms ease-out;
-}
-
-[data-slot="accordion"][data-hydrated] [data-slot="accordion-panel"] > div {
+/* Accordion animation - Base UI pattern */
+[data-slot="accordion-panel"] {
   overflow: hidden;
 }
 
-[data-slot="accordion"][data-hydrated] [data-slot="accordion-panel"][data-starting-style],
-[data-slot="accordion"][data-hydrated] [data-slot="accordion-panel"][data-ending-style] {
-  grid-template-rows: 0fr;
+[data-slot="accordion-panel"][data-open] {
+  animation: accordion-open 300ms ease-out;
+}
+
+[data-slot="accordion-panel"][data-ending-style] {
+  animation: accordion-close 300ms ease-out;
+}
+
+@keyframes accordion-open {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+  to {
+    height: var(--accordion-panel-height);
+    opacity: 1;
+  }
+}
+
+@keyframes accordion-close {
+  from {
+    height: var(--accordion-panel-height);
+    opacity: 1;
+  }
+  to {
+    height: 0;
+    opacity: 0;
+  }
 }
 
