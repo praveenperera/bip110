@@ -1,7 +1,6 @@
 ---
 import Layout from '@/layouts/Layout.astro';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/ThemeToggle';
 ---
 
@@ -44,7 +43,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
                 </ol>
               </div>
               <a
-                href="https://github.com/dathonohm/bitcoin/releases/"
+                href="https://github.com/dathonohm/bitcoin/releases/tag/v29.2.knots20251110%2Bbip110-v0.1rc3"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
@@ -76,7 +75,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
               </div>
               <div class="flex flex-wrap gap-3">
                 <a
-                  href="https://github.com/dathonohm/knots-startos/releases/tag/v29.2.knots20251110%2Bbip110-v0.1rc2"
+                  href="https://github.com/dathonohm/knots-startos/releases/tag/v29.2.knots20251110%2Bbip110-v0.1rc3"
                   target="_blank"
                   rel="noopener noreferrer"
                   class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
@@ -87,7 +86,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
                   </svg>
                 </a>
                 <a
-                  href="https://github.com/dathonohm/knots-startos/releases/tag/v29.2.knots20251110%2Bbip110-v0.1rc2-startos0.4.0"
+                  href="https://github.com/dathonohm/knots-startos/releases/tag/v29.2.knots20251110%2Bbip110-v0.1rc3-startos0.4.0"
                   target="_blank"
                   rel="noopener noreferrer"
                   class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
@@ -101,67 +100,133 @@ import { ThemeToggle } from '@/components/ThemeToggle';
             </CardContent>
           </Card>
 
+          <div id="umbrel">
           <Card>
             <CardHeader>
-              <div class="flex items-center justify-between">
-                <CardTitle>Umbrel</CardTitle>
-                <Badge variant="secondary">PR Pending</Badge>
-              </div>
+              <CardTitle>Umbrel</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p class="text-muted-foreground">
-                A pull request has been submitted to the Umbrel community app store and is pending approval.
+                One-click install from the Umbrel community app store.
               </p>
               <div class="bg-muted/50 rounded-lg p-4 space-y-3">
-                <p class="font-medium">Current status:</p>
-                <p class="text-sm text-muted-foreground">
-                  Once approved, you'll be able to install BIP-110 Bitcoin Knots directly from the Umbrel app store. Installing from the app store also provides automatic update notifications. In the meantime, you can follow the PR progress or build from source.
-                </p>
+                <p class="font-medium">Installation steps:</p>
+                <ol class="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+                  <li>Open your Umbrel dashboard</li>
+                  <li>Update the Bitcoin Knots app if prompted in the App Store</li>
+                  <li>Open the Bitcoin Knots app</li>
+                  <li>Go to settings &gt; Bitcoin Knots version &gt; Select BIP110</li>
+                  <li>Save settings</li>
+                </ol>
               </div>
               <a
                 href="https://github.com/getumbrel/umbrel-apps/pull/4237"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="inline-flex items-center gap-2 px-4 py-2 border border-input bg-background rounded-md hover:bg-accent transition-colors"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
               >
-                View Pull Request
+                View on GitHub
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
               </a>
             </CardContent>
           </Card>
+          </div>
 
+          <div id="mynode">
           <Card>
             <CardHeader>
-              <div class="flex items-center justify-between">
-                <CardTitle>myNode</CardTitle>
-                <Badge variant="secondary">PR Pending</Badge>
-              </div>
+              <CardTitle>myNode</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p class="text-muted-foreground">
-                A pull request has been submitted to myNode and is pending approval.
+                One-click install for myNode servers.
               </p>
               <div class="bg-muted/50 rounded-lg p-4 space-y-3">
-                <p class="font-medium">Current status:</p>
-                <p class="text-sm text-muted-foreground">
-                  Once approved, you'll be able to install BIP-110 Bitcoin Knots directly from myNode. Installing from the app store also provides automatic update notifications. In the meantime, you can follow the PR progress or build from source.
-                </p>
+                <p class="font-medium">Installation steps:</p>
+                <ol class="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+                  <li>Update your myNode to the latest version</li>
+                  <li>Go to the Marketplace and find Bitcoin Knots BIP-110</li>
+                  <li>Install and configure as you would any myNode app</li>
+                </ol>
               </div>
               <a
-                href="https://github.com/mynodebtc/mynode/pull/982"
+                href="https://github.com/mynodebtc/mynode/pull/986"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="inline-flex items-center gap-2 px-4 py-2 border border-input bg-background rounded-md hover:bg-accent transition-colors"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
               >
-                View Pull Request
+                View on GitHub
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
               </a>
             </CardContent>
           </Card>
+          </div>
+
+          <div id="parmanode">
+          <Card>
+            <CardHeader>
+              <CardTitle>Parmanode</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p class="text-muted-foreground">
+                Simple one-click style install for Parmanode users.
+              </p>
+              <div class="bg-muted/50 rounded-lg p-4 space-y-3">
+                <p class="font-medium">Installation steps:</p>
+                <ol class="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+                  <li>Make sure you have the latest Parmanode version</li>
+                  <li>Install Bitcoin using Parmanode</li>
+                  <li>Select BIP-110 when the option appears during installation</li>
+                </ol>
+              </div>
+              <a
+                href="https://www.youtube.com/watch?v=JpvNDL9Opns"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+              >
+                Watch Tutorial
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+            </CardContent>
+          </Card>
+          </div>
+
+          <div id="docker">
+          <Card>
+            <CardHeader>
+              <CardTitle>Docker</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p class="text-muted-foreground">
+                For advanced users running their own Docker infrastructure. Uses the same GUIX-built binaries as Umbrel.
+              </p>
+              <div class="bg-muted/50 rounded-lg p-4 space-y-3">
+                <p class="font-medium">Docker image:</p>
+                <code class="block bg-background rounded px-3 py-2 text-sm font-mono break-all">
+                  ghcr.io/retropex/bitcoin:29.2.knots20251110-bip110-RC3
+                </code>
+              </div>
+              <a
+                href="https://github.com/Retropex/docker-bitcoind-prebuilt/pkgs/container/bitcoin/647778380?tag=29.2.knots20251110-bip110-RC3"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+              >
+                View on GHCR
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+            </CardContent>
+          </Card>
+          </div>
         </div>
 
         <div class="mt-16 pt-8 border-t border-border">
