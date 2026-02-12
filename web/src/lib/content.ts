@@ -144,6 +144,12 @@ export const faqItems = [
     category: "safety",
   },
   {
+    question: "Why is OP_IF restricted in Tapscripts?",
+    answer:
+      "Taproot was designed so that each conditional branch lives in its own tapleaf. This is the entire point of MAST (Merklized Alternative Script Trees). Using OP_IF inside a tapleaf is redundant: it's less private (you reveal unused branches), larger on-chain, and more expensive in fees. Well-designed Taproot wallets already split conditions into separate tapleaves. Any wallet still using OP_IF in Tapscripts should update to the more efficient approach, which saves users money. This restriction only applies to Tapscripts, so P2WSH scripts (like standard Lightning channels) are completely unaffected.",
+    category: "technical",
+  },
+  {
     question: "How is this different from relay policy filters?",
     answer:
       "Relay policy (mempool filtering) only affects transaction propagation — miners can still include anything they want in blocks. BIP-110 enforces limits at the consensus level, meaning blocks containing oversized data are invalid regardless of who mines them. Policy is a suggestion; consensus is a rule.",
@@ -233,7 +239,7 @@ export const tradeoffs = {
     {
       title: "Wallet Compatibility",
       description:
-        "Some wallets using Miniscript may create Tapleaves with OP_IF. UTXOs created before activation are permanently exempt, so existing funds are unaffected regardless of wallet software.",
+        "Some wallets like Nunchuk allow arbitrary Miniscript and may create Tapleaves with OP_IF. These wallets would need to update to disallow OP_IF in Tapscripts after activation. UTXOs created before activation are permanently exempt, so existing funds are unaffected regardless of wallet software. Wallet developers have until mandatory lock-in (~August 2026) plus a two-week grace period to update. Even after activation, only newly created UTXOs are subject to the new rules. Updating is straightforward: split OP_IF branches into separate tapleaves, which is already best practice for Taproot.",
       severity: "low",
     },
     {
