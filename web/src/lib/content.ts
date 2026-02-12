@@ -150,6 +150,12 @@ export const faqItems = [
     category: "technical",
   },
   {
+    question: "Is this optional for miners?",
+    answer:
+      "During the signaling phase, miners choose whether to signal support. If 55% signal in a retarget period, the softfork locks in early. If not, mandatory signaling kicks in before the deadline — blocks that don't signal are rejected, guaranteeing lock-in. Once activated, the new rules are enforced at the consensus level: any block that violates them is rejected by all enforcing nodes, regardless of the miner's preference.",
+    category: "general",
+  },
+  {
     question: "What happens when the deployment expires?",
     answer:
       "After approximately one year (52,416 blocks), all restrictions automatically lift and Bitcoin returns to its pre-activation rules. No action is needed from users or node operators. If the community wants to continue or refine the protections, a new proposal would need to go through the activation process again.",
@@ -160,26 +166,27 @@ export const faqItems = [
 export const timeline = [
   {
     date: "December 1, 2025",
-    event: "Signaling Period Starts",
-    description: "Miners can begin signaling support using bit 4.",
+    event: "Signaling Begins",
+    description:
+      "Miners signal readiness using bit 4. Early lock-in if 55% of blocks signal in a retarget period (1109/2016).",
   },
   {
-    date: "~September 1, 2026",
-    event: "Maximum Activation Height",
+    date: "~August 2026",
+    event: "Mandatory Lock-in",
     description:
-      "Block 965664. Activation requires 55% miner signaling (1109/2016 blocks).",
+      "If not locked in early, mandatory signaling begins — blocks that don't signal are rejected as invalid, guaranteeing lock-in.",
   },
   {
     date: "2 weeks post lock-in",
     event: "Activation",
     description:
-      "New rules take effect for newly created UTXOs only. Pre-existing UTXOs remain permanently exempt.",
+      "New consensus rules take effect. Blocks violating these rules are rejected by all enforcing nodes. Pre-existing UTXOs remain permanently exempt.",
   },
   {
     date: "~1 year after activation",
     event: "Expiry",
     description:
-      "52,416 blocks after activation, restrictions expire automatically.",
+      "52,416 blocks after activation, all restrictions lift automatically.",
   },
 ];
 
@@ -226,7 +233,7 @@ export const tradeoffs = {
     {
       title: "Wallet Compatibility",
       description:
-        "Some wallets using Miniscript may create Tapleaves with OP_IF. UTXOs created before activation are permanently exempt, so existing funds are unaffected regardless of wallet software. The two-week grace period before activation also gives wallet developers time to update.",
+        "Some wallets using Miniscript may create Tapleaves with OP_IF. UTXOs created before activation are permanently exempt, so existing funds are unaffected regardless of wallet software.",
       severity: "low",
     },
     {
