@@ -146,7 +146,7 @@ export const faqItems = [
   {
     question: "Why is OP_IF restricted in Tapscripts?",
     answer:
-      "Taproot was designed so that each conditional branch lives in its own tapleaf. This is the entire point of MAST (Merklized Alternative Script Trees). Using OP_IF inside a tapleaf is redundant: it's less private (you reveal unused branches), larger on-chain, and more expensive in fees. Well-designed Taproot wallets already split conditions into separate tapleaves. Any wallet still using OP_IF in Tapscripts should update to the more efficient approach, which saves users money. This restriction only applies to Tapscripts, so P2WSH scripts (like standard Lightning channels) are completely unaffected.",
+      "Taproot was designed so that each conditional branch lives in its own tapleaf. This is the entire point of MAST (Merklized Alternative Script Trees). Using OP_IF inside a tapleaf is redundant: it reveals unused branches on-chain, defeating Taproot's privacy benefits. In some cases OP_IF can save a few bytes by avoiding merkle path overhead, but at the cost of exposing your other spending conditions to the world. Well-designed Taproot wallets already split conditions into separate tapleaves. This restriction only applies to Tapscripts, so P2WSH scripts (like standard Lightning channels) are completely unaffected.",
     category: "technical",
   },
   {
