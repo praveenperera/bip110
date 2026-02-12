@@ -239,7 +239,7 @@ export const tradeoffs = {
     {
       title: "Wallet Compatibility",
       description:
-        "Some wallets like Nunchuk allow arbitrary Miniscript and may create Tapleaves with OP_IF. These wallets would need to update to disallow OP_IF in Tapscripts after activation. UTXOs created before activation are permanently exempt, so existing funds are unaffected regardless of wallet software. Wallet developers have until mandatory lock-in (~August 2026) plus a two-week grace period to update. Even after activation, only newly created UTXOs are subject to the new rules. Updating is straightforward: split OP_IF branches into separate tapleaves, which is already best practice for Taproot.",
+        "Some wallets like Nunchuk allow arbitrary Miniscript and may create Tapleaves with OP_IF. These wallets would need to update before activation to stop creating Tapleaves with OP_IF. UTXOs created before activation are permanently exempt, so existing funds are unaffected regardless of wallet software. Wallet developers have until mandatory lock-in (~August 2026) plus a two-week grace period to update. Even after activation, only newly created UTXOs are subject to the new rules. Updating is straightforward: split OP_IF branches into separate tapleaves, which is already best practice for Taproot.",
       severity: "low",
     },
     {
