@@ -121,6 +121,12 @@ export const faqItems = [
     category: "technical",
   },
   {
+    question: "Does this break multisig?",
+    answer:
+      "No. Vanilla multisig (BIP-48, BIP-174, BIP-129) is completely unaffected. Taproot multisig using MuSig/Schnorr signature aggregation is also unaffected. The only area with any potential impact is advanced Taproot Miniscript that uses OP_IF inside tapleaves — and the fix is straightforward: split OP_IF branches into separate tapleaves, which is already best practice for Taproot script design.",
+    category: "safety",
+  },
+  {
     question: "Is this a slippery slope toward banning use cases?",
     answer:
       "No. These rules enshrine long-standing principles of Bitcoin. This softfork doesn't restrict monetary activity—only non-monetary data storage. The temporary nature reinforces this is a targeted intervention, not a new direction.",
@@ -239,6 +245,25 @@ export const installOptions = [
     link: "/howto#docker",
     status: "available",
     icon: "box",
+  },
+];
+
+export const articles = [
+  {
+    title: "Bitcoin Has a Squatter Problem. BIP 110 Is the Eviction Notice.",
+    description:
+      "Why a temporary soft fork is the most important thing happening in Bitcoin right now, and why the FUD about it is dead wrong.",
+    author: "Kyle Santiago",
+    date: "Feb 17, 2026",
+    link: "https://privkey.substack.com/p/bitcoin-has-a-squatter-problem-bip",
+  },
+  {
+    title: "BIP-110: The Temporary Softfork",
+    description:
+      "A deep-dive game theory analysis and code audit examining what the mechanism design reveals and what the code actually does.",
+    author: "Melvin Carvalho",
+    date: "Feb 2026",
+    link: "https://melvin.me/public/articles/bip110.html",
   },
 ];
 
