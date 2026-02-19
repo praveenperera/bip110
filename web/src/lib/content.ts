@@ -254,7 +254,7 @@ export const articles = [
     description:
       "Why a temporary soft fork is the most important thing happening in Bitcoin right now, and why the FUD about it is dead wrong.",
     author: "Kyle Santiago",
-    date: "Feb 17, 2026",
+    date: "Feb 2026",
     link: "https://privkey.substack.com/p/bitcoin-has-a-squatter-problem-bip",
   },
   {
