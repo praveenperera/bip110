@@ -18,9 +18,14 @@ update:
 deploy: build
     cd web && npx --yes wrangler deploy
 
-# local preview with wrangler dev
-preview: build
-    cd web && npx --yes wrangler dev
+# deploy preview to cloudflare workers (optional: just preview <subdomain>)
+preview subdomain="": build
+    #!/usr/bin/env bash
+    name="{{ subdomain }}"
+    if [ -z "$name" ]; then
+        name=$(git branch --show-current | tr '/' '-' | tr '[:upper:]' '[:lower:]')
+    fi
+    cd web && npx --yes wrangler versions upload --preview-alias "$name"
 
 # initialize terraform
 tf-init:
