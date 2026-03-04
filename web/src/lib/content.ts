@@ -127,6 +127,12 @@ export const faqItems = [
     category: "safety",
   },
   {
+    question: "Does the 256-byte limit restrict multisig to 7 keys?",
+    answer:
+      "No. The 256-byte limit applies to script argument witness items like signatures and data pushes — not to witness scripts, tapleaf scripts, or control blocks. In P2WSH, the witnessScript containing all the public keys is not subject to the 256-byte cap. In P2TR, tapleaf scripts are also excluded from the 256-byte limit, and control blocks are separately capped at 257 bytes. Individual signatures (64–72 bytes) and public keys (33 bytes) are each well under 256 bytes, so standard multisig of any supported size continues to work exactly as before.",
+    category: "safety",
+  },
+  {
     question: "Is this a slippery slope toward banning use cases?",
     answer:
       "No. These rules enshrine long-standing principles of Bitcoin. This softfork doesn't restrict monetary activity—only non-monetary data storage. The temporary nature reinforces this is a targeted intervention, not a new direction.",
