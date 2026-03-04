@@ -258,7 +258,7 @@ export const articles = [
   {
     title: "BIP 110 Neutralizes Bitcoin's Biggest Legal Attack Vector",
     description:
-      "Arbitrary data on the blockchain creates untested legal exposure for every node operator on the network. BIP 110 is the protocol-level fix that closes it.",
+      "Arbitrary data on the blockchain creates untested legal exposure for every node operator on the network. BIP 110 is the protocol-level fix that shrinks it.",
     author: "Kyle Santiago",
     date: "Feb 24, 2026",
     link: "https://privkey.substack.com/p/bip-110-neutralizes-bitcoins-biggest",
