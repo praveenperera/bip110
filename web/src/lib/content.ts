@@ -207,7 +207,7 @@ export const installOptions = [
   {
     platform: "Bitcoin Knots",
     description: "Direct download of the BIP-110 enabled Bitcoin Knots release",
-    link: "https://github.com/dathonohm/bitcoin/releases/tag/v29.3.knots20260210%2Bbip110-v0.3",
+    link: "https://github.com/dathonohm/bitcoin/releases/tag/v29.3.knots20260210%2Bbip110-v0.4.1",
     status: "available",
     icon: "download",
   },
