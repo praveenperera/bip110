@@ -18,20 +18,25 @@ export function FAQ() {
         </p>
 
         <Accordion className="space-y-4">
-          {faqItems.map((item, i) => (
-            <AccordionItem
-              key={i}
-              value={i}
-              className="bg-card border border-border/50 rounded-lg px-6 data-[open]:border-primary/30"
-            >
-              <AccordionTrigger className="text-left font-medium hover:no-underline py-5">
-                {item.question}
-              </AccordionTrigger>
-              <AccordionContent className="text-muted-foreground pb-5 leading-relaxed">
-                {item.answer}
-              </AccordionContent>
-            </AccordionItem>
-          ))}
+          {faqItems.map((item, i) => {
+            const questionId = `q${i + 1}`;
+
+            return (
+              <AccordionItem
+                key={questionId}
+                id={questionId}
+                value={i}
+                className="scroll-mt-24 bg-card border border-border/50 rounded-lg px-6 data-[open]:border-primary/30"
+              >
+                <AccordionTrigger className="text-left font-medium hover:no-underline py-5">
+                  {item.question}
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground pb-5 leading-relaxed">
+                  {item.answer}
+                </AccordionContent>
+              </AccordionItem>
+            );
+          })}
         </Accordion>
       </div>
     </section>
