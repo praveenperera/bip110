@@ -256,6 +256,15 @@ export const installOptions = [
 
 export const articles = [
   {
+    title: "BIP-110 Objections: Asymmetry of Scale",
+    description:
+      "Every objection raised against BIP-110, triaged against the data. Millions of spam transactions vs. hypothetical edge cases and rhetorical tactics.",
+    author: "Melvin Carvalho",
+    date: "Mar 7, 2026",
+    link: "https://melvin.me/public/articles/bip110-objections.html",
+    image: "https://melvin.me/public/articles/og-bip110-objections.png",
+  },
+  {
     title: "BIP 110 Neutralizes Bitcoin's Biggest Legal Attack Vector",
     description:
       "Arbitrary data on the blockchain creates untested legal exposure for every node operator on the network. BIP 110 is the protocol-level fix that shrinks it.",
