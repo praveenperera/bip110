@@ -36,9 +36,7 @@ function NavLink({
     <a
       href={href}
       className={`relative px-3 py-1.5 text-[13px] font-medium tracking-wide uppercase transition-colors duration-200 group flex items-center gap-1 ${
-        active
-          ? "text-primary"
-          : "text-muted-foreground hover:text-foreground"
+        active ? "text-primary" : "text-muted-foreground hover:text-foreground"
       }`}
     >
       {children}
