@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertCircle, ExternalLink, RefreshCw } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 const API_URL = "/api/monitor";
+const BLOCKS_API_URL = "/api/monitor-blocks";
 const LOCAL_DEV_API_URL = "https://bip110monitor.com/api";
 const MONITOR_URL = "https://bip110monitor.com";
 const URSF_MONITOR_URL = "/ursf-monitor";
@@ -23,6 +24,7 @@ const SIGNAL_BIT = 4;
 const REQUIRED_SIGNALING_BLOCKS = Math.ceil(
   PERIOD_BLOCK_COUNT * (ACTIVATION_THRESHOLD / 100),
 );
+const GRID_VISIBLE_BLOCKS = 144;
 
 type Period = {
   periodNum: number;
@@ -48,11 +50,35 @@ type MonitorData = {
   periods: Period[];
 };
 
+type MonitorBlock = {
+  hash: string;
+  height: number;
+  version: number;
+  time: number;
+  nTx: number;
+  signaling: boolean;
+};
+
+type PeriodGridBlock = {
+  hash?: string;
+  height: number;
+  nTx?: number;
+  signaling?: boolean;
+  time?: number;
+  version?: number;
+};
+
 type StatusCardProps = {
   label: string;
   value: string;
   detail: string;
   tone?: "default" | "primary";
+};
+
+type MonitorHighlightStat = {
+  label: string;
+  value: string;
+  detail: string;
 };
 
 type CacheInfo = {
@@ -66,20 +92,46 @@ type CachedMonitorData = {
   version: typeof CACHE_VERSION;
 };
 
+type MonitorBlocksPayload = {
+  blocks: MonitorBlock[];
+  updatedAt: string;
+};
+
+type BlockDataStatus = "loading" | "live" | "unavailable";
+
+type MonitorBlockGridMode = "bip110" | "ursf";
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
 }
 
 function isPeriod(value: unknown): value is Period {
   if (!isRecord(value)) return false;
 
   return (
-    typeof value.periodNum === "number" &&
-    typeof value.startBlock === "number" &&
-    typeof value.endBlock === "number" &&
-    typeof value.signalingCount === "number" &&
-    typeof value.totalBlocks === "number" &&
-    typeof value.pct === "number"
+    isFiniteNumber(value.periodNum) &&
+    isFiniteNumber(value.startBlock) &&
+    isFiniteNumber(value.endBlock) &&
+    isFiniteNumber(value.signalingCount) &&
+    isFiniteNumber(value.totalBlocks) &&
+    isFiniteNumber(value.pct)
+  );
+}
+
+function isMonitorBlock(value: unknown): value is MonitorBlock {
+  if (!isRecord(value)) return false;
+
+  return (
+    typeof value.hash === "string" &&
+    isFiniteNumber(value.height) &&
+    isFiniteNumber(value.version) &&
+    isFiniteNumber(value.time) &&
+    isFiniteNumber(value.nTx) &&
+    typeof value.signaling === "boolean"
   );
 }
 
@@ -88,18 +140,28 @@ function isMonitorData(value: unknown): value is MonitorData {
 
   return (
     typeof value.bip === "string" &&
-    typeof value.tip === "number" &&
-    typeof value.chainTip === "number" &&
-    typeof value.periodNum === "number" &&
-    typeof value.periodStart === "number" &&
-    typeof value.periodEnd === "number" &&
-    typeof value.totalBlocks === "number" &&
-    typeof value.signalingCount === "number" &&
-    typeof value.pct === "number" &&
+    isFiniteNumber(value.tip) &&
+    isFiniteNumber(value.chainTip) &&
+    isFiniteNumber(value.periodNum) &&
+    isFiniteNumber(value.periodStart) &&
+    isFiniteNumber(value.periodEnd) &&
+    isFiniteNumber(value.totalBlocks) &&
+    isFiniteNumber(value.signalingCount) &&
+    isFiniteNumber(value.pct) &&
     typeof value.synced === "boolean" &&
     typeof value.updatedAt === "string" &&
     Array.isArray(value.periods) &&
     value.periods.every(isPeriod)
+  );
+}
+
+function isMonitorBlocksPayload(value: unknown): value is MonitorBlocksPayload {
+  if (!isRecord(value)) return false;
+
+  return (
+    Array.isArray(value.blocks) &&
+    value.blocks.every(isMonitorBlock) &&
+    typeof value.updatedAt === "string"
   );
 }
 
@@ -166,6 +228,72 @@ async function fetchMonitorData(signal?: AbortSignal) {
   }
 
   throw new Error(`Monitor API returned ${response.status}`);
+}
+
+async function fetchMonitorBlocks(signal?: AbortSignal) {
+  const response = await fetch(BLOCKS_API_URL, {
+    cache: "no-store",
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Monitor block API returned ${response.status}`);
+  }
+
+  const payload = (await response.json()) as unknown;
+  if (!isMonitorBlocksPayload(payload)) {
+    throw new Error("Monitor block API returned invalid data");
+  }
+
+  return payload;
+}
+
+function useMonitorBlocks(onBlocks: (payload: MonitorBlocksPayload) => void) {
+  const [blockDataStatus, setBlockDataStatus] =
+    useState<BlockDataStatus>("loading");
+  const onBlocksRef = useRef(onBlocks);
+
+  useEffect(() => {
+    onBlocksRef.current = onBlocks;
+  }, [onBlocks]);
+
+  useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+    let interval: number | undefined;
+
+    const loadBlocks = async (signal?: AbortSignal) => {
+      try {
+        const payload = await fetchMonitorBlocks(signal);
+        if (!active) return;
+
+        onBlocksRef.current(payload);
+        setBlockDataStatus("live");
+      } catch (nextError) {
+        if (
+          nextError instanceof DOMException &&
+          nextError.name === "AbortError"
+        ) {
+          return;
+        }
+
+        if (active) {
+          setBlockDataStatus("unavailable");
+        }
+      }
+    };
+
+    void loadBlocks(controller.signal);
+    interval = window.setInterval(() => void loadBlocks(), REFRESH_INTERVAL_MS);
+
+    return () => {
+      active = false;
+      controller.abort();
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  return blockDataStatus;
 }
 
 function formatNumber(value: number) {
@@ -235,6 +363,62 @@ function clampPercent(value: number) {
   return Math.min(Math.max(value, 0), 100);
 }
 
+function blockDetailUnavailable(block: PeriodGridBlock) {
+  return (
+    block.hash === undefined ||
+    block.version === undefined ||
+    block.time === undefined ||
+    block.nTx === undefined
+  );
+}
+
+function formatBlockVersion(value: number | undefined) {
+  if (value === undefined) return "Unavailable";
+
+  return `0x${value.toString(16).toUpperCase().padStart(8, "0")}`;
+}
+
+function formatBlockTime(value: number | undefined) {
+  if (value === undefined) return "Unavailable";
+
+  return `${new Date(value * 1000)
+    .toISOString()
+    .replace("T", " ")
+    .slice(0, 16)} UTC`;
+}
+
+function formatBlockTransactions(value: number | undefined) {
+  return value === undefined ? "Unavailable" : formatNumber(value);
+}
+
+function formatBlockStatus(block: PeriodGridBlock, mode: MonitorBlockGridMode) {
+  if (mode === "ursf") {
+    return "not signaling";
+  }
+
+  if (block.signaling === true) {
+    return "SIGNALING BIP-110";
+  }
+
+  if (block.signaling === false) {
+    return "not signaling";
+  }
+
+  return "signal status unavailable";
+}
+
+function generatePeriodBlocks(data: MonitorData): PeriodGridBlock[] {
+  const firstHeight = Math.max(
+    data.periodStart,
+    data.tip - data.totalBlocks + 1,
+  );
+  const blockCount = Math.max(data.tip - firstHeight + 1, 0);
+
+  return Array.from({ length: blockCount }, (_, index) => ({
+    height: data.tip - index,
+  }));
+}
+
 function StatusCard({
   label,
   value,
@@ -294,6 +478,168 @@ function ProgressRow({
   );
 }
 
+export function MonitorHighlights() {
+  const [data, setData] = useState<MonitorData | null>(null);
+  const [cacheInfo, setCacheInfo] = useState<CacheInfo | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const loadData = useCallback(async (signal?: AbortSignal) => {
+    try {
+      const nextData = await fetchMonitorData(signal);
+      const cachedAt = Date.now();
+
+      setData(nextData);
+      setCacheInfo({ cachedAt, source: "network" });
+      setError(null);
+      writeCachedMonitorData(nextData, cachedAt);
+    } catch (nextError) {
+      if (
+        nextError instanceof DOMException &&
+        nextError.name === "AbortError"
+      ) {
+        return;
+      }
+
+      setError(
+        nextError instanceof Error
+          ? nextError.message
+          : "Monitor data could not be loaded",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const cached = readCachedMonitorData();
+    let interval: number | undefined;
+
+    if (cached) {
+      setData(cached.data);
+      setCacheInfo({ cachedAt: cached.cachedAt, source: "cache" });
+      setLoading(false);
+    }
+
+    void loadData(controller.signal);
+    interval = window.setInterval(() => void loadData(), REFRESH_INTERVAL_MS);
+
+    return () => {
+      controller.abort();
+      window.clearInterval(interval);
+    };
+  }, [loadData]);
+
+  const stats = useMemo<MonitorHighlightStat[] | null>(() => {
+    if (!data) return null;
+
+    const blocksLeft = Math.max(data.periodEnd - data.tip, 0);
+    const periodProgress = (data.totalBlocks / PERIOD_BLOCK_COUNT) * 100;
+    const signalingDeficit = Math.max(
+      REQUIRED_SIGNALING_BLOCKS - data.signalingCount,
+      0,
+    );
+
+    return [
+      {
+        label: "Signal rate",
+        value: formatPercent(data.pct),
+        detail: `${formatNumber(data.signalingCount)} of ${formatNumber(data.totalBlocks)} blocks`,
+      },
+      {
+        label: "Blocks left",
+        value: formatNumber(blocksLeft),
+        detail: `${formatEstimatedTime(blocksLeft)} in this period`,
+      },
+      {
+        label: "Period progress",
+        value: formatPercent(periodProgress),
+        detail: `${formatNumber(signalingDeficit)} more signals needed`,
+      },
+    ];
+  }, [data]);
+
+  const statusLabel = data
+    ? data.synced
+      ? "Synced to chain tip"
+      : "Index catching up"
+    : loading
+      ? "Loading live status"
+      : "Monitor unavailable";
+
+  return (
+    <section className="px-6 pb-20" data-monitor-react>
+      <div className="mx-auto max-w-5xl">
+        <Card className="border-border/50 bg-card/70 shadow-sm shadow-foreground/5 backdrop-blur">
+          <CardContent className="pt-5">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "border-border/60 bg-background/70 text-xs",
+                      data?.synced && "border-primary/25 text-primary",
+                    )}
+                  >
+                    {statusLabel}
+                  </Badge>
+                  {cacheInfo && (
+                    <span className="text-xs text-muted-foreground">
+                      Updated {formatCacheAge(cacheInfo.cachedAt)}
+                    </span>
+                  )}
+                </div>
+                <h2 className="mt-3 text-2xl font-semibold tracking-tight">
+                  Live BIP-110 signaling
+                </h2>
+                <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+                  Current activation status from the public monitor, summarized
+                  for the main page.
+                </p>
+                {error && !data && (
+                  <p className="mt-2 text-sm text-destructive">{error}</p>
+                )}
+              </div>
+
+              <a
+                href="/monitor"
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "sm" }),
+                  "w-fit bg-background",
+                )}
+              >
+                Full monitor
+                <ExternalLink className="size-3.5" aria-hidden="true" />
+              </a>
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              {(stats ?? Array.from({ length: 3 })).map((stat, index) => (
+                <div
+                  key={stat?.label ?? index}
+                  className="rounded-lg border border-border/50 bg-muted/30 p-4"
+                >
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    {stat?.label ?? "Loading"}
+                  </p>
+                  <p className="mt-2 text-2xl font-semibold tracking-tight">
+                    {stat?.value ?? "N/A"}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {stat?.detail ?? "Waiting for monitor data"}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </section>
+  );
+}
+
 function PeriodBlockLink({
   block,
   children,
@@ -314,8 +660,424 @@ function PeriodBlockLink({
   );
 }
 
+function BlockTooltip({
+  block,
+  mode,
+  x,
+  y,
+}: {
+  block: PeriodGridBlock;
+  mode: MonitorBlockGridMode;
+  x: number;
+  y: number;
+}) {
+  return (
+    <div
+      className={cn(
+        "pointer-events-none fixed z-50 w-[min(35rem,calc(100vw-2rem))] rounded-lg border px-3 py-2.5 font-mono text-xs leading-relaxed shadow-2xl",
+        mode === "ursf"
+          ? "border-[var(--ursf-border)] bg-[var(--ursf-card)] text-[var(--ursf-heading)]"
+          : "border-border bg-popover text-popover-foreground",
+      )}
+      style={{ left: x, top: y }}
+    >
+      <dl className="grid grid-cols-[4.25rem_minmax(0,1fr)] gap-x-3 gap-y-1">
+        <dt className="text-muted-foreground">Height</dt>
+        <dd>{block.height}</dd>
+        <dt className="text-muted-foreground">Hash</dt>
+        <dd className="break-all">{block.hash ?? "Unavailable"}</dd>
+        <dt className="text-muted-foreground">Version</dt>
+        <dd>{formatBlockVersion(block.version)}</dd>
+        <dt className="text-muted-foreground">Time</dt>
+        <dd>{formatBlockTime(block.time)}</dd>
+        <dt className="text-muted-foreground">Txs</dt>
+        <dd>{formatBlockTransactions(block.nTx)}</dd>
+      </dl>
+      <p
+        className={cn(
+          "mt-3",
+          mode === "bip110" && block.signaling === true
+            ? "text-primary"
+            : "text-muted-foreground",
+        )}
+      >
+        {mode === "bip110" && block.signaling === true ? "" : "x "}
+        {formatBlockStatus(block, mode)}
+      </p>
+    </div>
+  );
+}
+
+function blockTitle(block: PeriodGridBlock, mode: MonitorBlockGridMode) {
+  return [
+    `Height ${block.height}`,
+    `Hash ${block.hash ?? "Unavailable"}`,
+    `Version ${formatBlockVersion(block.version)}`,
+    `Time ${formatBlockTime(block.time)}`,
+    `Txs ${formatBlockTransactions(block.nTx)}`,
+    formatBlockStatus(block, mode),
+  ].join("\n");
+}
+
+function BlockTile({
+  block,
+  mode,
+  onTooltipClear,
+  onTooltipMove,
+}: {
+  block: PeriodGridBlock;
+  mode: MonitorBlockGridMode;
+  onTooltipClear: () => void;
+  onTooltipMove: (
+    block: PeriodGridBlock,
+    x: number,
+    y: number,
+    pointer: "mouse" | "focus",
+  ) => void;
+}) {
+  const signaling = mode === "bip110" && block.signaling === true;
+  const unavailable = blockDetailUnavailable(block);
+
+  return (
+    <a
+      href={`${MEMPOOL_BLOCK_URL}/${block.height}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={blockTitle(block, mode)}
+      onBlur={onTooltipClear}
+      onFocus={(event) => {
+        const rect = event.currentTarget.getBoundingClientRect();
+        onTooltipMove(block, rect.left, rect.bottom, "focus");
+      }}
+      onMouseEnter={(event) =>
+        onTooltipMove(block, event.clientX, event.clientY, "mouse")
+      }
+      onMouseLeave={onTooltipClear}
+      onMouseMove={(event) =>
+        onTooltipMove(block, event.clientX, event.clientY, "mouse")
+      }
+      className={cn(
+        "relative flex h-12 items-center justify-center overflow-hidden rounded-md border px-2 font-mono text-sm font-semibold tracking-normal transition-[background-color,border-color,box-shadow,transform] duration-150 hover:-translate-y-0.5 focus-visible:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+        mode === "ursf"
+          ? "ursf-block-cell border-[var(--ursf-border)] bg-[var(--ursf-block)] text-[var(--ursf-block-text)] hover:bg-[var(--ursf-card-hover)]"
+          : "border-border/60 bg-background/80 text-muted-foreground hover:border-border hover:bg-muted/50 hover:text-foreground",
+        signaling &&
+          "border-primary/50 bg-primary/10 text-primary shadow-[inset_0_-3px_0_var(--primary)] hover:border-primary/70 hover:bg-primary/15 hover:text-primary",
+        unavailable && "border-dashed",
+      )}
+    >
+      {block.height}
+    </a>
+  );
+}
+
+function PeriodBlockGrid({
+  blockDataStatus,
+  blocks,
+  data,
+  mode = "bip110",
+}: {
+  blockDataStatus: BlockDataStatus;
+  blocks: MonitorBlock[] | null;
+  data: MonitorData;
+  mode?: MonitorBlockGridMode;
+}) {
+  const [showAll, setShowAll] = useState(false);
+  const [tooltip, setTooltip] = useState<{
+    block: PeriodGridBlock;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  useEffect(() => {
+    setShowAll(false);
+    setTooltip(null);
+  }, [data.periodNum, data.tip, mode]);
+
+  const gridBlocks = useMemo(() => {
+    if (blocks && blocks.length > 0) {
+      return blocks;
+    }
+
+    return generatePeriodBlocks(data);
+  }, [blocks, data]);
+
+  const visibleBlocks = showAll
+    ? gridBlocks
+    : gridBlocks.slice(0, GRID_VISIBLE_BLOCKS);
+  const hiddenCount = Math.max(gridBlocks.length - visibleBlocks.length, 0);
+  const liveBlockCount = blocks?.length ?? 0;
+  const hasLiveBlocks = liveBlockCount > 0;
+
+  const moveTooltip = useCallback(
+    (
+      block: PeriodGridBlock,
+      x: number,
+      y: number,
+      pointer: "mouse" | "focus",
+    ) => {
+      const width = Math.min(560, window.innerWidth - 32);
+      const height = 176;
+      const requestedLeft = pointer === "mouse" ? x + 14 : x;
+      const left = Math.min(requestedLeft, window.innerWidth - width - 16);
+      const top =
+        pointer === "mouse"
+          ? Math.min(y + 14, window.innerHeight - height - 16)
+          : Math.min(y + 10, window.innerHeight - height - 16);
+
+      setTooltip({
+        block,
+        x: Math.max(16, left),
+        y: Math.max(16, top),
+      });
+    },
+    [],
+  );
+
+  const blockDataLabel =
+    blockDataStatus === "live"
+      ? "Live block data"
+      : blockDataStatus === "loading"
+        ? "Loading block data"
+        : "Block data unavailable";
+
+  return (
+    <Card
+      className={cn(
+        "overflow-visible border-border/50 bg-card/50 backdrop-blur",
+        mode === "ursf" && "ursf-card border p-0 shadow-none",
+      )}
+    >
+      <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p
+            className={cn(
+              "text-xs font-medium uppercase tracking-wide text-muted-foreground",
+              mode === "ursf" && "ursf-label",
+            )}
+          >
+            {mode === "ursf" ? "Recent blocks" : "Current period blocks"}
+          </p>
+          <CardTitle
+            className={cn(
+              "mt-1 text-xl font-semibold tracking-tight",
+              mode === "ursf" && "ursf-heading font-sans",
+            )}
+          >
+            {mode === "ursf" ? "All quiet" : "Block signaling grid"}
+          </CardTitle>
+          <p
+            className={cn(
+              "mt-2 max-w-2xl text-sm text-muted-foreground",
+              mode === "ursf" && "ursf-muted",
+            )}
+          >
+            Difficulty period {formatNumber(data.periodNum)}:{" "}
+            {formatNumber(gridBlocks.length)} tracked blocks
+            {mode === "bip110"
+              ? `, ${formatNumber(data.signalingCount)} signaling`
+              : ", 0 URSF signals"}
+          </p>
+        </div>
+
+        <div
+          className={cn(
+            "flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground",
+            mode === "ursf" && "ursf-muted",
+          )}
+        >
+          <Badge
+            variant="outline"
+            className={cn(
+              "border-border/60 bg-background/70",
+              blockDataStatus === "live" && "border-primary/25 text-primary",
+              mode === "ursf" &&
+                "border-[var(--ursf-border)] bg-[var(--ursf-pill)] text-[var(--ursf-muted)]",
+            )}
+          >
+            {blockDataLabel}
+          </Badge>
+          <span className="inline-flex items-center gap-2">
+            <span className="size-3 rounded-sm bg-primary" aria-hidden="true" />
+            Signaling
+          </span>
+          <span className="inline-flex items-center gap-2">
+            <span
+              className={cn(
+                "size-3 rounded-sm border border-border bg-background",
+                mode === "ursf" && "ursf-block-dot border-[var(--ursf-border)]",
+              )}
+              aria-hidden="true"
+            />
+            Not signaling
+          </span>
+        </div>
+      </CardHeader>
+
+      <CardContent>
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(4.75rem,1fr))] gap-2 sm:grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))]">
+          {visibleBlocks.map((block) => (
+            <BlockTile
+              key={block.height}
+              block={block}
+              mode={mode}
+              onTooltipClear={() => setTooltip(null)}
+              onTooltipMove={moveTooltip}
+            />
+          ))}
+        </div>
+
+        {hiddenCount > 0 && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAll(true)}
+            className={cn(
+              "mt-4 w-full bg-background",
+              mode === "ursf" &&
+                "ursf-link-button border-[var(--ursf-border)] bg-[var(--ursf-card)]",
+            )}
+          >
+            Show all {formatNumber(gridBlocks.length)} blocks
+          </Button>
+        )}
+
+        {!hasLiveBlocks && (
+          <p
+            className={cn(
+              "mt-3 text-xs text-muted-foreground",
+              mode === "ursf" && "ursf-muted",
+            )}
+          >
+            Waiting for detailed block metadata.
+          </p>
+        )}
+      </CardContent>
+
+      {tooltip && (
+        <BlockTooltip
+          block={tooltip.block}
+          mode={mode}
+          x={tooltip.x}
+          y={tooltip.y}
+        />
+      )}
+    </Card>
+  );
+}
+
+export function MonitorBlockGrid({
+  mode = "bip110",
+}: {
+  mode?: MonitorBlockGridMode;
+}) {
+  const [data, setData] = useState<MonitorData | null>(null);
+  const [blocks, setBlocks] = useState<MonitorBlock[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const applyMonitorBlocks = useCallback((payload: MonitorBlocksPayload) => {
+    setBlocks(payload.blocks);
+  }, []);
+  const blockDataStatus = useMonitorBlocks(applyMonitorBlocks);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const cached = readCachedMonitorData();
+
+    if (cached) {
+      setData(cached.data);
+      setLoading(false);
+    }
+
+    if (!cached || Date.now() - cached.cachedAt > CACHE_TTL_MS) {
+      fetchMonitorData(controller.signal)
+        .then((nextData) => {
+          const cachedAt = Date.now();
+
+          setData(nextData);
+          setError(null);
+          writeCachedMonitorData(nextData, cachedAt);
+        })
+        .catch((nextError) => {
+          if (
+            nextError instanceof DOMException &&
+            nextError.name === "AbortError"
+          ) {
+            return;
+          }
+
+          setError(
+            nextError instanceof Error
+              ? nextError.message
+              : "Monitor data could not be loaded",
+          );
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
+
+  if (loading && !data) {
+    return (
+      <Card
+        className={cn(
+          "border-border/50 bg-card/50 backdrop-blur",
+          mode === "ursf" && "ursf-card mt-6 border",
+        )}
+      >
+        <CardContent className="flex min-h-40 items-center justify-center">
+          <div className="flex items-center gap-3 text-muted-foreground">
+            <RefreshCw className="size-4 animate-spin" aria-hidden="true" />
+            Loading block grid
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!data) {
+    return (
+      <Card
+        className={cn(
+          "border-destructive/30 bg-destructive/5",
+          mode === "ursf" && "mt-6",
+        )}
+      >
+        <CardContent className="flex items-start gap-3 pt-6">
+          <AlertCircle
+            className="mt-0.5 size-4 shrink-0 text-destructive"
+            aria-hidden="true"
+          />
+          <p className="text-sm text-muted-foreground">
+            {error ?? "Block grid data could not be loaded."}
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className={mode === "ursf" ? "mt-6" : undefined}>
+      <PeriodBlockGrid
+        blockDataStatus={blockDataStatus}
+        blocks={blocks}
+        data={data}
+        mode={mode}
+      />
+    </div>
+  );
+}
+
 export function MonitorDashboard() {
   const [data, setData] = useState<MonitorData | null>(null);
+  const [blocks, setBlocks] = useState<MonitorBlock[] | null>(null);
   const [cacheInfo, setCacheInfo] = useState<CacheInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -349,6 +1111,11 @@ export function MonitorDashboard() {
       setRefreshing(false);
     }
   }, []);
+
+  const applyMonitorBlocks = useCallback((payload: MonitorBlocksPayload) => {
+    setBlocks(payload.blocks);
+  }, []);
+  const blockDataStatus = useMonitorBlocks(applyMonitorBlocks);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -674,6 +1441,12 @@ export function MonitorDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <PeriodBlockGrid
+        blockDataStatus={blockDataStatus}
+        blocks={blocks}
+        data={data}
+      />
 
       <Card className="border-border/50 bg-card/50 backdrop-blur">
         <CardHeader>

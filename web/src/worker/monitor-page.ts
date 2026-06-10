@@ -4,6 +4,7 @@ import {
   formatPercent,
   jsonResponse,
   monitorDescription,
+  PERIOD_SIZE,
   readMonitorData,
 } from "./monitor-data";
 import { MONITOR_OG_IMAGE_PATH } from "./monitor-og-image";
@@ -56,7 +57,8 @@ function rewriteMonitorPage(
   data: MonitorData,
 ): Response {
   const metadata = monitorMetadata(request, data);
-  const transformed = new HTMLRewriter()
+  const fields = monitorPageFields(data);
+  let rewriter = new HTMLRewriter()
     .on(
       'meta[name="description"]',
       new MetaContentRewriter(metadata.description),
@@ -81,7 +83,26 @@ function rewriteMonitorPage(
       new MetaContentRewriter(metadata.imageUrl),
     )
     .on("title", new InnerContentRewriter(metadata.title))
-    .on("head", new HeadAppender(extraMetaTags(metadata)))
+    .on("head", new HeadAppender(extraMetaTags(metadata)));
+
+  for (const [field, value] of Object.entries(fields)) {
+    rewriter = rewriter.on(
+      `[data-monitor-field="${field}"]`,
+      new InnerContentRewriter(value),
+    );
+  }
+
+  const transformed = rewriter
+    .on(
+      '[data-monitor-progress="activation"]',
+      new StyleRewriter(
+        `width: ${activationProgressPercent(data).toFixed(2)}%`,
+      ),
+    )
+    .on(
+      '[data-monitor-progress="period"]',
+      new StyleRewriter(`width: ${periodProgressPercent(data).toFixed(2)}%`),
+    )
     .transform(response);
 
   const headers = new Headers(transformed.headers);
@@ -94,6 +115,148 @@ function rewriteMonitorPage(
     status: transformed.status,
     statusText: transformed.statusText,
   });
+}
+
+function monitorPageFields(data: MonitorData): Record<string, string> {
+  const blocksLeft = Math.max(data.periodEnd - data.tip, 0);
+  const requiredSignalBlocks = Math.ceil(
+    PERIOD_SIZE * (ACTIVATION_THRESHOLD / 100),
+  );
+  const signalingDeficit = Math.max(
+    requiredSignalBlocks - data.signalingCount,
+    0,
+  );
+  const sortedPeriods = [...data.periods].sort(
+    (a, b) => b.periodNum - a.periodNum,
+  );
+  const previousPeriod =
+    sortedPeriods.find((period) => period.periodNum === data.periodNum - 1) ??
+    sortedPeriods.find((period) => period.periodNum < data.periodNum);
+
+  return {
+    "blocks-left": formatInteger(blocksLeft),
+    "blocks-left-detail": formatEstimatedTime(blocksLeft),
+    "chain-tip": formatInteger(data.chainTip),
+    "history-current-end": formatInteger(data.periodEnd),
+    "history-current-percent": formatPercent(data.pct),
+    "history-current-period": formatInteger(data.periodNum),
+    "history-current-signaling": formatInteger(data.signalingCount),
+    "history-current-start": formatInteger(data.periodStart),
+    "history-current-tracked": `${formatInteger(data.totalBlocks)} / ${formatInteger(PERIOD_SIZE)}`,
+    "history-previous-end": formatPeriodEnd(
+      previousPeriod,
+      data.periodStart - 1,
+    ),
+    "history-previous-percent": formatPeriodPercent(previousPeriod, 0),
+    "history-previous-period": previousPeriod
+      ? formatInteger(previousPeriod.periodNum)
+      : "previous",
+    "history-previous-signaling": formatPeriodSignaling(previousPeriod, 0),
+    "history-previous-start": formatPeriodStart(
+      previousPeriod,
+      data.periodStart - PERIOD_SIZE,
+    ),
+    "history-previous-tracked": formatPeriodTracked(
+      previousPeriod,
+      PERIOD_SIZE,
+    ),
+    "indexed-tip": formatInteger(data.tip),
+    "period-detail": `${formatInteger(blocksLeft)} blocks remain in this period`,
+    "period-end": formatInteger(data.periodEnd),
+    "period-num": formatInteger(data.periodNum),
+    "period-progress": `${formatInteger(data.totalBlocks)} / ${formatInteger(PERIOD_SIZE)}`,
+    "period-start": formatInteger(data.periodStart),
+    "signal-rate": formatPercent(data.pct),
+    "signaling-detail": [
+      `${formatInteger(data.signalingCount)} signaling blocks`,
+      `${formatInteger(signalingDeficit)} more needed for lock-in`,
+    ].join(", "),
+    signals: formatInteger(data.signalingCount),
+    "sync-status": data.synced ? "Synced" : "Syncing",
+    threshold: formatInteger(requiredSignalBlocks),
+    "updated-at": formatUpdatedAt(data.updatedAt),
+  };
+}
+
+function activationProgressPercent(data: MonitorData): number {
+  return clampPercent((data.pct / ACTIVATION_THRESHOLD) * 100);
+}
+
+function periodProgressPercent(data: MonitorData): number {
+  return clampPercent((data.totalBlocks / PERIOD_SIZE) * 100);
+}
+
+function clampPercent(value: number): number {
+  return Math.min(Math.max(value, 0), 100);
+}
+
+function formatPeriodStart(
+  period: MonitorData["periods"][number] | undefined,
+  fallback: number,
+): string {
+  return formatInteger(period?.startBlock ?? fallback);
+}
+
+function formatPeriodEnd(
+  period: MonitorData["periods"][number] | undefined,
+  fallback: number,
+): string {
+  return formatInteger(period?.endBlock ?? fallback);
+}
+
+function formatPeriodTracked(
+  period: MonitorData["periods"][number] | undefined,
+  fallback: number,
+): string {
+  return `${formatInteger(period?.totalBlocks ?? fallback)} / ${formatInteger(PERIOD_SIZE)}`;
+}
+
+function formatPeriodSignaling(
+  period: MonitorData["periods"][number] | undefined,
+  fallback: number,
+): string {
+  return formatInteger(period?.signalingCount ?? fallback);
+}
+
+function formatPeriodPercent(
+  period: MonitorData["periods"][number] | undefined,
+  fallback: number,
+): string {
+  return formatPercent(period?.pct ?? fallback);
+}
+
+function formatEstimatedTime(blocks: number): string {
+  const minutes = blocks * 10;
+  const days = minutes / 1440;
+
+  if (days >= 2) {
+    return `~${days.toFixed(days >= 10 ? 0 : 1)} days`;
+  }
+
+  const hours = minutes / 60;
+
+  if (hours >= 1) {
+    return `~${hours.toFixed(hours >= 10 ? 0 : 1)} hours`;
+  }
+
+  return `~${minutes} minutes`;
+}
+
+function formatUpdatedAt(value: string): string {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Unknown";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    month: "short",
+    timeZoneName: "short",
+    year: "numeric",
+  }).format(date);
 }
 
 function staticMonitorPage(response: Response): Response {
@@ -187,5 +350,13 @@ class HeadAppender implements HTMLRewriterElementContentHandlers {
 
   element(element: Element): void {
     element.append(this.html, { html: true });
+  }
+}
+
+class StyleRewriter implements HTMLRewriterElementContentHandlers {
+  constructor(private readonly style: string) {}
+
+  element(element: Element): void {
+    element.setAttribute("style", this.style);
   }
 }

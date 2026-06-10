@@ -1,8 +1,66 @@
 ---
-import Layout from '@/layouts/Layout.astro';
-import Header from '@/components/Header.astro';
-import Footer from '@/components/Footer.astro';
-import { MonitorDashboard } from '@/components/MonitorDashboard';
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import { MonitorDashboard } from "@/components/MonitorDashboard";
+
+const stats = [
+  {
+    label: "Indexed tip",
+    value: "N/A",
+    detail: "Highest block indexed by the monitor",
+    valueField: "indexed-tip",
+  },
+  {
+    label: "Chain tip",
+    value: "N/A",
+    detail: "Latest Bitcoin chain height reported",
+    valueField: "chain-tip",
+  },
+  {
+    label: "Signal rate",
+    value: "N/A",
+    detail: "Current period target is 55%",
+    valueField: "signal-rate",
+  },
+  {
+    label: "Signals",
+    value: "N/A",
+    detail: "Blocks tracked this period",
+    valueField: "signals",
+  },
+];
+
+const historyRows = [
+  {
+    periodField: "history-current-period",
+    period: "current",
+    firstBlockField: "history-current-start",
+    firstBlock: "Loading",
+    lastBlockField: "history-current-end",
+    lastBlock: "Loading",
+    trackedField: "history-current-tracked",
+    tracked: "Loading",
+    signalingField: "history-current-signaling",
+    signaling: "Loading",
+    percentField: "history-current-percent",
+    percent: "Loading",
+  },
+  {
+    periodField: "history-previous-period",
+    period: "previous",
+    firstBlockField: "history-previous-start",
+    firstBlock: "Loading",
+    lastBlockField: "history-previous-end",
+    lastBlock: "Loading",
+    trackedField: "history-previous-tracked",
+    tracked: "Loading",
+    signalingField: "history-previous-signaling",
+    signaling: "Loading",
+    percentField: "history-previous-percent",
+    percent: "Loading",
+  },
+];
 ---
 
 <Layout
@@ -28,7 +86,269 @@ import { MonitorDashboard } from '@/components/MonitorDashboard';
           </p>
         </div>
 
-        <MonitorDashboard client:load />
+        <section
+          data-monitor-static
+          class="space-y-6"
+          aria-label="BIP-110 monitor static summary"
+        >
+          <div
+            class="rounded-lg border border-border/60 bg-muted/25 px-4 py-3 shadow-sm shadow-foreground/5 dark:bg-card/60"
+          >
+            <div
+              class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div>
+                <p class="font-medium">
+                  <span data-monitor-field="sync-status"
+                    >Loading monitor data</span
+                  >
+                </p>
+                <p class="mt-1 text-sm text-muted-foreground">
+                  Updated <span data-monitor-field="updated-at">N/A</span>
+                </p>
+              </div>
+              <a
+                href="https://bip110monitor.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex w-fit items-center text-sm text-primary hover:underline"
+              >
+                Source monitor
+              </a>
+            </div>
+          </div>
+
+          <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {
+              stats.map((stat) => (
+                <article class="rounded-lg border border-border/50 bg-card/50 p-4">
+                  <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    {stat.label}
+                  </p>
+                  <p class="mt-2 text-3xl font-bold tracking-tight">
+                    <span data-monitor-field={stat.valueField}>
+                      {stat.value}
+                    </span>
+                  </p>
+                  <p class="mt-1 text-sm text-muted-foreground">
+                    {stat.detail}
+                  </p>
+                </article>
+              ))
+            }
+          </div>
+
+          <div
+            class="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]"
+          >
+            <section class="rounded-lg border border-border/50 bg-card/50 p-6">
+              <h2 class="text-xl font-semibold">
+                Difficulty Adjustment Period <span
+                  data-monitor-field="period-num">N/A</span
+                >
+              </h2>
+              <div class="mt-6 grid gap-4 sm:grid-cols-3">
+                <div class="rounded-lg bg-muted/50 p-4">
+                  <p
+                    class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                  >
+                    Block range
+                  </p>
+                  <p class="mt-2 text-sm font-medium">
+                    <span data-monitor-field="period-start">N/A</span>
+                    <span class="mx-2 text-muted-foreground">to</span>
+                    <span data-monitor-field="period-end">N/A</span>
+                  </p>
+                </div>
+                <div class="rounded-lg bg-muted/50 p-4">
+                  <p
+                    class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                  >
+                    Blocks left
+                  </p>
+                  <p
+                    class="mt-2 text-lg font-semibold"
+                    data-monitor-field="blocks-left"
+                  >
+                    N/A
+                  </p>
+                  <p
+                    class="text-sm text-muted-foreground"
+                    data-monitor-field="blocks-left-detail"
+                  >
+                    Loading chain state
+                  </p>
+                </div>
+                <div class="rounded-lg bg-muted/50 p-4">
+                  <p
+                    class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                  >
+                    Threshold
+                  </p>
+                  <p
+                    class="mt-2 text-lg font-semibold"
+                    data-monitor-field="threshold"
+                  >
+                    N/A
+                  </p>
+                  <p class="text-sm text-muted-foreground">
+                    signaling blocks required
+                  </p>
+                </div>
+              </div>
+
+              <div class="mt-6 space-y-5">
+                <div>
+                  <div class="mb-2 flex items-end justify-between gap-3">
+                    <div>
+                      <p class="text-sm font-medium">Signaling rate</p>
+                      <p
+                        class="text-xs text-muted-foreground"
+                        data-monitor-field="signaling-detail"
+                      >
+                        Loading signaling data
+                      </p>
+                    </div>
+                    <p
+                      class="font-mono text-sm text-muted-foreground"
+                      data-monitor-field="signal-rate"
+                    >
+                      N/A
+                    </p>
+                  </div>
+                  <div class="h-3 overflow-hidden rounded-full bg-muted">
+                    <div
+                      class="h-full w-0 rounded-full bg-primary"
+                      data-monitor-progress="activation"
+                    >
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="mb-2 flex items-end justify-between gap-3">
+                    <div>
+                      <p class="text-sm font-medium">Period progress</p>
+                      <p
+                        class="text-xs text-muted-foreground"
+                        data-monitor-field="period-detail"
+                      >
+                        Loading period data
+                      </p>
+                    </div>
+                    <p
+                      class="font-mono text-sm text-muted-foreground"
+                      data-monitor-field="period-progress"
+                    >
+                      N/A
+                    </p>
+                  </div>
+                  <div class="h-3 overflow-hidden rounded-full bg-muted">
+                    <div
+                      class="h-full w-0 rounded-full bg-foreground/70 dark:bg-foreground/80"
+                      data-monitor-progress="period"
+                    >
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="rounded-lg border border-border/50 bg-card/50 p-6">
+              <h2 class="text-xl font-semibold">BIP-110 Rules</h2>
+              <div class="mt-4 space-y-4 text-sm text-muted-foreground">
+                <p>
+                  BIP-110 is a temporary soft fork that limits data field sizes
+                  to reduce blockchain bloat and refocus development on monetary
+                  use cases.
+                </p>
+                <div class="grid gap-3">
+                  <div class="rounded-lg border border-border/50 p-3">
+                    <p class="font-medium text-foreground">Signal bit</p>
+                    <p>Miners signal support by setting bit 4.</p>
+                  </div>
+                  <div class="rounded-lg border border-border/50 p-3">
+                    <p class="font-medium text-foreground">Activation</p>
+                    <p>
+                      55% of blocks in one 2,016-block period must signal for
+                      early lock-in.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <section class="rounded-lg border border-border/50 bg-card/50 p-6">
+            <h2 class="text-xl font-semibold">
+              Difficulty Adjustment Period History
+            </h2>
+            <div class="mt-4 overflow-x-auto">
+              <table class="w-full min-w-160 text-left text-sm">
+                <thead
+                  class="border-b border-border/50 text-xs uppercase tracking-wide text-muted-foreground"
+                >
+                  <tr>
+                    <th class="py-3 pr-4 font-medium">Period</th>
+                    <th class="py-3 pr-4 font-medium">First block</th>
+                    <th class="py-3 pr-4 font-medium">Last block</th>
+                    <th class="py-3 pr-4 font-medium">Blocks tracked</th>
+                    <th class="py-3 pr-4 font-medium">Signaling</th>
+                    <th class="py-3 font-medium">Signal %</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-border/50">
+                  {
+                    historyRows.map((row) => (
+                      <tr>
+                        <td
+                          class="py-3 pr-4 font-medium"
+                          data-monitor-field={row.periodField}
+                        >
+                          {row.period}
+                        </td>
+                        <td
+                          class="py-3 pr-4 text-muted-foreground"
+                          data-monitor-field={row.firstBlockField}
+                        >
+                          {row.firstBlock}
+                        </td>
+                        <td
+                          class="py-3 pr-4 text-muted-foreground"
+                          data-monitor-field={row.lastBlockField}
+                        >
+                          {row.lastBlock}
+                        </td>
+                        <td
+                          class="py-3 pr-4 text-muted-foreground"
+                          data-monitor-field={row.trackedField}
+                        >
+                          {row.tracked}
+                        </td>
+                        <td
+                          class="py-3 pr-4 text-muted-foreground"
+                          data-monitor-field={row.signalingField}
+                        >
+                          {row.signaling}
+                        </td>
+                        <td
+                          class="py-3 font-mono text-muted-foreground"
+                          data-monitor-field={row.percentField}
+                        >
+                          {row.percent}
+                        </td>
+                      </tr>
+                    ))
+                  }
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <div data-monitor-react>
+          <MonitorDashboard client:load />
+        </div>
       </div>
     </section>
 

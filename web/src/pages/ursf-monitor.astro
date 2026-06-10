@@ -1,70 +1,69 @@
 ---
-import Layout from '@/layouts/Layout.astro';
-import Header from '@/components/Header.astro';
-import Footer from '@/components/Footer.astro';
-
-const emptyBlocks = Array.from({ length: 144 }, (_, index) => index + 1);
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import { MonitorBlockGrid } from "@/components/MonitorDashboard";
 
 const stats = [
   {
-    label: 'Indexed tip',
-    value: 'N/A',
-    detail: 'Loading chain state',
-    valueField: 'indexed-tip',
-    detailField: 'indexed-tip-detail',
+    label: "Indexed tip",
+    value: "N/A",
+    detail: "Loading chain state",
+    valueField: "indexed-tip",
+    detailField: "indexed-tip-detail",
   },
   {
-    label: 'Chain tip',
-    value: 'N/A',
-    detail: 'Loading chain state',
-    valueField: 'chain-tip',
-    detailField: 'chain-tip-detail',
+    label: "Chain tip",
+    value: "N/A",
+    detail: "Loading chain state",
+    valueField: "chain-tip",
+    detailField: "chain-tip-detail",
   },
   {
-    label: 'Period signal rate',
-    value: '0.00%',
-    detail: '0 blocks signaling',
+    label: "Period signal rate",
+    value: "0.00%",
+    detail: "0 blocks signaling",
   },
   {
-    label: 'Activation target',
-    value: 'N/A',
-    detail: 'No URSF activation target',
+    label: "Activation target",
+    value: "N/A",
+    detail: "No URSF activation target",
   },
 ];
 
 const historyRows = [
   {
-    period: 'current',
-    firstBlock: 'Loading',
-    firstBlockField: 'history-current-start',
-    lastBlock: 'Loading',
-    lastBlockField: 'history-current-end',
-    tracked: 'Loading',
-    trackedField: 'history-current-tracked',
-    signaling: '0',
-    percent: '0.00%',
+    period: "current",
+    firstBlock: "Loading",
+    firstBlockField: "history-current-start",
+    lastBlock: "Loading",
+    lastBlockField: "history-current-end",
+    tracked: "Loading",
+    trackedField: "history-current-tracked",
+    signaling: "0",
+    percent: "0.00%",
   },
   {
-    period: 'previous',
-    firstBlock: 'Loading',
-    firstBlockField: 'history-previous-start',
-    lastBlock: 'Loading',
-    lastBlockField: 'history-previous-end',
-    tracked: 'Loading',
-    trackedField: 'history-previous-tracked',
-    signaling: '0',
-    percent: '0.00%',
+    period: "previous",
+    firstBlock: "Loading",
+    firstBlockField: "history-previous-start",
+    lastBlock: "Loading",
+    lastBlockField: "history-previous-end",
+    tracked: "Loading",
+    trackedField: "history-previous-tracked",
+    signaling: "0",
+    percent: "0.00%",
   },
   {
-    period: 'all time',
-    firstBlock: 'Loading',
-    firstBlockField: 'history-all-start',
-    lastBlock: 'Loading',
-    lastBlockField: 'history-all-end',
-    tracked: 'Loading',
-    trackedField: 'history-all-tracked',
-    signaling: '0',
-    percent: '0.00%',
+    period: "all time",
+    firstBlock: "Loading",
+    firstBlockField: "history-all-start",
+    lastBlock: "Loading",
+    lastBlockField: "history-all-end",
+    tracked: "Loading",
+    trackedField: "history-all-tracked",
+    signaling: "0",
+    percent: "0.00%",
   },
 ];
 ---
@@ -80,9 +79,13 @@ const historyRows = [
 
     <section class="px-4 pb-20 pt-24 sm:px-6">
       <div class="mx-auto max-w-6xl">
-        <div class="ursf-border mb-8 flex flex-col gap-5 border-b pb-6 lg:flex-row lg:items-end lg:justify-between">
+        <div
+          class="ursf-border mb-8 flex flex-col gap-5 border-b pb-6 lg:flex-row lg:items-end lg:justify-between"
+        >
           <div>
-            <h1 class="ursf-heading font-mono text-3xl font-semibold tracking-normal sm:text-5xl">
+            <h1
+              class="ursf-heading font-mono text-3xl font-semibold tracking-normal sm:text-5xl"
+            >
               URSF MONITOR
             </h1>
             <p class="ursf-muted mt-2 text-sm">
@@ -100,7 +103,9 @@ const historyRows = [
           </div>
         </div>
 
-        <div class="ursf-card mb-6 rounded-lg border p-5 shadow-2xl shadow-black/10 dark:shadow-black/40">
+        <div
+          class="ursf-card mb-6 rounded-lg border p-5 shadow-2xl shadow-black/10 dark:shadow-black/40"
+        >
           <p class="ursf-accent text-sm font-medium">
             Current URSF Signaling Status - Difficulty Adjustment Period <span
               data-ursf-field="status-period">N/A</span
@@ -118,7 +123,10 @@ const historyRows = [
                 <p class="ursf-heading mt-3 font-mono text-4xl font-semibold tracking-normal">
                   <span data-ursf-field={stat.valueField}>{stat.value}</span>
                 </p>
-                <p class="ursf-muted mt-2 text-sm" data-ursf-field={stat.detailField}>
+                <p
+                  class="ursf-muted mt-2 text-sm"
+                  data-ursf-field={stat.detailField}
+                >
                   {stat.detail}
                 </p>
               </article>
@@ -126,23 +134,37 @@ const historyRows = [
           }
         </div>
 
-        <div class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)]">
+        <div
+          class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)]"
+        >
           <section class="ursf-card rounded-lg border p-5">
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div
+              class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+            >
               <div>
-                <p class="ursf-label text-xs font-medium uppercase tracking-wide">
+                <p
+                  class="ursf-label text-xs font-medium uppercase tracking-wide"
+                >
                   Current Difficulty Adjustment Period
                 </p>
-                <p class="ursf-heading mt-2 font-mono text-5xl font-semibold tracking-normal">
+                <p
+                  class="ursf-heading mt-2 font-mono text-5xl font-semibold tracking-normal"
+                >
                   <span data-ursf-field="period-num">N/A</span>
                 </p>
               </div>
               <div class="ursf-pill rounded-md border px-4 py-3 text-sm">
-                <span class="ursf-heading font-mono" data-ursf-field="period-start">
+                <span
+                  class="ursf-heading font-mono"
+                  data-ursf-field="period-start"
+                >
                   N/A
                 </span>
                 <span class="ursf-muted px-2">-</span>
-                <span class="ursf-heading font-mono" data-ursf-field="period-end">
+                <span
+                  class="ursf-heading font-mono"
+                  data-ursf-field="period-end"
+                >
                   N/A
                 </span>
               </div>
@@ -156,7 +178,10 @@ const historyRows = [
                 <p class="ursf-heading mt-2 font-mono text-2xl">
                   <span data-ursf-field="blocks-left">N/A</span>
                 </p>
-                <p class="ursf-muted text-sm" data-ursf-field="blocks-left-detail">
+                <p
+                  class="ursf-muted text-sm"
+                  data-ursf-field="blocks-left-detail"
+                >
                   Loading chain state
                 </p>
               </div>
@@ -189,7 +214,9 @@ const historyRows = [
                   </div>
                   <p class="ursf-muted font-mono text-sm">0.00%</p>
                 </div>
-                <div class="ursf-progress-track h-3 overflow-hidden rounded-full">
+                <div
+                  class="ursf-progress-track h-3 overflow-hidden rounded-full"
+                >
                   <div class="h-full w-0 rounded-full bg-amber-400"></div>
                 </div>
               </div>
@@ -204,11 +231,16 @@ const historyRows = [
                       Current Bitcoin difficulty period
                     </p>
                   </div>
-                  <p class="ursf-muted font-mono text-sm" data-ursf-field="period-progress">
+                  <p
+                    class="ursf-muted font-mono text-sm"
+                    data-ursf-field="period-progress"
+                  >
                     N/A
                   </p>
                 </div>
-                <div class="ursf-progress-track h-3 overflow-hidden rounded-full">
+                <div
+                  class="ursf-progress-track h-3 overflow-hidden rounded-full"
+                >
                   <div
                     class="h-full w-0 rounded-full bg-sky-400"
                     data-ursf-progress="period"
@@ -236,41 +268,7 @@ const historyRows = [
           </aside>
         </div>
 
-        <section class="ursf-card mt-6 rounded-lg border p-5">
-          <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p class="ursf-label text-xs font-medium uppercase tracking-wide">
-                Recent Blocks
-              </p>
-              <h2 class="ursf-heading mt-1 text-xl font-semibold tracking-tight">
-                All quiet
-              </h2>
-            </div>
-            <div class="ursf-muted flex flex-wrap gap-4 text-xs">
-              <span class="inline-flex items-center gap-2">
-                <span class="size-3 rounded-sm bg-amber-400"></span>
-                Signaling
-              </span>
-              <span class="inline-flex items-center gap-2">
-                <span class="ursf-block-dot size-3 rounded-sm"></span>
-                Not signaling
-              </span>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-[repeat(auto-fill,minmax(42px,1fr))] gap-2">
-            {
-              emptyBlocks.map((block) => (
-                <div
-                  class="ursf-block-cell flex aspect-square items-center justify-center rounded-md border font-mono text-xs"
-                  aria-label={`URSF block slot ${block}: not signaling`}
-                >
-                  0
-                </div>
-              ))
-            }
-          </div>
-        </section>
+        <MonitorBlockGrid mode="ursf" client:load />
 
         <section class="ursf-card mt-6 rounded-lg border p-5">
           <h2 class="ursf-heading text-xl font-semibold tracking-tight">
@@ -278,7 +276,9 @@ const historyRows = [
           </h2>
           <div class="mt-4 overflow-x-auto">
             <table class="w-full min-w-[720px] text-left text-sm">
-              <thead class="ursf-border ursf-label border-b text-xs uppercase tracking-wide">
+              <thead
+                class="ursf-border ursf-label border-b text-xs uppercase tracking-wide"
+              >
                 <tr>
                   <th class="py-3 pr-4 font-medium">Period</th>
                   <th class="py-3 pr-4 font-medium">First block</th>
@@ -313,9 +313,7 @@ const historyRows = [
                       <td class="ursf-muted py-3 pr-4 font-mono">
                         {row.signaling}
                       </td>
-                      <td class="ursf-muted py-3 font-mono">
-                        {row.percent}
-                      </td>
+                      <td class="ursf-muted py-3 font-mono">{row.percent}</td>
                     </tr>
                   ))
                 }
@@ -488,9 +486,14 @@ const historyRows = [
         );
         setText("history-all-start", formatNumber(previousPeriodStart));
         setText("history-all-end", formatNumber(data.tip));
-        setText("history-all-tracked", formatNumber(data.tip - previousPeriodStart + 1));
+        setText(
+          "history-all-tracked",
+          formatNumber(data.tip - previousPeriodStart + 1),
+        );
 
-        const progress = document.querySelector('[data-ursf-progress="period"]');
+        const progress = document.querySelector(
+          '[data-ursf-progress="period"]',
+        );
         if (progress instanceof HTMLElement) {
           progress.style.width = `${progressPercent}%`;
         }

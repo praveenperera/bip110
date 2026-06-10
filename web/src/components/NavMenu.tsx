@@ -70,7 +70,7 @@ function NavLink({
 
 function DesktopNav() {
   const [showSections, setShowSections] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [currentPath, setCurrentPath] = useState("/");
 

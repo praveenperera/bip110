@@ -26,7 +26,10 @@ const {
 } = Astro.props;
 const siteName = "BIP-110";
 const canonicalUrl = Astro.url.href;
-const ogImageUrl = new URL(ogImage ?? "/images/bip110-og-home-dark.png", Astro.url).href;
+const ogImageUrl = new URL(
+  ogImage ?? "/images/bip110-og-home-dark.png",
+  Astro.url,
+).href;
 ---
 
 <!doctype html>
@@ -53,36 +56,58 @@ const ogImageUrl = new URL(ogImage ?? "/images/bip110-og-home-dark.png", Astro.u
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>{title}</title>
     <style is:inline>
-      html:not(.theme-ready) { visibility: hidden; }
+      html:not(.theme-ready) {
+        visibility: hidden;
+      }
     </style>
     <style is:inline>
       /* pre-hydration: show all accordion panels before JS loads */
-      [data-slot="accordion"]:not([data-hydrated]) [data-slot="accordion-panel"] {
+      [data-slot="accordion"]:not([data-hydrated])
+        [data-slot="accordion-panel"] {
         display: block !important;
         height: auto !important;
         overflow: visible !important;
       }
-      [data-slot="accordion"]:not([data-hydrated]) [data-slot="accordion-trigger"] svg {
+      [data-slot="accordion"]:not([data-hydrated])
+        [data-slot="accordion-trigger"]
+        svg {
+        display: none !important;
+      }
+      html.js [data-monitor-static] {
+        display: none !important;
+      }
+      html:not(.js) [data-monitor-react] {
         display: none !important;
       }
     </style>
     <noscript>
       <style>
-        html:not(.theme-ready) { visibility: visible !important; }
-        [data-slot="accordion-panel"] { display: block !important; height: auto !important; overflow: visible !important; }
-        [data-slot="accordion-trigger"] svg { display: none !important; }
+        html:not(.theme-ready) {
+          visibility: visible !important;
+        }
+        [data-slot="accordion-panel"] {
+          display: block !important;
+          height: auto !important;
+          overflow: visible !important;
+        }
+        [data-slot="accordion-trigger"] svg {
+          display: none !important;
+        }
       </style>
     </noscript>
     <script is:inline>
-      (function() {
+      (function () {
+        document.documentElement.classList.add("js");
         try {
-          var theme = localStorage.getItem('theme');
-          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          if (theme === 'dark' || (!theme && prefersDark)) {
-            document.documentElement.classList.add('dark');
+          var theme = localStorage.getItem("theme");
+          var prefersDark = window.matchMedia(
+            "(prefers-color-scheme: dark)",
+          ).matches;
+          if (theme === "dark" || (!theme && prefersDark)) {
+            document.documentElement.classList.add("dark");
           }
         } catch (e) {}
-        document.documentElement.classList.add('theme-ready');
+        document.documentElement.classList.add("theme-ready");
       })();
     </script>
   </head>
@@ -92,5 +117,5 @@ const ogImageUrl = new URL(ogImage ?? "/images/bip110-og-home-dark.png", Astro.u
 </html>
 
 <style is:global>
-  @import '../styles/global.css';
+  @import "../styles/global.css";
 </style>
