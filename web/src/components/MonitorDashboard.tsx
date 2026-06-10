@@ -1,13 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Activity,
-  AlertCircle,
-  CheckCircle2,
-  ExternalLink,
-  RefreshCw,
-} from "lucide-react";
+import { AlertCircle, ExternalLink, RefreshCw } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -471,19 +466,28 @@ export function MonitorDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 rounded-lg border border-border/50 bg-card/50 p-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          {data.synced ? (
-            <CheckCircle2 className="size-5 text-primary" aria-hidden="true" />
-          ) : (
-            <Activity className="size-5 text-primary" aria-hidden="true" />
-          )}
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant={data.synced ? "default" : "secondary"}>
+      <div className="rounded-lg border border-border/60 bg-muted/25 px-4 py-3 shadow-sm shadow-foreground/5 dark:bg-card/60">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="min-w-0 space-y-2">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+              <Badge
+                variant="outline"
+                className={cn(
+                  "gap-1.5 border-primary/20 bg-primary/10 text-primary",
+                  !data.synced &&
+                    "border-border bg-secondary text-secondary-foreground",
+                )}
+              >
+                <span
+                  className={cn(
+                    "size-1.5 rounded-full bg-current",
+                    !data.synced && "animate-pulse",
+                  )}
+                  aria-hidden="true"
+                />
                 {syncBadge}
               </Badge>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm text-foreground/80">
                 Updated {formatUpdatedAt(data.updatedAt)}
               </span>
               {cacheInfo && (
@@ -492,42 +496,46 @@ export function MonitorDashboard() {
                 </span>
               )}
             </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Public data from the BIP-{data.bip} signaling monitor, refreshed
-              every minute and cached locally for one minute.
-            </p>
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+            <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center">
+              <span>
+                Public BIP-{data.bip} monitor data refreshes every minute and
+                caches locally.
+              </span>
+              <span
+                className="hidden size-1 rounded-full bg-muted-foreground/40 sm:block"
+                aria-hidden="true"
+              />
               <a
                 href={MONITOR_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-primary hover:underline"
+                className="inline-flex w-fit items-center gap-1 text-primary hover:underline"
               >
                 Source monitor
                 <ExternalLink className="size-3" aria-hidden="true" />
               </a>
               <a
                 href={URSF_MONITOR_URL}
-                className="inline-flex items-center gap-1 text-primary hover:underline"
+                className="inline-flex w-fit items-center gap-1 text-primary hover:underline"
               >
                 URSF Monitor
               </a>
             </div>
           </div>
-        </div>
-        <div className="flex shrink-0">
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={() => void loadData()}
-            className="inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-60"
+            className="self-start bg-background md:self-auto"
             disabled={refreshing}
           >
             <RefreshCw
-              className={cn("size-4", refreshing && "animate-spin")}
+              className={cn("size-3.5", refreshing && "animate-spin")}
               aria-hidden="true"
             />
             Refresh
-          </button>
+          </Button>
         </div>
       </div>
 
