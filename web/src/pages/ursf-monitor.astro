@@ -29,6 +29,7 @@ const stats = [
     label: "Activation target",
     value: "N/A",
     detail: "No URSF activation target",
+    alert: true,
   },
 ];
 
@@ -205,8 +206,10 @@ const historyRows = [
                 <p class="ursf-label text-xs uppercase tracking-wide">
                   Activation target
                 </p>
-                <p class="ursf-heading mt-2 font-mono text-2xl">N/A</p>
-                <p class="ursf-muted text-sm">No URSF target</p>
+                <p class="ursf-alert mt-2 font-mono text-2xl font-semibold">
+                  N/A
+                </p>
+                <p class="ursf-alert text-sm font-medium">No URSF target</p>
               </div>
             </div>
 
