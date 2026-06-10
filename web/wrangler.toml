@@ -1,8 +1,10 @@
 name = "bip110"
 compatibility_date = "2025-01-26"
+main = "./src/worker.js"
 
 [observability]
 enabled = true
 
 [assets]
 directory = "./dist"
+binding = "ASSETS"
