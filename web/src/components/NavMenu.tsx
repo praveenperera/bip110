@@ -14,6 +14,7 @@ const sections = [
 
 const pages = [
   { label: "Home", href: "/" },
+  { label: "Monitor", href: "/monitor" },
   { label: "How To", href: "/howto" },
   { label: "Articles", href: "/articles" },
 ];
@@ -129,6 +130,9 @@ function DesktopNav() {
 
       <NavLink href="/howto" active={currentPath === "/howto"}>
         How To
+      </NavLink>
+      <NavLink href="/monitor" active={currentPath === "/monitor"}>
+        Monitor
       </NavLink>
       <NavLink href="/articles" active={currentPath.startsWith("/articles")}>
         Articles
