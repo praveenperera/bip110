@@ -268,7 +268,54 @@ const historyRows = [
           </aside>
         </div>
 
-        <MonitorBlockGrid mode="ursf" client:load />
+        <section
+          class="ursf-card mt-6 rounded-lg border p-5"
+          data-ursf-static
+          aria-labelledby="ursf-static-block-grid-title"
+        >
+          <div
+            class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+          >
+            <div>
+              <p class="ursf-label text-xs font-medium uppercase tracking-wide">
+                Recent blocks
+              </p>
+              <h2
+                id="ursf-static-block-grid-title"
+                class="ursf-heading mt-1 text-xl font-semibold tracking-tight"
+              >
+                All quiet
+              </h2>
+              <p class="ursf-muted mt-2 max-w-2xl text-sm">
+                Server-rendered Bitcoin block snapshot. Enable JavaScript for
+                live refreshes and interactive tooltips.
+              </p>
+            </div>
+            <div
+              class="ursf-muted flex flex-wrap items-center gap-x-4 gap-y-2 text-xs"
+            >
+              <span class="inline-flex items-center gap-2">
+                <span
+                  class="ursf-block-dot size-3 rounded-sm border border-[var(--ursf-border)]"
+                  aria-hidden="true"></span>
+                Not signaling
+              </span>
+            </div>
+          </div>
+
+          <div
+            class="mt-5 grid grid-cols-[repeat(auto-fill,minmax(4.75rem,1fr))] gap-2 sm:grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))]"
+            data-ursf-block-grid
+          >
+            <p class="ursf-muted col-span-full text-sm">
+              Loading block snapshot
+            </p>
+          </div>
+        </section>
+
+        <div data-monitor-react>
+          <MonitorBlockGrid mode="ursf" client:load />
+        </div>
 
         <section class="ursf-card mt-6 rounded-lg border p-5">
           <h2 class="ursf-heading text-xl font-semibold tracking-tight">

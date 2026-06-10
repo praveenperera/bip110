@@ -1,4 +1,5 @@
 import { defaultCache, jsonResponse } from "./monitor-data";
+import type { MonitorBlock, MonitorBlocksPayload } from "./types";
 
 const UPSTREAM_MONITOR_PAGE = "https://bip110monitor.com";
 const MAX_MONITOR_HTML_BYTES = 1_000_000;
@@ -14,20 +15,6 @@ type CacheStatus = "HIT" | "MISS" | "BYPASS";
 interface CachedMonitorBlocksResponse {
   response: Response;
   cacheStatus: CacheStatus;
-}
-
-interface MonitorBlock {
-  hash: string;
-  height: number;
-  nTx: number;
-  signaling: boolean;
-  time: number;
-  version: number;
-}
-
-interface MonitorBlocksPayload {
-  blocks: MonitorBlock[];
-  updatedAt: string;
 }
 
 export async function handleMonitorBlocksApiRequest(
@@ -56,6 +43,19 @@ export async function handleMonitorBlocksApiRequest(
     status: response.status,
     statusText: response.statusText,
   });
+}
+
+export async function readMonitorBlocks(
+  request: Request,
+  ctx: ExecutionContext,
+): Promise<MonitorBlocksPayload> {
+  const { response } = await fetchCachedMonitorBlocksResponse(request, ctx);
+
+  if (!response.ok) {
+    throw new Error(`monitor block data unavailable: ${response.status}`);
+  }
+
+  return (await response.clone().json()) as MonitorBlocksPayload;
 }
 
 async function fetchCachedMonitorBlocksResponse(

@@ -1,10 +1,12 @@
+import { ursfBlockGridHtml } from "./block-grid";
 import {
   formatInteger,
   jsonResponse,
   PERIOD_SIZE,
   readMonitorData,
 } from "./monitor-data";
-import type { MonitorData } from "./types";
+import { readMonitorBlocks } from "./monitor-blocks";
+import type { MonitorBlock, MonitorData } from "./types";
 
 export const URSF_MONITOR_PAGE_PATHS = new Set([
   "/ursf-monitor",
@@ -36,7 +38,8 @@ export async function handleUrsfMonitorPageRequest(
 
   try {
     const data = await readMonitorData(request, ctx);
-    return rewriteUrsfMonitorPage(assetResponse, data);
+    const blocks = await readUrsfMonitorBlocks(request, ctx);
+    return rewriteUrsfMonitorPage(assetResponse, data, blocks);
   } catch {
     return staticUrsfMonitorPage(assetResponse);
   }
@@ -56,6 +59,7 @@ function fetchUrsfMonitorPageAsset(
 function rewriteUrsfMonitorPage(
   response: Response,
   data: MonitorData,
+  blocks: MonitorBlock[],
 ): Response {
   const fields = ursfMonitorFields(data);
   let rewriter = new HTMLRewriter();
@@ -72,6 +76,10 @@ function rewriteUrsfMonitorPage(
       '[data-ursf-progress="period"]',
       new StyleRewriter(`width: ${periodProgressPercent(data).toFixed(2)}%`),
     )
+    .on(
+      "[data-ursf-block-grid]",
+      new InnerHtmlRewriter(ursfBlockGridHtml(data, blocks)),
+    )
     .transform(response);
 
   const headers = new Headers(transformed.headers);
@@ -84,6 +92,18 @@ function rewriteUrsfMonitorPage(
     status: transformed.status,
     statusText: transformed.statusText,
   });
+}
+
+async function readUrsfMonitorBlocks(
+  request: Request,
+  ctx: ExecutionContext,
+): Promise<MonitorBlock[]> {
+  try {
+    const payload = await readMonitorBlocks(request, ctx);
+    return payload.blocks;
+  } catch {
+    return [];
+  }
 }
 
 function staticUrsfMonitorPage(response: Response): Response {
@@ -157,6 +177,14 @@ class InnerContentRewriter implements HTMLRewriterElementContentHandlers {
 
   element(element: Element): void {
     element.setInnerContent(this.content);
+  }
+}
+
+class InnerHtmlRewriter implements HTMLRewriterElementContentHandlers {
+  constructor(private readonly html: string) {}
+
+  element(element: Element): void {
+    element.setInnerContent(this.html, { html: true });
   }
 }
 

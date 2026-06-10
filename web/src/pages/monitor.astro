@@ -344,6 +344,57 @@ const historyRows = [
               </table>
             </div>
           </section>
+
+          <section
+            class="rounded-lg border border-border/50 bg-card/50 p-6"
+            aria-labelledby="static-block-grid-title"
+          >
+            <div
+              class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+            >
+              <div>
+                <p
+                  class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                >
+                  Current period blocks
+                </p>
+                <h2
+                  id="static-block-grid-title"
+                  class="mt-1 text-xl font-semibold tracking-tight"
+                >
+                  Block signaling grid
+                </h2>
+                <p class="mt-2 max-w-2xl text-sm text-muted-foreground">
+                  A server-rendered snapshot of recent blocks. Enable
+                  JavaScript for live refreshes and interactive tooltips.
+                </p>
+              </div>
+              <div
+                class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground"
+              >
+                <span class="inline-flex items-center gap-2">
+                  <span class="size-3 rounded-sm bg-primary" aria-hidden="true"
+                  ></span>
+                  Signaling
+                </span>
+                <span class="inline-flex items-center gap-2">
+                  <span
+                    class="size-3 rounded-sm border border-border bg-background"
+                    aria-hidden="true"></span>
+                  Not signaling
+                </span>
+              </div>
+            </div>
+
+            <div
+              class="mt-5 grid grid-cols-[repeat(auto-fill,minmax(4.75rem,1fr))] gap-2 sm:grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))]"
+              data-monitor-block-grid
+            >
+              <p class="col-span-full text-sm text-muted-foreground">
+                Loading block snapshot
+              </p>
+            </div>
+          </section>
         </section>
 
         <div data-monitor-react>

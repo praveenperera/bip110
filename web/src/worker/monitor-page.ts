@@ -1,3 +1,4 @@
+import { bip110BlockGridHtml } from "./block-grid";
 import {
   ACTIVATION_THRESHOLD,
   formatInteger,
@@ -7,8 +8,9 @@ import {
   PERIOD_SIZE,
   readMonitorData,
 } from "./monitor-data";
+import { readMonitorBlocks } from "./monitor-blocks";
 import { MONITOR_OG_IMAGE_PATH } from "./monitor-og-image";
-import type { MonitorData, MonitorMetadata } from "./types";
+import type { MonitorBlock, MonitorData, MonitorMetadata } from "./types";
 
 export const MONITOR_PAGE_PATHS = new Set(["/monitor", "/monitor/"]);
 
@@ -37,7 +39,8 @@ export async function handleMonitorPageRequest(
 
   try {
     const data = await readMonitorData(request, ctx);
-    return rewriteMonitorPage(assetResponse, request, data);
+    const blocks = await readMonitorPageBlocks(request, ctx);
+    return rewriteMonitorPage(assetResponse, request, data, blocks);
   } catch {
     return staticMonitorPage(assetResponse);
   }
@@ -55,6 +58,7 @@ function rewriteMonitorPage(
   response: Response,
   request: Request,
   data: MonitorData,
+  blocks: MonitorBlock[],
 ): Response {
   const metadata = monitorMetadata(request, data);
   const fields = monitorPageFields(data);
@@ -103,6 +107,10 @@ function rewriteMonitorPage(
       '[data-monitor-progress="period"]',
       new StyleRewriter(`width: ${periodProgressPercent(data).toFixed(2)}%`),
     )
+    .on(
+      "[data-monitor-block-grid]",
+      new InnerHtmlRewriter(bip110BlockGridHtml(data, blocks)),
+    )
     .transform(response);
 
   const headers = new Headers(transformed.headers);
@@ -115,6 +123,18 @@ function rewriteMonitorPage(
     status: transformed.status,
     statusText: transformed.statusText,
   });
+}
+
+async function readMonitorPageBlocks(
+  request: Request,
+  ctx: ExecutionContext,
+): Promise<MonitorBlock[]> {
+  try {
+    const payload = await readMonitorBlocks(request, ctx);
+    return payload.blocks;
+  } catch {
+    return [];
+  }
 }
 
 function monitorPageFields(data: MonitorData): Record<string, string> {
@@ -342,6 +362,14 @@ class InnerContentRewriter implements HTMLRewriterElementContentHandlers {
 
   element(element: Element): void {
     element.setInnerContent(this.content);
+  }
+}
+
+class InnerHtmlRewriter implements HTMLRewriterElementContentHandlers {
+  constructor(private readonly html: string) {}
+
+  element(element: Element): void {
+    element.setInnerContent(this.html, { html: true });
   }
 }
 

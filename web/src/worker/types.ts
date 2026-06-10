@@ -22,6 +22,20 @@ export interface MonitorData {
   updatedAt: string;
 }
 
+export interface MonitorBlock {
+  hash: string;
+  height: number;
+  nTx: number;
+  signaling: boolean;
+  time: number;
+  version: number;
+}
+
+export interface MonitorBlocksPayload {
+  blocks: MonitorBlock[];
+  updatedAt: string;
+}
+
 export interface MonitorMetadata {
   title: string;
   description: string;
