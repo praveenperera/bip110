@@ -1,0 +1,270 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-10T00:00:00.000Z",
+  "title": "Design System: BIP-110",
+  "extensions": {
+    "colorMeta": {
+      "signal-amber": {
+        "role": "primary",
+        "displayName": "Signal Amber",
+        "canonical": "oklch(0.75 0.18 55)",
+        "tonalRamp": [
+          "oklch(0.15 0.08 55)",
+          "oklch(0.25 0.11 55)",
+          "oklch(0.35 0.14 55)",
+          "oklch(0.45 0.16 55)",
+          "oklch(0.58 0.18 55)",
+          "oklch(0.70 0.18 55)",
+          "oklch(0.82 0.13 55)",
+          "oklch(0.94 0.05 55)"
+        ]
+      },
+      "paper-light": {
+        "role": "neutral",
+        "displayName": "Paper Light",
+        "canonical": "oklch(0.985 0 0)",
+        "tonalRamp": [
+          "oklch(0.15 0 0)",
+          "oklch(0.25 0 0)",
+          "oklch(0.35 0 0)",
+          "oklch(0.50 0 0)",
+          "oklch(0.65 0 0)",
+          "oklch(0.78 0 0)",
+          "oklch(0.90 0 0)",
+          "oklch(0.985 0 0)"
+        ]
+      },
+      "ink-light": {
+        "role": "neutral",
+        "displayName": "Ink Light",
+        "canonical": "oklch(0.145 0 0)",
+        "tonalRamp": [
+          "oklch(0.12 0 0)",
+          "oklch(0.18 0 0)",
+          "oklch(0.28 0 0)",
+          "oklch(0.42 0 0)",
+          "oklch(0.56 0 0)",
+          "oklch(0.70 0 0)",
+          "oklch(0.84 0 0)",
+          "oklch(0.95 0 0)"
+        ]
+      },
+      "destructive": {
+        "role": "tertiary",
+        "displayName": "Destructive Red",
+        "canonical": "oklch(0.577 0.245 27.325)",
+        "tonalRamp": [
+          "oklch(0.16 0.08 27.325)",
+          "oklch(0.25 0.12 27.325)",
+          "oklch(0.35 0.17 27.325)",
+          "oklch(0.46 0.22 27.325)",
+          "oklch(0.577 0.245 27.325)",
+          "oklch(0.70 0.19 27.325)",
+          "oklch(0.82 0.12 27.325)",
+          "oklch(0.94 0.05 27.325)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Hero headings and major route titles only."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section headings and monitor section titles."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card titles, panel titles, and status group labels."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Explanatory page copy, FAQ answers, and installation content."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Metadata, badges, table headers, and dashboard microcopy."
+      },
+      "code": {
+        "displayName": "Code",
+        "purpose": "Hashes, block heights, versions, commands, and technical details."
+      }
+    },
+    "shadows": [
+      {
+        "name": "surface-trace",
+        "value": "0 1px 2px oklch(0.145 0 0 / 5%)",
+        "purpose": "Subtle separation on monitor summary panels and outline actions."
+      },
+      {
+        "name": "dropdown-lift",
+        "value": "0 20px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.05)",
+        "purpose": "Navigation dropdown menus."
+      },
+      {
+        "name": "tooltip-lift",
+        "value": "0 25px 50px -12px rgb(0 0 0 / 0.25)",
+        "purpose": "Dense block inspection tooltips."
+      },
+      {
+        "name": "inset-signal",
+        "value": "inset 0 -3px 0 var(--primary)",
+        "purpose": "Signaling monitor block tiles."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state-fast",
+        "value": "150ms ease-out",
+        "purpose": "Monitor tile hover and focus feedback."
+      },
+      {
+        "name": "state-standard",
+        "value": "200ms ease-out",
+        "purpose": "Navigation color and menu transitions."
+      },
+      {
+        "name": "progress-fill",
+        "value": "500ms ease-out",
+        "purpose": "Progress bar width changes."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Compact amber action button for primary actions and active states.",
+      "html": "<button class=\"ds-btn-primary\">Read the Full BIP</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 32px; padding: 8px 10px; border: 1px solid transparent; border-radius: 8px; background: var(--primary, oklch(0.75 0.18 55)); color: var(--primary-foreground, oklch(0.12 0 0)); font: 500 14px/1.25 ui-sans-serif, system-ui, sans-serif; white-space: nowrap; transition: background-color 150ms ease-out, transform 150ms ease-out, box-shadow 150ms ease-out; } .ds-btn-primary:hover { background: color-mix(in oklch, var(--primary, oklch(0.75 0.18 55)), var(--background, oklch(0.985 0 0)) 20%); } .ds-btn-primary:active { transform: translateY(1px); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring, oklch(0.75 0.18 55)), transparent 50%); }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Default utility action for navigation, monitor links, and secondary choices.",
+      "html": "<button class=\"ds-btn-outline\">Full monitor</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 32px; padding: 8px 10px; border: 1px solid var(--border, oklch(0.9 0 0)); border-radius: 8px; background: var(--background, oklch(0.985 0 0)); color: var(--foreground, oklch(0.145 0 0)); font: 500 14px/1.25 ui-sans-serif, system-ui, sans-serif; white-space: nowrap; transition: background-color 150ms ease-out, color 150ms ease-out, border-color 150ms ease-out, box-shadow 150ms ease-out; } .ds-btn-outline:hover { background: var(--muted, oklch(0.97 0 0)); color: var(--foreground, oklch(0.145 0 0)); } .ds-btn-outline:focus-visible { outline: none; border-color: var(--ring, oklch(0.75 0.18 55)); box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring, oklch(0.75 0.18 55)), transparent 50%); }"
+    },
+    {
+      "name": "Outline Badge",
+      "kind": "chip",
+      "refersTo": "badge-outline",
+      "description": "Compact metadata and status pill.",
+      "html": "<span class=\"ds-badge-outline\">Synced to chain tip</span>",
+      "css": ".ds-badge-outline { display: inline-flex; align-items: center; justify-content: center; gap: 4px; height: 20px; width: fit-content; padding: 2px 8px; border: 1px solid var(--border, oklch(0.9 0 0)); border-radius: 9999px; background: color-mix(in oklch, var(--background, oklch(0.985 0 0)), transparent 30%); color: var(--foreground, oklch(0.145 0 0)); font: 500 12px/1 ui-sans-serif, system-ui, sans-serif; white-space: nowrap; transition: border-color 150ms ease-out, color 150ms ease-out, background-color 150ms ease-out; } .ds-badge-outline:hover { background: var(--muted, oklch(0.97 0 0)); } .ds-badge-outline:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring, oklch(0.75 0.18 55)), transparent 50%); }"
+    },
+    {
+      "name": "Information Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Flat bordered surface for install paths, articles, FAQ rows, and monitor status.",
+      "html": "<article class=\"ds-card\"><p class=\"ds-card-label\">Signal rate</p><p class=\"ds-card-value\">42.31%</p><p class=\"ds-card-detail\">853 of 2,016 blocks</p></article>",
+      "css": ".ds-card { display: flex; flex-direction: column; gap: 4px; padding: 16px; border: 1px solid color-mix(in oklch, var(--border, oklch(0.9 0 0)), transparent 50%); border-radius: 12px; background: color-mix(in oklch, var(--card, oklch(1 0 0)), transparent 50%); color: var(--card-foreground, oklch(0.145 0 0)); font-family: ui-sans-serif, system-ui, sans-serif; } .ds-card-label { margin: 0; color: var(--muted-foreground, oklch(0.5 0 0)); font-size: 12px; font-weight: 500; letter-spacing: 0.025em; text-transform: uppercase; } .ds-card-value { margin: 8px 0 0; color: var(--foreground, oklch(0.145 0 0)); font-size: 30px; font-weight: 700; line-height: 1; letter-spacing: -0.025em; } .ds-card-detail { margin: 4px 0 0; color: var(--muted-foreground, oklch(0.5 0 0)); font-size: 14px; line-height: 1.4; }"
+    },
+    {
+      "name": "Navigation Link",
+      "kind": "nav",
+      "refersTo": "navigation",
+      "description": "Uppercase route link with active amber underline.",
+      "html": "<a class=\"ds-nav-link ds-nav-link-active\" href=\"#\">Monitor</a>",
+      "css": ".ds-nav-link { position: relative; display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; color: var(--muted-foreground, oklch(0.5 0 0)); font: 500 13px/1.25 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.025em; text-transform: uppercase; text-decoration: none; transition: color 200ms ease-out; } .ds-nav-link::after { content: \"\"; position: absolute; left: 12px; right: 12px; bottom: 0; height: 1px; transform: scaleX(0); transform-origin: left; background: color-mix(in oklch, var(--foreground, oklch(0.145 0 0)), transparent 60%); transition: transform 300ms ease-out, background-color 200ms ease-out; } .ds-nav-link:hover { color: var(--foreground, oklch(0.145 0 0)); } .ds-nav-link:hover::after { transform: scaleX(1); } .ds-nav-link-active { color: var(--primary, oklch(0.75 0.18 55)); } .ds-nav-link-active::after { transform: scaleX(1); background: var(--primary, oklch(0.75 0.18 55)); } .ds-nav-link:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring, oklch(0.75 0.18 55)), transparent 50%); border-radius: 6px; }"
+    },
+    {
+      "name": "Monitor Block Tile",
+      "kind": "custom",
+      "refersTo": "monitor-block",
+      "description": "Inspectable block-height tile for signaling grids.",
+      "html": "<a class=\"ds-monitor-block ds-monitor-block-signal\" href=\"#\" aria-label=\"Height 960000, signaling BIP-110\">960000</a>",
+      "css": ".ds-monitor-block { position: relative; display: flex; align-items: center; justify-content: center; height: 48px; padding: 0 8px; overflow: hidden; border: 1px solid color-mix(in oklch, var(--border, oklch(0.9 0 0)), transparent 40%); border-radius: 6px; background: color-mix(in oklch, var(--background, oklch(0.985 0 0)), transparent 20%); color: var(--muted-foreground, oklch(0.5 0 0)); font: 600 14px/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; text-decoration: none; transition: background-color 150ms ease-out, border-color 150ms ease-out, box-shadow 150ms ease-out, transform 150ms ease-out, color 150ms ease-out; } .ds-monitor-block:hover, .ds-monitor-block:focus-visible { transform: translateY(-0.5px); border-color: var(--border, oklch(0.9 0 0)); background: color-mix(in oklch, var(--muted, oklch(0.97 0 0)), transparent 50%); color: var(--foreground, oklch(0.145 0 0)); outline: none; } .ds-monitor-block:focus-visible { box-shadow: 0 0 0 2px color-mix(in oklch, var(--ring, oklch(0.75 0.18 55)), transparent 50%); } .ds-monitor-block-signal { border-color: color-mix(in oklch, var(--primary, oklch(0.75 0.18 55)), transparent 50%); background: color-mix(in oklch, var(--primary, oklch(0.75 0.18 55)), transparent 90%); color: var(--primary, oklch(0.75 0.18 55)); box-shadow: inset 0 -3px 0 var(--primary, oklch(0.75 0.18 55)); } .ds-monitor-block-signal:hover { border-color: color-mix(in oklch, var(--primary, oklch(0.75 0.18 55)), transparent 30%); background: color-mix(in oklch, var(--primary, oklch(0.75 0.18 55)), transparent 85%); color: var(--primary, oklch(0.75 0.18 55)); }"
+    },
+    {
+      "name": "Progress Row",
+      "kind": "custom",
+      "refersTo": "progress-row",
+      "description": "Labeled progress track for signaling rate and period progress.",
+      "html": "<div class=\"ds-progress-row\"><div class=\"ds-progress-head\"><div><p class=\"ds-progress-label\">Signaling rate</p><p class=\"ds-progress-detail\">853 of 2,016 blocks</p></div><p class=\"ds-progress-value\">42.31%</p></div><div class=\"ds-progress-track\"><div class=\"ds-progress-fill\" style=\"width: 42%\"></div></div></div>",
+      "css": ".ds-progress-row { display: grid; gap: 8px; font-family: ui-sans-serif, system-ui, sans-serif; } .ds-progress-head { display: flex; align-items: end; justify-content: space-between; gap: 12px; } .ds-progress-label { margin: 0; color: var(--foreground, oklch(0.145 0 0)); font-size: 14px; font-weight: 500; } .ds-progress-detail { margin: 2px 0 0; color: var(--muted-foreground, oklch(0.5 0 0)); font-size: 12px; } .ds-progress-value { margin: 0; color: var(--muted-foreground, oklch(0.5 0 0)); font: 400 14px/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; } .ds-progress-track { height: 12px; overflow: hidden; border-radius: 9999px; background: var(--muted, oklch(0.97 0 0)); } .ds-progress-fill { height: 100%; border-radius: 9999px; background: var(--primary, oklch(0.75 0.18 55)); transition: width 500ms ease-out; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Protocol Ledger",
+    "overview": "BIP-110 should feel like a public technical record that can also move an operator to act. The design is restrained, amber-led, and structurally quiet: thin rules, compact components, muted surfaces, and a small number of decisive highlighted states. The system earns trust by making claims easy to inspect.\n\nThe atmosphere is principled, exact, and calm. It rejects crypto-hype aesthetics, generic SaaS polish, and protocol-paper density as the dominant mode. The site may carry long-form argument, but the interface should keep a node operator oriented: what changed, what matters now, what action is available, and where the source lives.",
+    "keyCharacteristics": [
+      "restrained amber signal over neutral chain-ash surfaces",
+      "compact shadcn/base-ui primitives with visible focus and thin borders",
+      "mostly flat elevation, with depth created by tonal contrast, border strength, and occasional blur",
+      "technical monitor grids as the signature data texture",
+      "system typography with strong weight contrast, not decorative font personality"
+    ],
+    "rules": [
+      {
+        "name": "The One Signal Rule",
+        "body": "Signal Amber is the only recurring accent. Do not introduce additional brand colors unless a data visualization needs separate semantic categories.",
+        "section": "colors"
+      },
+      {
+        "name": "The No Crypto Costume Rule",
+        "body": "Do not use neon gradients, purple-blue Web3 palettes, token-chart greens, or trader-dashboard color systems.",
+        "section": "colors"
+      },
+      {
+        "name": "The Native Precision Rule",
+        "body": "System fonts are part of the product posture. Do not swap in a decorative display family unless the whole brand direction is being intentionally revised.",
+        "section": "typography"
+      },
+      {
+        "name": "The Mono Earns Its Place Rule",
+        "body": "Monospace is for block data, hashes, version strings, commands, and technical details. It is forbidden as a lazy signifier for \"Bitcoin\" or \"developer\".",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Record Rule",
+        "body": "Static content surfaces are flat at rest. If a card needs attention, use stronger hierarchy, a full border, or a pale amber fill before adding shadow.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Overlay Exception Rule",
+        "body": "Shadows belong to temporary layers: menus, tooltips, and data inspection states.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use Signal Amber for activation, support, progress, links, and selected states.",
+      "Do keep public pages readable first: center summaries when useful, but cap long body copy around 65 to 75 characters.",
+      "Do use thin full borders, pale fills, and clear hierarchy before adding shadows.",
+      "Do preserve keyboard focus rings on every button, nav item, accordion trigger, and monitor block.",
+      "Do make monitor data inspectable through labels, tooltips, source links, and stable mono formatting.",
+      "Do use cards only for grouped information, install paths, monitor status, article entries, and FAQ rows."
+    ],
+    "donts": [
+      "Don't use crypto-hype aesthetics: neon-on-black, trader dashboards, speculative language, meme-token energy, countdown urgency, inflated promises, or decorative Web3 tropes.",
+      "Don't use generic SaaS landing-page patterns when they weaken credibility: soft gradient hero stacks, repeated icon cards, vague value propositions, oversized metrics, or polish detached from protocol reality.",
+      "Don't make the site feel like an academic paper as the dominant mode. Technical depth must stay navigable and actionable for node operators.",
+      "Don't add gradient text. Use solid text color and hierarchy instead.",
+      "Don't use `border-left` or `border-right` greater than `1px` as a colored accent on cards, list items, callouts, or alerts.",
+      "Don't add decorative glassmorphism. Blur is reserved for fixed navigation and temporary overlay separation.",
+      "Don't introduce new rounded icon-card grids unless each card is a real action, status, or content object."
+    ]
+  }
+}
