@@ -39,6 +39,7 @@ export function ThemeToggle() {
       size="icon"
       onClick={toggleTheme}
       className="rounded-full"
+      data-js-only
     >
       {mounted && theme === "dark" ? (
         <svg

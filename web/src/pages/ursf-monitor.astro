@@ -2,7 +2,8 @@
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
-import { MonitorBlockGrid } from "@/components/MonitorDashboard";
+
+const emptyBlocks = Array.from({ length: 144 }, (_, index) => index + 1);
 
 const stats = [
   {
@@ -268,7 +269,47 @@ const historyRows = [
           </aside>
         </div>
 
-        <MonitorBlockGrid mode="ursf" client:load />
+        <section class="ursf-card mt-6 rounded-lg border p-5">
+          <div
+            class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"
+          >
+            <div>
+              <p class="ursf-label text-xs font-medium uppercase tracking-wide">
+                Recent Blocks
+              </p>
+              <h2
+                class="ursf-heading mt-1 text-xl font-semibold tracking-tight"
+              >
+                All quiet
+              </h2>
+            </div>
+            <div class="ursf-muted flex flex-wrap gap-4 text-xs">
+              <span class="inline-flex items-center gap-2">
+                <span class="size-3 rounded-sm bg-amber-400"></span>
+                Signaling
+              </span>
+              <span class="inline-flex items-center gap-2">
+                <span class="ursf-block-dot size-3 rounded-sm"></span>
+                Not signaling
+              </span>
+            </div>
+          </div>
+
+          <div
+            class="grid grid-cols-[repeat(auto-fill,minmax(42px,1fr))] gap-2"
+          >
+            {
+              emptyBlocks.map((block) => (
+                <div
+                  class="ursf-block-cell flex aspect-square items-center justify-center rounded-md border font-mono text-xs"
+                  aria-label={`URSF block slot ${block}: not signaling`}
+                >
+                  0
+                </div>
+              ))
+            }
+          </div>
+        </section>
 
         <section class="ursf-card mt-6 rounded-lg border p-5">
           <h2 class="ursf-heading text-xl font-semibold tracking-tight">

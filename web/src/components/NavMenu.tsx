@@ -167,7 +167,7 @@ function MobileNav() {
   }, [open]);
 
   return (
-    <div ref={menuRef} className="relative md:hidden">
+    <div ref={menuRef} className="relative md:hidden" data-js-only>
       <Button
         variant="ghost"
         size="icon"
