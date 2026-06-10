@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#080d14"/>
+  <rect width="8" height="630" fill="#f7931a"/>
+  <rect x="28" y="20" width="1144" height="590" rx="12" fill="#0b1018" stroke="#253044" stroke-width="1.5"/>
+
+  <text x="72" y="86" fill="#9aa4b2" font-family="Arial, Helvetica, sans-serif" font-size="15" letter-spacing="7">
+    BITCOIN SIGNALING MONITOR
+  </text>
+
+  <rect x="1014" y="40" width="126" height="39" rx="9" fill="#0d2b1a" stroke="#2f8f4f" stroke-width="1.25"/>
+  <text x="1077" y="65" text-anchor="middle" fill="#44d064" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" letter-spacing="4">
+    LIVE
+  </text>
+
+  <text x="72" y="220" fill="#f8fafc" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="125" font-weight="900">
+    URSF
+  </text>
+  <text x="802" y="220" fill="#f7931a" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="112" font-weight="900">
+    0.00%
+  </text>
+
+  <line x1="72" y1="248" x2="1128" y2="248" stroke="#232d3e" stroke-width="1"/>
+
+  <text x="72" y="286" fill="#9aa4b2" font-family="Arial, Helvetica, sans-serif" font-size="14" letter-spacing="6">
+    DIFFICULTY ADJUSTMENT PERIOD
+  </text>
+  <text x="76" y="389" fill="#e8eef6" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="101" font-weight="900">
+    0
+  </text>
+
+  <text x="1128" y="286" text-anchor="end" fill="#9aa4b2" font-family="Arial, Helvetica, sans-serif" font-size="14" letter-spacing="6">
+    SIGNALING BLOCKS
+  </text>
+  <text x="980" y="389" text-anchor="end" fill="#e8eef6" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="80" font-weight="900">
+    0
+  </text>
+  <text x="995" y="389" fill="#7f8795" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="49" font-weight="900">
+    / 0
+  </text>
+
+  <text x="652" y="472" text-anchor="middle" fill="#8b95a3" font-family="Arial, Helvetica, sans-serif" font-size="12" letter-spacing=".5">
+    55% TARGET
+  </text>
+  <rect x="72" y="489" width="1056" height="31" rx="5" fill="#070c12" stroke="#2c384c" stroke-width="1.5"/>
+  <line x1="652" y1="481" x2="652" y2="530" stroke="#777f8d" stroke-width="4" stroke-linecap="round"/>
+
+  <text x="1128" y="578" text-anchor="end" fill="#404b61" font-family="Arial, Helvetica, sans-serif" font-size="17" letter-spacing="1.5">
+    bip110.org/ursf-monitor
+  </text>
+</svg>

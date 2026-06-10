@@ -35,25 +35,34 @@ const stats = [
 const historyRows = [
   {
     period: 'current',
-    firstBlock: 'N/A',
-    lastBlock: 'N/A',
-    tracked: 'N/A',
+    firstBlock: 'Loading',
+    firstBlockField: 'history-current-start',
+    lastBlock: 'Loading',
+    lastBlockField: 'history-current-end',
+    tracked: 'Loading',
+    trackedField: 'history-current-tracked',
     signaling: '0',
     percent: '0.00%',
   },
   {
     period: 'previous',
-    firstBlock: 'N/A',
-    lastBlock: 'N/A',
-    tracked: 'N/A',
+    firstBlock: 'Loading',
+    firstBlockField: 'history-previous-start',
+    lastBlock: 'Loading',
+    lastBlockField: 'history-previous-end',
+    tracked: 'Loading',
+    trackedField: 'history-previous-tracked',
     signaling: '0',
     percent: '0.00%',
   },
   {
     period: 'all time',
-    firstBlock: 'N/A',
-    lastBlock: 'N/A',
-    tracked: 'N/A',
+    firstBlock: 'Loading',
+    firstBlockField: 'history-all-start',
+    lastBlock: 'Loading',
+    lastBlockField: 'history-all-end',
+    tracked: 'Loading',
+    trackedField: 'history-all-tracked',
     signaling: '0',
     percent: '0.00%',
   },
@@ -62,8 +71,9 @@ const historyRows = [
 
 <Layout
   title="URSF Monitor - Bitcoin Signaling Status"
-  description="A static URSF signaling monitor where every block count and signal rate is exactly zero."
-  ogImage="/og.jpg"
+  description="Real-time Bitcoin miner version-bit signaling tracker by difficulty adjustment period."
+  ogTitle="URSF Status | Bitcoin Signaling Monitor"
+  ogImage="/images/ursf-monitor-og.png"
 >
   <main class="ursf-monitor-page min-h-screen">
     <Header />
@@ -286,13 +296,19 @@ const historyRows = [
                         {row.period}
                       </td>
                       <td class="ursf-muted py-3 pr-4 font-mono">
-                        {row.firstBlock}
+                        <span data-ursf-field={row.firstBlockField}>
+                          {row.firstBlock}
+                        </span>
                       </td>
                       <td class="ursf-muted py-3 pr-4 font-mono">
-                        {row.lastBlock}
+                        <span data-ursf-field={row.lastBlockField}>
+                          {row.lastBlock}
+                        </span>
                       </td>
                       <td class="ursf-muted py-3 pr-4 font-mono">
-                        {row.tracked}
+                        <span data-ursf-field={row.trackedField}>
+                          {row.tracked}
+                        </span>
                       </td>
                       <td class="ursf-muted py-3 pr-4 font-mono">
                         {row.signaling}
@@ -441,6 +457,8 @@ const historyRows = [
           Math.max((data.totalBlocks / PERIOD_BLOCK_COUNT) * 100, 0),
           100,
         );
+        const previousPeriodStart = data.periodStart - PERIOD_BLOCK_COUNT;
+        const previousPeriodEnd = data.periodStart - 1;
 
         setText("indexed-tip", formatNumber(data.tip));
         setText("indexed-tip-detail", "Current Bitcoin block height");
@@ -456,6 +474,21 @@ const historyRows = [
           "period-progress",
           `${formatNumber(data.totalBlocks)} / ${formatNumber(PERIOD_BLOCK_COUNT)}`,
         );
+        setText("history-current-start", formatNumber(data.periodStart));
+        setText("history-current-end", formatNumber(data.periodEnd));
+        setText(
+          "history-current-tracked",
+          `${formatNumber(data.totalBlocks)} / ${formatNumber(PERIOD_BLOCK_COUNT)}`,
+        );
+        setText("history-previous-start", formatNumber(previousPeriodStart));
+        setText("history-previous-end", formatNumber(previousPeriodEnd));
+        setText(
+          "history-previous-tracked",
+          `${formatNumber(PERIOD_BLOCK_COUNT)} / ${formatNumber(PERIOD_BLOCK_COUNT)}`,
+        );
+        setText("history-all-start", formatNumber(previousPeriodStart));
+        setText("history-all-end", formatNumber(data.tip));
+        setText("history-all-tracked", formatNumber(data.tip - previousPeriodStart + 1));
 
         const progress = document.querySelector('[data-ursf-progress="period"]');
         if (progress instanceof HTMLElement) {
