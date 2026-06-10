@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Tooltip } from "@base-ui/react/tooltip";
 import { AlertCircle, ExternalLink, RefreshCw } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -569,8 +570,16 @@ export function MonitorHighlights() {
       : "Monitor unavailable";
 
   return (
-    <section className="px-6 pb-20" data-monitor-react>
+    <section className="px-6 py-24" data-monitor-react>
       <div className="mx-auto max-w-5xl">
+        <h2 className="mb-4 text-center text-3xl font-bold">
+          Live BIP-110 signaling
+        </h2>
+        <p className="mx-auto mb-12 max-w-2xl text-center text-muted-foreground">
+          Track current miner support, period progress, and the remaining
+          signals needed for activation.
+        </p>
+
         <Card className="border-border/50 bg-card/70 shadow-sm shadow-foreground/5 backdrop-blur">
           <CardContent className="pt-5">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
@@ -591,13 +600,6 @@ export function MonitorHighlights() {
                     </span>
                   )}
                 </div>
-                <h2 className="mt-3 text-2xl font-semibold tracking-tight">
-                  Live BIP-110 signaling
-                </h2>
-                <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-                  Current activation status from the public monitor, summarized
-                  for the main page.
-                </p>
                 {error && !data && (
                   <p className="mt-2 text-sm text-destructive">{error}</p>
                 )}
@@ -663,23 +665,18 @@ function PeriodBlockLink({
 function BlockTooltip({
   block,
   mode,
-  x,
-  y,
 }: {
   block: PeriodGridBlock;
   mode: MonitorBlockGridMode;
-  x: number;
-  y: number;
 }) {
   return (
-    <div
+    <Tooltip.Popup
       className={cn(
-        "pointer-events-none fixed z-50 w-[min(35rem,calc(100vw-2rem))] rounded-lg border px-3 py-2.5 font-mono text-xs leading-relaxed shadow-2xl",
+        "z-50 w-[min(35rem,calc(100vw-2rem))] rounded-lg border px-3 py-2.5 font-mono text-xs leading-relaxed shadow-2xl",
         mode === "ursf"
-          ? "border-[var(--ursf-border)] bg-[var(--ursf-card)] text-[var(--ursf-heading)]"
+          ? "ursf-tooltip"
           : "border-border bg-popover text-popover-foreground",
       )}
-      style={{ left: x, top: y }}
     >
       <dl className="grid grid-cols-[4.25rem_minmax(0,1fr)] gap-x-3 gap-y-1">
         <dt className="text-muted-foreground">Height</dt>
@@ -704,7 +701,7 @@ function BlockTooltip({
         {mode === "bip110" && block.signaling === true ? "" : "x "}
         {formatBlockStatus(block, mode)}
       </p>
-    </div>
+    </Tooltip.Popup>
   );
 }
 
@@ -722,52 +719,51 @@ function blockTitle(block: PeriodGridBlock, mode: MonitorBlockGridMode) {
 function BlockTile({
   block,
   mode,
-  onTooltipClear,
-  onTooltipMove,
 }: {
   block: PeriodGridBlock;
   mode: MonitorBlockGridMode;
-  onTooltipClear: () => void;
-  onTooltipMove: (
-    block: PeriodGridBlock,
-    x: number,
-    y: number,
-    pointer: "mouse" | "focus",
-  ) => void;
 }) {
   const signaling = mode === "bip110" && block.signaling === true;
   const unavailable = blockDetailUnavailable(block);
 
   return (
-    <a
-      href={`${MEMPOOL_BLOCK_URL}/${block.height}`}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label={blockTitle(block, mode)}
-      onBlur={onTooltipClear}
-      onFocus={(event) => {
-        const rect = event.currentTarget.getBoundingClientRect();
-        onTooltipMove(block, rect.left, rect.bottom, "focus");
-      }}
-      onMouseEnter={(event) =>
-        onTooltipMove(block, event.clientX, event.clientY, "mouse")
-      }
-      onMouseLeave={onTooltipClear}
-      onMouseMove={(event) =>
-        onTooltipMove(block, event.clientX, event.clientY, "mouse")
-      }
-      className={cn(
-        "relative flex h-12 items-center justify-center overflow-hidden rounded-md border px-2 font-mono text-sm font-semibold tracking-normal transition-[background-color,border-color,box-shadow,transform] duration-150 hover:-translate-y-0.5 focus-visible:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
-        mode === "ursf"
-          ? "ursf-block-cell border-[var(--ursf-border)] bg-[var(--ursf-block)] text-[var(--ursf-block-text)] hover:bg-[var(--ursf-card-hover)]"
-          : "border-border/60 bg-background/80 text-muted-foreground hover:border-border hover:bg-muted/50 hover:text-foreground",
-        signaling &&
-          "border-primary/50 bg-primary/10 text-primary shadow-[inset_0_-3px_0_var(--primary)] hover:border-primary/70 hover:bg-primary/15 hover:text-primary",
-        unavailable && "border-dashed",
-      )}
-    >
-      {block.height}
-    </a>
+    <Tooltip.Root>
+      <Tooltip.Trigger
+        delay={80}
+        closeDelay={0}
+        render={
+          <a
+            href={`${MEMPOOL_BLOCK_URL}/${block.height}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={blockTitle(block, mode)}
+          />
+        }
+        className={cn(
+          "relative flex h-12 items-center justify-center overflow-hidden rounded-md border px-2 font-mono text-sm font-semibold tracking-normal transition-[background-color,border-color,box-shadow,transform] duration-150 hover:-translate-y-0.5 focus-visible:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+          mode === "ursf"
+            ? "ursf-block-cell border-[var(--ursf-border)] bg-[var(--ursf-block)] text-[var(--ursf-block-text)] hover:bg-[var(--ursf-card-hover)]"
+            : "border-border/60 bg-background/80 text-muted-foreground hover:border-border hover:bg-muted/50 hover:text-foreground",
+          signaling &&
+            "border-primary/50 bg-primary/10 text-primary shadow-[inset_0_-3px_0_var(--primary)] hover:border-primary/70 hover:bg-primary/15 hover:text-primary",
+          unavailable && "border-dashed",
+        )}
+      >
+        {block.height}
+      </Tooltip.Trigger>
+      <Tooltip.Portal>
+        <Tooltip.Positioner
+          side="bottom"
+          align="center"
+          sideOffset={8}
+          collisionPadding={16}
+          positionMethod="fixed"
+          collisionAvoidance={{ side: "flip", align: "shift" }}
+        >
+          <BlockTooltip block={block} mode={mode} />
+        </Tooltip.Positioner>
+      </Tooltip.Portal>
+    </Tooltip.Root>
   );
 }
 
@@ -783,15 +779,9 @@ function PeriodBlockGrid({
   mode?: MonitorBlockGridMode;
 }) {
   const [showAll, setShowAll] = useState(false);
-  const [tooltip, setTooltip] = useState<{
-    block: PeriodGridBlock;
-    x: number;
-    y: number;
-  } | null>(null);
 
   useEffect(() => {
     setShowAll(false);
-    setTooltip(null);
   }, [data.periodNum, data.tip, mode]);
 
   const gridBlocks = useMemo(() => {
@@ -809,31 +799,6 @@ function PeriodBlockGrid({
   const liveBlockCount = blocks?.length ?? 0;
   const hasLiveBlocks = liveBlockCount > 0;
 
-  const moveTooltip = useCallback(
-    (
-      block: PeriodGridBlock,
-      x: number,
-      y: number,
-      pointer: "mouse" | "focus",
-    ) => {
-      const width = Math.min(560, window.innerWidth - 32);
-      const height = 176;
-      const requestedLeft = pointer === "mouse" ? x + 14 : x;
-      const left = Math.min(requestedLeft, window.innerWidth - width - 16);
-      const top =
-        pointer === "mouse"
-          ? Math.min(y + 14, window.innerHeight - height - 16)
-          : Math.min(y + 10, window.innerHeight - height - 16);
-
-      setTooltip({
-        block,
-        x: Math.max(16, left),
-        y: Math.max(16, top),
-      });
-    },
-    [],
-  );
-
   const blockDataLabel =
     blockDataStatus === "live"
       ? "Live block data"
@@ -845,7 +810,7 @@ function PeriodBlockGrid({
     <Card
       className={cn(
         "overflow-visible border-border/50 bg-card/50 backdrop-blur",
-        mode === "ursf" && "ursf-card border p-0 shadow-none",
+        mode === "ursf" && "ursf-card border shadow-none",
       )}
     >
       <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -917,13 +882,7 @@ function PeriodBlockGrid({
       <CardContent>
         <div className="grid grid-cols-[repeat(auto-fill,minmax(4.75rem,1fr))] gap-2 sm:grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))]">
           {visibleBlocks.map((block) => (
-            <BlockTile
-              key={block.height}
-              block={block}
-              mode={mode}
-              onTooltipClear={() => setTooltip(null)}
-              onTooltipMove={moveTooltip}
-            />
+            <BlockTile key={block.height} block={block} mode={mode} />
           ))}
         </div>
 
@@ -954,15 +913,6 @@ function PeriodBlockGrid({
           </p>
         )}
       </CardContent>
-
-      {tooltip && (
-        <BlockTooltip
-          block={tooltip.block}
-          mode={mode}
-          x={tooltip.x}
-          y={tooltip.y}
-        />
-      )}
     </Card>
   );
 }
