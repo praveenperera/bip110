@@ -1,0 +1,628 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import Header from '@/components/Header.astro';
+import Footer from '@/components/Footer.astro';
+
+const emptyBlocks = Array.from({ length: 144 }, (_, index) => index + 1);
+
+const stats = [
+  {
+    label: 'Indexed tip',
+    value: 'N/A',
+    detail: 'Loading chain state',
+    valueField: 'indexed-tip',
+    detailField: 'indexed-tip-detail',
+  },
+  {
+    label: 'Chain tip',
+    value: 'N/A',
+    detail: 'Loading chain state',
+    valueField: 'chain-tip',
+    detailField: 'chain-tip-detail',
+  },
+  {
+    label: 'Period signal rate',
+    value: '0.00%',
+    detail: '0 blocks signaling',
+  },
+  {
+    label: 'Activation target',
+    value: 'N/A',
+    detail: 'No URSF activation target',
+  },
+];
+
+const historyRows = [
+  {
+    period: 'current',
+    firstBlock: 'N/A',
+    lastBlock: 'N/A',
+    tracked: 'N/A',
+    signaling: '0',
+    percent: '0.00%',
+  },
+  {
+    period: 'previous',
+    firstBlock: 'N/A',
+    lastBlock: 'N/A',
+    tracked: 'N/A',
+    signaling: '0',
+    percent: '0.00%',
+  },
+  {
+    period: 'all time',
+    firstBlock: 'N/A',
+    lastBlock: 'N/A',
+    tracked: 'N/A',
+    signaling: '0',
+    percent: '0.00%',
+  },
+];
+---
+
+<Layout
+  title="URSF Monitor - Bitcoin Signaling Status"
+  description="A static URSF signaling monitor where every block count and signal rate is exactly zero."
+  ogImage="/og.jpg"
+>
+  <main class="ursf-monitor-page min-h-screen">
+    <Header />
+
+    <section class="px-4 pb-20 pt-24 sm:px-6">
+      <div class="mx-auto max-w-6xl">
+        <div class="ursf-border mb-8 flex flex-col gap-5 border-b pb-6 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h1 class="ursf-heading font-mono text-3xl font-semibold tracking-normal sm:text-5xl">
+              URSF MONITOR
+            </h1>
+            <p class="ursf-muted mt-2 text-sm">
+              Bitcoin signaling monitor - no URSF blocks observed
+            </p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3 text-sm">
+            <a
+              href="/monitor"
+              class="ursf-link-button inline-flex items-center rounded-md border px-3 py-2 font-medium transition-colors"
+            >
+              bip110 monitor
+            </a>
+          </div>
+        </div>
+
+        <div class="ursf-card mb-6 rounded-lg border p-5 shadow-2xl shadow-black/10 dark:shadow-black/40">
+          <p class="ursf-accent text-sm font-medium">
+            Current URSF Signaling Status - Difficulty Adjustment Period <span
+              data-ursf-field="status-period">N/A</span
+            >: 0.00% of blocks signaling
+          </p>
+        </div>
+
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {
+            stats.map((stat) => (
+              <article class="ursf-card rounded-lg border p-4">
+                <p class="ursf-label text-xs font-medium uppercase tracking-wide">
+                  {stat.label}
+                </p>
+                <p class="ursf-heading mt-3 font-mono text-4xl font-semibold tracking-normal">
+                  <span data-ursf-field={stat.valueField}>{stat.value}</span>
+                </p>
+                <p class="ursf-muted mt-2 text-sm" data-ursf-field={stat.detailField}>
+                  {stat.detail}
+                </p>
+              </article>
+            ))
+          }
+        </div>
+
+        <div class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)]">
+          <section class="ursf-card rounded-lg border p-5">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p class="ursf-label text-xs font-medium uppercase tracking-wide">
+                  Current Difficulty Adjustment Period
+                </p>
+                <p class="ursf-heading mt-2 font-mono text-5xl font-semibold tracking-normal">
+                  <span data-ursf-field="period-num">N/A</span>
+                </p>
+              </div>
+              <div class="ursf-pill rounded-md border px-4 py-3 text-sm">
+                <span class="ursf-heading font-mono" data-ursf-field="period-start">
+                  N/A
+                </span>
+                <span class="ursf-muted px-2">-</span>
+                <span class="ursf-heading font-mono" data-ursf-field="period-end">
+                  N/A
+                </span>
+              </div>
+            </div>
+
+            <div class="mt-6 grid gap-3 sm:grid-cols-3">
+              <div class="ursf-soft-card rounded-md p-4">
+                <p class="ursf-label text-xs uppercase tracking-wide">
+                  Blocks left
+                </p>
+                <p class="ursf-heading mt-2 font-mono text-2xl">
+                  <span data-ursf-field="blocks-left">N/A</span>
+                </p>
+                <p class="ursf-muted text-sm" data-ursf-field="blocks-left-detail">
+                  Loading chain state
+                </p>
+              </div>
+              <div class="ursf-soft-card rounded-md p-4">
+                <p class="ursf-label text-xs uppercase tracking-wide">
+                  Signaling blocks
+                </p>
+                <p class="ursf-heading mt-2 font-mono text-2xl">0</p>
+                <p class="ursf-muted text-sm">observed</p>
+              </div>
+              <div class="ursf-soft-card rounded-md p-4">
+                <p class="ursf-label text-xs uppercase tracking-wide">
+                  Activation target
+                </p>
+                <p class="ursf-heading mt-2 font-mono text-2xl">N/A</p>
+                <p class="ursf-muted text-sm">No URSF target</p>
+              </div>
+            </div>
+
+            <div class="mt-6 space-y-5">
+              <div>
+                <div class="mb-2 flex items-end justify-between gap-3">
+                  <div>
+                    <p class="ursf-heading text-sm font-medium">
+                      Signaling rate
+                    </p>
+                    <p class="ursf-muted text-xs">
+                      0 signaling blocks observed
+                    </p>
+                  </div>
+                  <p class="ursf-muted font-mono text-sm">0.00%</p>
+                </div>
+                <div class="ursf-progress-track h-3 overflow-hidden rounded-full">
+                  <div class="h-full w-0 rounded-full bg-amber-400"></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="mb-2 flex items-end justify-between gap-3">
+                  <div>
+                    <p class="ursf-heading text-sm font-medium">
+                      Period progress
+                    </p>
+                    <p class="ursf-muted text-xs">
+                      Current Bitcoin difficulty period
+                    </p>
+                  </div>
+                  <p class="ursf-muted font-mono text-sm" data-ursf-field="period-progress">
+                    N/A
+                  </p>
+                </div>
+                <div class="ursf-progress-track h-3 overflow-hidden rounded-full">
+                  <div
+                    class="h-full w-0 rounded-full bg-sky-400"
+                    data-ursf-progress="period"
+                  >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <aside class="ursf-card rounded-lg border p-5">
+            <p class="ursf-label text-xs font-medium uppercase tracking-wide">
+              URSF Rules
+            </p>
+            <div class="ursf-muted mt-4 space-y-3 text-sm">
+              <div class="ursf-card rounded-md border p-3">
+                <p class="ursf-heading font-medium">Signal bit</p>
+                <p>None. There is no miner signaling ceremony here.</p>
+              </div>
+              <div class="ursf-card rounded-md border p-3">
+                <p class="ursf-heading font-medium">Activation</p>
+                <p>No activation window exists.</p>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <section class="ursf-card mt-6 rounded-lg border p-5">
+          <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p class="ursf-label text-xs font-medium uppercase tracking-wide">
+                Recent Blocks
+              </p>
+              <h2 class="ursf-heading mt-1 text-xl font-semibold tracking-tight">
+                All quiet
+              </h2>
+            </div>
+            <div class="ursf-muted flex flex-wrap gap-4 text-xs">
+              <span class="inline-flex items-center gap-2">
+                <span class="size-3 rounded-sm bg-amber-400"></span>
+                Signaling
+              </span>
+              <span class="inline-flex items-center gap-2">
+                <span class="ursf-block-dot size-3 rounded-sm"></span>
+                Not signaling
+              </span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-[repeat(auto-fill,minmax(42px,1fr))] gap-2">
+            {
+              emptyBlocks.map((block) => (
+                <div
+                  class="ursf-block-cell flex aspect-square items-center justify-center rounded-md border font-mono text-xs"
+                  aria-label={`URSF block slot ${block}: not signaling`}
+                >
+                  0
+                </div>
+              ))
+            }
+          </div>
+        </section>
+
+        <section class="ursf-card mt-6 rounded-lg border p-5">
+          <h2 class="ursf-heading text-xl font-semibold tracking-tight">
+            Difficulty Adjustment Period History
+          </h2>
+          <div class="mt-4 overflow-x-auto">
+            <table class="w-full min-w-[720px] text-left text-sm">
+              <thead class="ursf-border ursf-label border-b text-xs uppercase tracking-wide">
+                <tr>
+                  <th class="py-3 pr-4 font-medium">Period</th>
+                  <th class="py-3 pr-4 font-medium">First block</th>
+                  <th class="py-3 pr-4 font-medium">Last block</th>
+                  <th class="py-3 pr-4 font-medium">Blocks tracked</th>
+                  <th class="py-3 pr-4 font-medium">Signaling</th>
+                  <th class="py-3 font-medium">Signal %</th>
+                </tr>
+              </thead>
+              <tbody class="ursf-history-body">
+                {
+                  historyRows.map((row) => (
+                    <tr>
+                      <td class="ursf-heading py-3 pr-4 font-medium">
+                        {row.period}
+                      </td>
+                      <td class="ursf-muted py-3 pr-4 font-mono">
+                        {row.firstBlock}
+                      </td>
+                      <td class="ursf-muted py-3 pr-4 font-mono">
+                        {row.lastBlock}
+                      </td>
+                      <td class="ursf-muted py-3 pr-4 font-mono">
+                        {row.tracked}
+                      </td>
+                      <td class="ursf-muted py-3 pr-4 font-mono">
+                        {row.signaling}
+                      </td>
+                      <td class="ursf-muted py-3 font-mono">
+                        {row.percent}
+                      </td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <a
+          href="/monitor"
+          class="ursf-monitor-link mt-6 block rounded-lg border p-5 transition-colors"
+        >
+          <p class="ursf-label text-xs font-medium uppercase tracking-wide">
+            Live BIP-110 Monitor
+          </p>
+          <h2 class="ursf-heading mt-2 text-xl font-semibold tracking-tight">
+            Monitor BIP-110 progress
+          </h2>
+          <p class="ursf-muted mt-2 text-sm">
+            Track actual BIP-110 signaling status, period progress, and
+            difficulty adjustment history.
+          </p>
+        </a>
+      </div>
+    </section>
+
+    <script>
+      const API_URL = "/api/monitor";
+      const LOCAL_DEV_API_URL = "https://bip110monitor.com/api";
+      const CACHE_KEY = "bip110-monitor-data";
+      const CACHE_VERSION = 1;
+      const CACHE_TTL_MS = 60_000;
+      const PERIOD_BLOCK_COUNT = 2016;
+
+      function isRecord(value) {
+        return typeof value === "object" && value !== null;
+      }
+
+      function isMonitorData(value) {
+        return (
+          isRecord(value) &&
+          typeof value.tip === "number" &&
+          typeof value.chainTip === "number" &&
+          typeof value.periodNum === "number" &&
+          typeof value.periodStart === "number" &&
+          typeof value.periodEnd === "number" &&
+          typeof value.totalBlocks === "number"
+        );
+      }
+
+      function readCachedMonitorData() {
+        try {
+          const cached = window.localStorage.getItem(CACHE_KEY);
+          if (!cached) return null;
+
+          const parsed = JSON.parse(cached);
+          if (
+            !isRecord(parsed) ||
+            parsed.version !== CACHE_VERSION ||
+            typeof parsed.cachedAt !== "number" ||
+            !isMonitorData(parsed.data)
+          ) {
+            return null;
+          }
+
+          return parsed;
+        } catch {
+          return null;
+        }
+      }
+
+      function writeCachedMonitorData(data, cachedAt) {
+        try {
+          window.localStorage.setItem(
+            CACHE_KEY,
+            JSON.stringify({ cachedAt, data, version: CACHE_VERSION }),
+          );
+        } catch {}
+      }
+
+      function isLocalDevHost() {
+        return ["127.0.0.1", "localhost", "::1"].includes(
+          window.location.hostname,
+        );
+      }
+
+      async function fetchMonitorData() {
+        const response = await fetch(API_URL, { cache: "no-store" });
+
+        if (response.ok) {
+          return await response.json();
+        }
+
+        if (response.status === 404 && isLocalDevHost()) {
+          const fallbackResponse = await fetch(LOCAL_DEV_API_URL, {
+            cache: "no-store",
+          });
+
+          if (fallbackResponse.ok) {
+            return await fallbackResponse.json();
+          }
+        }
+
+        throw new Error(`Monitor API returned ${response.status}`);
+      }
+
+      function formatNumber(value) {
+        return new Intl.NumberFormat("en-US").format(value);
+      }
+
+      function formatEstimatedTime(blocks) {
+        const minutes = blocks * 10;
+        const days = minutes / 1440;
+
+        if (days >= 2) {
+          return `~${days.toFixed(days >= 10 ? 0 : 1)} days`;
+        }
+
+        const hours = minutes / 60;
+
+        if (hours >= 1) {
+          return `~${hours.toFixed(hours >= 10 ? 0 : 1)} hours`;
+        }
+
+        return `~${minutes} minutes`;
+      }
+
+      function setText(field, value) {
+        for (const element of document.querySelectorAll(
+          `[data-ursf-field="${field}"]`,
+        )) {
+          element.textContent = value;
+        }
+      }
+
+      function renderChainState(data) {
+        const blocksLeft = Math.max(data.periodEnd - data.tip, 0);
+        const progressPercent = Math.min(
+          Math.max((data.totalBlocks / PERIOD_BLOCK_COUNT) * 100, 0),
+          100,
+        );
+
+        setText("indexed-tip", formatNumber(data.tip));
+        setText("indexed-tip-detail", "Current Bitcoin block height");
+        setText("chain-tip", formatNumber(data.chainTip));
+        setText("chain-tip-detail", "Latest Bitcoin chain height");
+        setText("status-period", formatNumber(data.periodNum));
+        setText("period-num", formatNumber(data.periodNum));
+        setText("period-start", formatNumber(data.periodStart));
+        setText("period-end", formatNumber(data.periodEnd));
+        setText("blocks-left", formatNumber(blocksLeft));
+        setText("blocks-left-detail", formatEstimatedTime(blocksLeft));
+        setText(
+          "period-progress",
+          `${formatNumber(data.totalBlocks)} / ${formatNumber(PERIOD_BLOCK_COUNT)}`,
+        );
+
+        const progress = document.querySelector('[data-ursf-progress="period"]');
+        if (progress instanceof HTMLElement) {
+          progress.style.width = `${progressPercent}%`;
+        }
+      }
+
+      const cachedMonitorData = readCachedMonitorData();
+      if (cachedMonitorData) {
+        renderChainState(cachedMonitorData.data);
+      }
+
+      if (
+        !cachedMonitorData ||
+        Date.now() - cachedMonitorData.cachedAt > CACHE_TTL_MS
+      ) {
+        fetchMonitorData()
+          .then((data) => {
+            if (!isMonitorData(data)) return;
+
+            const cachedAt = Date.now();
+            writeCachedMonitorData(data, cachedAt);
+            renderChainState(data);
+          })
+          .catch(() => {});
+      }
+    </script>
+
+    <Footer />
+  </main>
+</Layout>
+
+<style is:global>
+  .ursf-monitor-page {
+    --background: oklch(0.96 0 0);
+    --foreground: oklch(0.18 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.18 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.18 0 0);
+    --primary: oklch(0.62 0.16 65);
+    --primary-foreground: oklch(1 0 0);
+    --secondary: oklch(0.91 0 0);
+    --secondary-foreground: oklch(0.18 0 0);
+    --muted: oklch(0.91 0 0);
+    --muted-foreground: oklch(0.45 0 0);
+    --accent: oklch(0.62 0.16 65);
+    --accent-foreground: oklch(1 0 0);
+    --border: oklch(0.83 0 0);
+    --input: oklch(0.83 0 0);
+    --ring: oklch(0.62 0.16 65);
+    --ursf-bg: oklch(0.96 0 0);
+    --ursf-card: oklch(1 0 0);
+    --ursf-card-hover: oklch(0.93 0 0);
+    --ursf-soft: oklch(0.92 0 0);
+    --ursf-pill: oklch(0.98 0 0);
+    --ursf-border: oklch(0.83 0 0);
+    --ursf-heading: oklch(0.16 0 0);
+    --ursf-text: oklch(0.26 0 0);
+    --ursf-muted: oklch(0.48 0 0);
+    --ursf-label: oklch(0.56 0 0);
+    --ursf-progress: oklch(0.87 0 0);
+    --ursf-block: oklch(0.91 0 0);
+    --ursf-block-text: oklch(0.52 0 0);
+    --ursf-accent: oklch(0.62 0.16 65);
+    background-color: var(--ursf-bg);
+    color: var(--ursf-text);
+  }
+
+  .dark .ursf-monitor-page {
+    --background: oklch(0.08 0 0);
+    --foreground: oklch(0.95 0 0);
+    --card: oklch(0.13 0 0);
+    --card-foreground: oklch(0.95 0 0);
+    --popover: oklch(0.13 0 0);
+    --popover-foreground: oklch(0.95 0 0);
+    --primary: oklch(0.75 0.18 55);
+    --primary-foreground: oklch(0.08 0 0);
+    --secondary: oklch(0.18 0 0);
+    --secondary-foreground: oklch(0.95 0 0);
+    --muted: oklch(0.18 0 0);
+    --muted-foreground: oklch(0.68 0 0);
+    --accent: oklch(0.75 0.18 55);
+    --accent-foreground: oklch(0.08 0 0);
+    --border: oklch(1 0 0 / 12%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.75 0.18 55);
+    --ursf-bg: oklch(0.08 0 0);
+    --ursf-card: oklch(0.12 0 0);
+    --ursf-card-hover: oklch(0.16 0 0);
+    --ursf-soft: oklch(0.18 0 0);
+    --ursf-pill: oklch(0.06 0 0);
+    --ursf-border: oklch(1 0 0 / 12%);
+    --ursf-heading: oklch(0.97 0 0);
+    --ursf-text: oklch(0.84 0 0);
+    --ursf-muted: oklch(0.63 0 0);
+    --ursf-label: oklch(0.52 0 0);
+    --ursf-progress: oklch(0.18 0 0);
+    --ursf-block: oklch(0.18 0 0);
+    --ursf-block-text: oklch(0.48 0 0);
+    --ursf-accent: oklch(0.75 0.18 55);
+  }
+
+  .ursf-heading {
+    color: var(--ursf-heading);
+  }
+
+  .ursf-muted {
+    color: var(--ursf-muted);
+  }
+
+  .ursf-label {
+    color: var(--ursf-label);
+  }
+
+  .ursf-accent {
+    color: var(--ursf-accent);
+  }
+
+  .ursf-border {
+    border-color: var(--ursf-border);
+  }
+
+  .ursf-card {
+    background-color: var(--ursf-card);
+    border-color: var(--ursf-border);
+  }
+
+  .ursf-soft-card {
+    background-color: var(--ursf-soft);
+  }
+
+  .ursf-pill {
+    background-color: var(--ursf-pill);
+    border-color: var(--ursf-border);
+    color: var(--ursf-muted);
+  }
+
+  .ursf-link-button,
+  .ursf-monitor-link {
+    background-color: var(--ursf-card);
+    border-color: var(--ursf-border);
+    color: var(--ursf-heading);
+  }
+
+  .ursf-link-button:hover,
+  .ursf-monitor-link:hover {
+    background-color: var(--ursf-card-hover);
+    border-color: var(--ursf-accent);
+    color: var(--ursf-accent);
+  }
+
+  .ursf-progress-track {
+    background-color: var(--ursf-progress);
+  }
+
+  .ursf-block-dot,
+  .ursf-block-cell {
+    background-color: var(--ursf-block);
+  }
+
+  .ursf-block-cell {
+    border-color: var(--ursf-border);
+    color: var(--ursf-block-text);
+  }
+
+  .ursf-history-body tr + tr {
+    border-top: 1px solid var(--ursf-border);
+  }
+</style>
