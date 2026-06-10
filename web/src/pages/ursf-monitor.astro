@@ -23,6 +23,7 @@ const stats = [
     label: "Period signal rate",
     value: "0.00%",
     detail: "0 blocks signaling",
+    alert: true,
   },
   {
     label: "Activation target",
@@ -104,12 +105,12 @@ const historyRows = [
         </div>
 
         <div
-          class="ursf-card mb-6 rounded-lg border p-5 shadow-2xl shadow-black/10 dark:shadow-black/40"
+          class="ursf-alert-card mb-6 rounded-lg border p-5 shadow-2xl shadow-black/10 dark:shadow-black/40"
         >
-          <p class="ursf-accent text-sm font-medium">
+          <p class="ursf-alert text-sm font-semibold">
             Current URSF Signaling Status - Difficulty Adjustment Period <span
               data-ursf-field="status-period">N/A</span
-            >: 0.00% of blocks signaling
+            >: <span class="font-mono">0.00%</span> of blocks signaling
           </p>
         </div>
 
@@ -120,11 +121,19 @@ const historyRows = [
                 <p class="ursf-label text-xs font-medium uppercase tracking-wide">
                   {stat.label}
                 </p>
-                <p class="ursf-heading mt-3 font-mono text-4xl font-semibold tracking-normal">
+                <p
+                  class:list={[
+                    "mt-3 font-mono text-4xl font-semibold tracking-normal",
+                    stat.alert ? "ursf-alert" : "ursf-heading",
+                  ]}
+                >
                   <span data-ursf-field={stat.valueField}>{stat.value}</span>
                 </p>
                 <p
-                  class="ursf-muted mt-2 text-sm"
+                  class:list={[
+                    "mt-2 text-sm",
+                    stat.alert ? "ursf-alert font-medium" : "ursf-muted",
+                  ]}
                   data-ursf-field={stat.detailField}
                 >
                   {stat.detail}
@@ -189,8 +198,8 @@ const historyRows = [
                 <p class="ursf-label text-xs uppercase tracking-wide">
                   Signaling blocks
                 </p>
-                <p class="ursf-heading mt-2 font-mono text-2xl">0</p>
-                <p class="ursf-muted text-sm">observed</p>
+                <p class="ursf-alert mt-2 font-mono text-2xl font-semibold">0</p>
+                <p class="ursf-alert text-sm font-medium">observed</p>
               </div>
               <div class="ursf-soft-card rounded-md p-4">
                 <p class="ursf-label text-xs uppercase tracking-wide">
@@ -205,19 +214,21 @@ const historyRows = [
               <div>
                 <div class="mb-2 flex items-end justify-between gap-3">
                   <div>
-                    <p class="ursf-heading text-sm font-medium">
+                    <p class="ursf-alert text-sm font-semibold">
                       Signaling rate
                     </p>
-                    <p class="ursf-muted text-xs">
+                    <p class="ursf-alert text-xs font-medium">
                       0 signaling blocks observed
                     </p>
                   </div>
-                  <p class="ursf-muted font-mono text-sm">0.00%</p>
+                  <p class="ursf-alert font-mono text-sm font-semibold">
+                    0.00%
+                  </p>
                 </div>
                 <div
                   class="ursf-progress-track h-3 overflow-hidden rounded-full"
                 >
-                  <div class="h-full w-0 rounded-full bg-amber-400"></div>
+                  <div class="ursf-alert-progress h-full w-0 rounded-full"></div>
                 </div>
               </div>
 
@@ -357,10 +368,12 @@ const historyRows = [
                           {row.tracked}
                         </span>
                       </td>
-                      <td class="ursf-muted py-3 pr-4 font-mono">
+                      <td class="ursf-alert py-3 pr-4 font-mono font-semibold">
                         {row.signaling}
                       </td>
-                      <td class="ursf-muted py-3 font-mono">{row.percent}</td>
+                      <td class="ursf-alert py-3 font-mono font-semibold">
+                        {row.percent}
+                      </td>
                     </tr>
                   ))
                 }
@@ -604,6 +617,9 @@ const historyRows = [
     --ursf-block: oklch(0.91 0 0);
     --ursf-block-text: oklch(0.52 0 0);
     --ursf-accent: oklch(0.62 0.16 65);
+    --ursf-alert: oklch(0.53 0.2 28);
+    --ursf-alert-bg: oklch(0.97 0.04 28);
+    --ursf-alert-border: oklch(0.78 0.12 28);
     background-color: var(--ursf-bg);
     color: var(--ursf-text);
   }
@@ -640,6 +656,9 @@ const historyRows = [
     --ursf-block: oklch(0.18 0 0);
     --ursf-block-text: oklch(0.48 0 0);
     --ursf-accent: oklch(0.75 0.18 55);
+    --ursf-alert: oklch(0.72 0.2 28);
+    --ursf-alert-bg: oklch(0.2 0.06 28);
+    --ursf-alert-border: oklch(0.5 0.14 28);
   }
 
   .ursf-heading {
@@ -658,6 +677,10 @@ const historyRows = [
     color: var(--ursf-accent);
   }
 
+  .ursf-alert {
+    color: var(--ursf-alert);
+  }
+
   .ursf-border {
     border-color: var(--ursf-border);
   }
@@ -665,6 +688,11 @@ const historyRows = [
   .ursf-card {
     background-color: var(--ursf-card);
     border-color: var(--ursf-border);
+  }
+
+  .ursf-alert-card {
+    background-color: var(--ursf-alert-bg);
+    border-color: var(--ursf-alert-border);
   }
 
   .ursf-soft-card {
@@ -693,6 +721,10 @@ const historyRows = [
 
   .ursf-progress-track {
     background-color: var(--ursf-progress);
+  }
+
+  .ursf-alert-progress {
+    background-color: var(--ursf-alert);
   }
 
   .ursf-block-dot,
