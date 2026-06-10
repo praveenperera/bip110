@@ -83,7 +83,7 @@ export async function handleMonitorOgImageRequest(
   }
 
   const data = parsedData ?? (await readMonitorData(request, ctx));
-  const png = renderMonitorOgPng(data);
+  const png = await renderMonitorOgPng(data);
   const body = pngBody(png);
   const headers = new Headers({
     "cache-control": `public, max-age=${CACHE_TTL_SECONDS}`,
@@ -176,7 +176,7 @@ function numberParam(url: URL, name: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function renderMonitorOgPng(data: MonitorData): Uint8Array {
+async function renderMonitorOgPng(data: MonitorData): Promise<Uint8Array> {
   const raster = createRaster(
     OG_IMAGE_WIDTH,
     OG_IMAGE_HEIGHT,

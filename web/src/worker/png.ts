@@ -171,7 +171,7 @@ export function measureText(
   return width;
 }
 
-export function encodePng(raster: Raster): Uint8Array {
+export async function encodePng(raster: Raster): Promise<Uint8Array> {
   const ihdr = new Uint8Array(13);
   writeUint32(ihdr, 0, raster.width);
   writeUint32(ihdr, 4, raster.height);
@@ -194,12 +194,23 @@ export function encodePng(raster: Raster): Uint8Array {
     );
   }
 
+  const compressedScanlines = await deflate(scanlines);
+
   return concatBytes([
     pngSignature,
     pngChunk("IHDR", ihdr),
-    pngChunk("IDAT", zlibStore(scanlines)),
+    pngChunk("IDAT", compressedScanlines),
     pngChunk("IEND", new Uint8Array()),
   ]);
+}
+
+async function deflate(data: Uint8Array): Promise<Uint8Array> {
+  const compressed = new Blob([data])
+    .stream()
+    .pipeThrough(new CompressionStream("deflate"));
+  const buffer = await new Response(compressed).arrayBuffer();
+
+  return new Uint8Array(buffer);
 }
 
 function drawGlyph(
@@ -235,41 +246,6 @@ function pngChunk(type: string, data: Uint8Array): Uint8Array {
   return chunk;
 }
 
-function zlibStore(data: Uint8Array): Uint8Array {
-  const maxBlockLength = 65535;
-  const blockCount = Math.ceil(data.length / maxBlockLength);
-  const output = new Uint8Array(2 + data.length + blockCount * 5 + 4);
-  let outputOffset = 0;
-  let dataOffset = 0;
-
-  output[outputOffset] = 0x78;
-  output[outputOffset + 1] = 0x01;
-  outputOffset += 2;
-
-  while (dataOffset < data.length) {
-    const blockLength = Math.min(maxBlockLength, data.length - dataOffset);
-    const isFinalBlock = dataOffset + blockLength >= data.length;
-    const invertedLength = ~blockLength & 0xffff;
-
-    output[outputOffset] = isFinalBlock ? 1 : 0;
-    output[outputOffset + 1] = blockLength & 0xff;
-    output[outputOffset + 2] = (blockLength >> 8) & 0xff;
-    output[outputOffset + 3] = invertedLength & 0xff;
-    output[outputOffset + 4] = (invertedLength >> 8) & 0xff;
-    outputOffset += 5;
-    output.set(
-      data.subarray(dataOffset, dataOffset + blockLength),
-      outputOffset,
-    );
-    outputOffset += blockLength;
-    dataOffset += blockLength;
-  }
-
-  writeUint32(output, outputOffset, adler32(data));
-
-  return output;
-}
-
 function crc32(typeBytes: Uint8Array, data: Uint8Array): number {
   let crc = 0xffffffff;
   crc = updateCrc32(crc, typeBytes);
@@ -302,19 +278,6 @@ function createCrcTable(): Uint32Array {
   }
 
   return table;
-}
-
-function adler32(data: Uint8Array): number {
-  const mod = 65521;
-  let a = 1;
-  let b = 0;
-
-  for (const byte of data) {
-    a = (a + byte) % mod;
-    b = (b + a) % mod;
-  }
-
-  return ((b << 16) | a) >>> 0;
 }
 
 function concatBytes(chunks: readonly Uint8Array[]): Uint8Array {
