@@ -9,9 +9,10 @@ enabled = true
 directory = "./dist"
 binding = "ASSETS"
 run_worker_first = [
-  "/api/*",
+  "/api/monitor",
+  "/api/monitor-blocks",
   "/monitor",
-  "/monitor/*",
+  "/monitor/",
   "/og/monitor.png",
   "/ursf-monitor",
   "/ursf-monitor/",

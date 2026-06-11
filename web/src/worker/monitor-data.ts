@@ -3,7 +3,7 @@ import type { MonitorData, MonitorPeriod } from "./types";
 const UPSTREAM_MONITOR_API = "https://bip110monitor.com/api";
 
 export const MONITOR_API_PATH = "/api/monitor";
-export const CACHE_TTL_SECONDS = 300;
+export const CACHE_TTL_SECONDS = 60;
 export const PERIOD_SIZE = 2016;
 export const ACTIVATION_THRESHOLD = 55;
 

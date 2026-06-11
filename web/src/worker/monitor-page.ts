@@ -1,6 +1,7 @@
 import { bip110BlockGridHtml } from "./block-grid";
 import {
   ACTIVATION_THRESHOLD,
+  CACHE_TTL_SECONDS,
   formatInteger,
   formatPercent,
   jsonResponse,
@@ -114,7 +115,7 @@ function rewriteMonitorPage(
     .transform(response);
 
   const headers = new Headers(transformed.headers);
-  headers.set("cache-control", "no-store");
+  headers.set("cache-control", `public, max-age=${CACHE_TTL_SECONDS}`);
   headers.set("x-bip110-monitor-og", "dynamic");
   headers.delete("etag");
 
@@ -281,7 +282,7 @@ function formatUpdatedAt(value: string): string {
 
 function staticMonitorPage(response: Response): Response {
   const headers = new Headers(response.headers);
-  headers.set("cache-control", "no-store");
+  headers.set("cache-control", `public, max-age=${CACHE_TTL_SECONDS}`);
   headers.set("x-bip110-monitor-og", "static");
 
   return new Response(response.body, {

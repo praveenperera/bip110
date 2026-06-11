@@ -1,5 +1,6 @@
 import { ursfBlockGridHtml } from "./block-grid";
 import {
+  CACHE_TTL_SECONDS,
   formatInteger,
   jsonResponse,
   PERIOD_SIZE,
@@ -83,7 +84,7 @@ function rewriteUrsfMonitorPage(
     .transform(response);
 
   const headers = new Headers(transformed.headers);
-  headers.set("cache-control", "no-store");
+  headers.set("cache-control", `public, max-age=${CACHE_TTL_SECONDS}`);
   headers.set("x-bip110-ursf-monitor", "dynamic");
   headers.delete("etag");
 
@@ -108,7 +109,7 @@ async function readUrsfMonitorBlocks(
 
 function staticUrsfMonitorPage(response: Response): Response {
   const headers = new Headers(response.headers);
-  headers.set("cache-control", "no-store");
+  headers.set("cache-control", `public, max-age=${CACHE_TTL_SECONDS}`);
   headers.set("x-bip110-ursf-monitor", "static");
 
   return new Response(response.body, {
