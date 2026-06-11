@@ -464,16 +464,14 @@ const historyRows = [
       }
 
       async function fetchMonitorData() {
-        const response = await fetch(API_URL, { cache: "no-store" });
+        const response = await fetch(API_URL);
 
         if (response.ok) {
           return await response.json();
         }
 
         if (response.status === 404 && isLocalDevHost()) {
-          const fallbackResponse = await fetch(LOCAL_DEV_API_URL, {
-            cache: "no-store",
-          });
+          const fallbackResponse = await fetch(LOCAL_DEV_API_URL);
 
           if (fallbackResponse.ok) {
             return await fallbackResponse.json();

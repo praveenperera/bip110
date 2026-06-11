@@ -207,7 +207,6 @@ function isLocalDevHost() {
 
 async function fetchMonitorData(signal?: AbortSignal) {
   const response = await fetch(API_URL, {
-    cache: "no-store",
     signal,
   });
 
@@ -217,7 +216,6 @@ async function fetchMonitorData(signal?: AbortSignal) {
 
   if (response.status === 404 && isLocalDevHost()) {
     const fallbackResponse = await fetch(LOCAL_DEV_API_URL, {
-      cache: "no-store",
       signal,
     });
 
@@ -233,7 +231,6 @@ async function fetchMonitorData(signal?: AbortSignal) {
 
 async function fetchMonitorBlocks(signal?: AbortSignal) {
   const response = await fetch(BLOCKS_API_URL, {
-    cache: "no-store",
     signal,
   });
 
@@ -516,18 +513,37 @@ export function MonitorHighlights() {
     const controller = new AbortController();
     const cached = readCachedMonitorData();
     let interval: number | undefined;
+    let timeout: number | undefined;
 
     if (cached) {
+      const age = Date.now() - cached.cachedAt;
       setData(cached.data);
       setCacheInfo({ cachedAt: cached.cachedAt, source: "cache" });
       setLoading(false);
-    }
 
-    void loadData(controller.signal);
-    interval = window.setInterval(() => void loadData(), REFRESH_INTERVAL_MS);
+      if (age < CACHE_TTL_MS) {
+        timeout = window.setTimeout(() => {
+          void loadData();
+          interval = window.setInterval(
+            () => void loadData(),
+            REFRESH_INTERVAL_MS,
+          );
+        }, CACHE_TTL_MS - age);
+      } else {
+        void loadData(controller.signal);
+        interval = window.setInterval(
+          () => void loadData(),
+          REFRESH_INTERVAL_MS,
+        );
+      }
+    } else {
+      void loadData(controller.signal);
+      interval = window.setInterval(() => void loadData(), REFRESH_INTERVAL_MS);
+    }
 
     return () => {
       controller.abort();
+      window.clearTimeout(timeout);
       window.clearInterval(interval);
     };
   }, [loadData]);
