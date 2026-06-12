@@ -22,6 +22,7 @@ const ACTIVATION_THRESHOLD = 55;
 const VOLUNTARY_DEADLINE_BLOCK = 961542;
 const VOLUNTARY_DEADLINE_PERIOD = 476;
 const SIGNAL_BIT = 4;
+const HISTORY_SECTION_ID = "difficulty-adjustment-period-history";
 const REQUIRED_SIGNALING_BLOCKS = Math.ceil(
   PERIOD_BLOCK_COUNT * (ACTIVATION_THRESHOLD / 100),
 );
@@ -1170,6 +1171,7 @@ export function MonitorDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const historySectionRef = useRef<HTMLDivElement>(null);
 
   const loadData = useCallback(async (signal?: AbortSignal) => {
     setRefreshing(true);
@@ -1204,6 +1206,12 @@ export function MonitorDashboard() {
     setBlocks(payload.blocks);
   }, []);
   const blockDataStatus = useMonitorBlocks(applyMonitorBlocks);
+
+  useEffect(() => {
+    if (window.location.hash !== `#${HISTORY_SECTION_ID}`) return;
+
+    historySectionRef.current?.scrollIntoView();
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -1534,7 +1542,11 @@ export function MonitorDashboard() {
         data={data}
       />
 
-      <Card className="border-border/50 bg-card/50 backdrop-blur">
+      <Card
+        id={HISTORY_SECTION_ID}
+        ref={historySectionRef}
+        className="scroll-mt-24 border-border/50 bg-card/50 backdrop-blur"
+      >
         <CardHeader>
           <CardTitle>Difficulty Adjustment Period History</CardTitle>
         </CardHeader>
