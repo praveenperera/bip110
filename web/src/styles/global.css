@@ -186,6 +186,18 @@
   }
 }
 
+.period-chart-tooltip {
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+}
+
+.period-chart-point:hover .period-chart-tooltip,
+.period-chart-point:focus .period-chart-tooltip,
+.period-chart-point:focus-within .period-chart-tooltip {
+  opacity: 1;
+}
+
 /* Accordion animation - Base UI pattern */
 [data-slot="accordion-panel"] {
   overflow: hidden;

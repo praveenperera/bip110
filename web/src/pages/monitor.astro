@@ -288,7 +288,15 @@ const historyRows = [
             <h2 class="text-xl font-semibold">
               Difficulty Adjustment Period History
             </h2>
-            <div class="mt-4 overflow-x-auto">
+            <div class="mt-5" data-monitor-period-chart>
+              <div
+                class="rounded-lg border border-dashed border-border/60 bg-muted/20 p-6 text-sm text-muted-foreground"
+              >
+                Loading period chart
+              </div>
+            </div>
+
+            <div class="mt-6 overflow-x-auto">
               <table class="w-full min-w-160 text-left text-sm">
                 <thead
                   class="border-b border-border/50 text-xs uppercase tracking-wide text-muted-foreground"
@@ -376,8 +384,8 @@ const historyRows = [
                   Block signaling grid
                 </h2>
                 <p class="mt-2 max-w-2xl text-sm text-muted-foreground">
-                  A server-rendered snapshot of recent blocks. Enable
-                  JavaScript for live refreshes and interactive tooltips.
+                  A server-rendered snapshot of recent blocks. Enable JavaScript
+                  for live refreshes and interactive tooltips.
                 </p>
               </div>
               <div

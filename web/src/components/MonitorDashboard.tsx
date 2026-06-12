@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Tooltip } from "@base-ui/react/tooltip";
 import { AlertCircle, ExternalLink, RefreshCw } from "lucide-react";
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -81,6 +90,20 @@ type MonitorHighlightStat = {
   label: string;
   value: string;
   detail: string;
+};
+
+type PeriodChartDatum = Period & {
+  isCurrent: boolean;
+  label: string;
+  pctLabel: string;
+  signalingLabel: string;
+};
+
+type PeriodChartTooltipProps = {
+  active?: boolean;
+  payload?: Array<{
+    payload?: PeriodChartDatum;
+  }>;
 };
 
 type CacheInfo = {
@@ -353,6 +376,10 @@ function formatNumber(value: number) {
   return new Intl.NumberFormat("en-US").format(value);
 }
 
+function formatSignalingBlockCount(value: number) {
+  return `${formatNumber(value)} signaling ${value === 1 ? "block" : "blocks"}`;
+}
+
 function formatPercent(value: number) {
   return `${value.toFixed(2)}%`;
 }
@@ -546,6 +573,156 @@ function ProgressRow({
           style={{ width: `${clampPercent(percent)}%` }}
         />
       </div>
+    </div>
+  );
+}
+
+function chartPeriods(periods: Period[]) {
+  return [...periods].sort((a, b) => a.periodNum - b.periodNum);
+}
+
+function chartMaxSignalingCount(periods: Period[]) {
+  return Math.max(...periods.map((period) => period.signalingCount), 0) + 5;
+}
+
+function PeriodSignalingChart({
+  currentPeriodNum,
+  periods,
+}: {
+  currentPeriodNum: number;
+  periods: Period[];
+}) {
+  const sortedPeriods = chartPeriods(periods);
+
+  if (sortedPeriods.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed border-border/60 bg-muted/20 p-6 text-sm text-muted-foreground">
+        No period history available for charting.
+      </div>
+    );
+  }
+
+  const maxValue = chartMaxSignalingCount(sortedPeriods);
+  const midValue = Math.round(maxValue / 2);
+  const yTicks = Array.from(new Set([maxValue, midValue, 0]));
+  const chartData: PeriodChartDatum[] = sortedPeriods.map((period) => ({
+    ...period,
+    isCurrent: period.periodNum === currentPeriodNum,
+    label: String(period.periodNum),
+    pctLabel: formatPercent(period.pct),
+    signalingLabel: formatSignalingBlockCount(period.signalingCount),
+  }));
+
+  return (
+    <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h3 className="text-base font-semibold tracking-tight">
+            Signaling blocks by period
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            The line charts the signaling count from the period history table.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-2">
+            <span
+              className="size-3 rounded-full border-2 border-primary bg-background"
+              aria-hidden="true"
+            />
+            Signaling blocks
+          </span>
+        </div>
+      </div>
+
+      <div
+        className="mt-5 overflow-x-auto"
+        role="img"
+        aria-label={`Signaling block counts by difficulty adjustment period. Chart maximum is ${formatNumber(maxValue)} signaling blocks.`}
+      >
+        <div className="min-w-160">
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                accessibilityLayer
+                data={chartData}
+                margin={{ bottom: 12, left: 10, right: 18, top: 24 }}
+              >
+                <CartesianGrid
+                  stroke="currentColor"
+                  strokeOpacity={0.16}
+                  vertical={false}
+                />
+                <XAxis
+                  axisLine={{ stroke: "currentColor", strokeOpacity: 0.28 }}
+                  dataKey="label"
+                  height={34}
+                  interval={0}
+                  tick={{ fill: "currentColor", fontSize: 11 }}
+                  tickLine={false}
+                  tickMargin={10}
+                />
+                <YAxis
+                  axisLine={{ stroke: "currentColor", strokeOpacity: 0.28 }}
+                  domain={[0, maxValue]}
+                  tick={{ fill: "currentColor", fontSize: 11 }}
+                  tickFormatter={formatNumber}
+                  tickLine={false}
+                  ticks={yTicks}
+                  width={48}
+                />
+                <RechartsTooltip
+                  content={<PeriodChartTooltip />}
+                  cursor={{ stroke: "var(--primary)", strokeOpacity: 0.24 }}
+                />
+                <Line
+                  activeDot={{
+                    fill: "var(--primary)",
+                    r: 6,
+                    stroke: "var(--background)",
+                    strokeWidth: 3,
+                  }}
+                  dataKey="signalingCount"
+                  dot={{
+                    fill: "var(--primary)",
+                    r: 4.5,
+                    stroke: "var(--background)",
+                    strokeWidth: 3,
+                  }}
+                  isAnimationActive={false}
+                  name="Signaling blocks"
+                  stroke="var(--primary)"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2.5}
+                  type="linear"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <p className="pl-14 pr-5 text-left text-[11px] text-muted-foreground">
+            difficulty adjustment period
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PeriodChartTooltip({ active, payload }: PeriodChartTooltipProps) {
+  const datum = payload?.[0]?.payload;
+
+  if (!active || !datum) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-md border border-border bg-popover px-3 py-2 text-xs shadow-lg shadow-foreground/10">
+      <p className="font-medium text-popover-foreground">
+        Period {datum.periodNum}
+      </p>
+      <p className="mt-1 font-mono text-primary">{datum.pctLabel}</p>
+      <p className="mt-1 text-muted-foreground">{datum.signalingLabel}</p>
     </div>
   );
 }
@@ -1550,7 +1727,12 @@ export function MonitorDashboard() {
         <CardHeader>
           <CardTitle>Difficulty Adjustment Period History</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
+          <PeriodSignalingChart
+            currentPeriodNum={data.periodNum}
+            periods={stats.historyPeriods}
+          />
+
           <div className="overflow-x-auto">
             <table className="w-full min-w-160 text-left text-sm">
               <thead className="border-b border-border/50 text-xs uppercase tracking-wide text-muted-foreground">

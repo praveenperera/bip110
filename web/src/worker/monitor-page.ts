@@ -121,6 +121,10 @@ function rewriteMonitorPage(
       new StyleRewriter(`width: ${periodProgressPercent(data).toFixed(2)}%`),
     )
     .on(
+      "[data-monitor-period-chart]",
+      new InnerHtmlRewriter(periodSignalingChartHtml(data)),
+    )
+    .on(
       "[data-monitor-block-grid]",
       new InnerHtmlRewriter(bip110BlockGridHtml(data, blocks)),
     )
@@ -219,6 +223,143 @@ function periodProgressPercent(data: MonitorData): number {
   return clampPercent((data.totalBlocks / PERIOD_SIZE) * 100);
 }
 
+function periodSignalingChartHtml(data: MonitorData): string {
+  const periods = chartPeriodsFor(data);
+
+  if (periods.length === 0) {
+    return [
+      '<div class="rounded-lg border border-dashed border-border/60 bg-muted/20 p-6 text-sm text-muted-foreground">',
+      "No period history available for charting.",
+      "</div>",
+    ].join("");
+  }
+
+  const chartWidth = Math.max(640, periods.length * 76 + 88);
+  const chartHeight = 288;
+  const margin = { bottom: 58, left: 64, right: 24, top: 28 };
+  const plotHeight = chartHeight - margin.top - margin.bottom;
+  const plotWidth = chartWidth - margin.left - margin.right;
+  const maxValue =
+    Math.max(...periods.map((period) => period.signalingCount), 0) + 5;
+  const yTicks = Array.from(new Set([maxValue, Math.round(maxValue / 2), 0]));
+  const points = periods.map((period, index) => ({
+    period,
+    x: periodChartX(index, periods.length, margin.left, plotWidth),
+    y: periodChartY(period.signalingCount, maxValue, margin.top, plotHeight),
+  }));
+  const linePath = points
+    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
+    .join(" ");
+  const yTickHtml = yTicks
+    .map((tick) => {
+      const y = periodChartY(tick, maxValue, margin.top, plotHeight);
+
+      return [
+        "<g>",
+        `<line x1="${margin.left}" x2="${chartWidth - margin.right}" y1="${y}" y2="${y}" stroke="currentColor" stroke-opacity="0.16" />`,
+        `<text x="${margin.left - 12}" y="${y + 4}" text-anchor="end" class="fill-current font-mono text-[11px]">${formatInteger(tick)}</text>`,
+        "</g>",
+      ].join("");
+    })
+    .join("");
+  const pointHtml = points
+    .map(({ period, x, y }) => {
+      const isCurrentPeriod = period.periodNum === data.periodNum;
+      const tooltipAbove = y > margin.top + 42;
+      const tooltipY = tooltipAbove ? y - 40 : y + 14;
+      const tooltipTextY = tooltipAbove ? y - 23 : y + 31;
+      const currentLabel = isCurrentPeriod
+        ? `<text x="${x}" y="${chartHeight - 14}" text-anchor="middle" class="fill-primary text-[10px] font-medium">current</text>`
+        : "";
+      const title = escapeHtml(
+        [
+          `Period ${period.periodNum}: ${formatSignalingBlockCount(period.signalingCount)}`,
+          `(${formatPercent(period.pct)})`,
+        ].join(" "),
+      );
+      const ariaLabel = escapeHtml(
+        `Period ${period.periodNum}: ${formatSignalingBlockCount(period.signalingCount)}, ${formatPercent(period.pct)}`,
+      );
+
+      return [
+        `<g aria-label="${ariaLabel}" class="period-chart-point outline-none" role="img" tabindex="0">`,
+        `<title>${title}</title>`,
+        `<circle cx="${x}" cy="${y}" r="${isCurrentPeriod ? "5.5" : "4.5"}" class="transition-[r,fill] duration-150" fill="var(--primary)" stroke="var(--background)" stroke-width="3" />`,
+        '<g class="period-chart-tooltip">',
+        `<rect x="${x - 34}" y="${tooltipY}" width="68" height="24" rx="6" class="fill-popover stroke-border" />`,
+        `<text x="${x}" y="${tooltipTextY}" text-anchor="middle" class="fill-popover-foreground font-mono text-[11px]">${formatPercent(period.pct)}</text>`,
+        "</g>",
+        `<text x="${x}" y="${Math.max(y - 12, 14)}" text-anchor="middle" class="fill-current font-mono text-[11px]">${formatInteger(period.signalingCount)}</text>`,
+        `<text x="${x}" y="${chartHeight - 31}" text-anchor="middle" class="fill-current font-mono text-[11px]">${period.periodNum}</text>`,
+        currentLabel,
+        "</g>",
+      ].join("");
+    })
+    .join("");
+
+  return [
+    '<div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">',
+    "<div>",
+    '<h3 class="text-base font-semibold tracking-tight">Signaling blocks by period</h3>',
+    '<p class="mt-1 text-sm text-muted-foreground">The line charts the signaling count from the period history table.</p>',
+    "</div>",
+    '<div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">',
+    '<span class="inline-flex items-center gap-2"><span class="size-3 rounded-full border-2 border-primary bg-background" aria-hidden="true"></span>Signaling blocks</span>',
+    "</div>",
+    "</div>",
+    `<div class="mt-5 overflow-x-auto" role="img" aria-label="Signaling block counts by difficulty adjustment period. Chart maximum is ${formatInteger(maxValue)} signaling blocks.">`,
+    '<div class="w-max">',
+    `<svg class="max-w-none text-muted-foreground" width="${chartWidth}" height="${chartHeight}" viewBox="0 0 ${chartWidth} ${chartHeight}">`,
+    yTickHtml,
+    `<line x1="${margin.left}" x2="${margin.left}" y1="${margin.top}" y2="${margin.top + plotHeight}" stroke="currentColor" stroke-opacity="0.28" />`,
+    `<line x1="${margin.left}" x2="${chartWidth - margin.right}" y1="${margin.top + plotHeight}" y2="${margin.top + plotHeight}" stroke="currentColor" stroke-opacity="0.28" />`,
+    `<path d="${linePath}" fill="none" stroke="var(--primary)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" />`,
+    pointHtml,
+    "</svg>",
+    `<p class="text-left text-[11px] text-muted-foreground" style="padding-left: ${margin.left}px; padding-right: ${margin.right}px;">difficulty adjustment period</p>`,
+    "</div>",
+    "</div>",
+  ].join("");
+}
+
+function chartPeriodsFor(data: MonitorData): MonitorData["periods"] {
+  const currentPeriod = {
+    periodNum: data.periodNum,
+    startBlock: data.periodStart,
+    endBlock: data.periodEnd,
+    signalingCount: data.signalingCount,
+    totalBlocks: data.totalBlocks,
+    pct: data.pct,
+  };
+  const previousPeriods = data.periods
+    .filter((period) => period.periodNum !== data.periodNum)
+    .sort((a, b) => a.periodNum - b.periodNum);
+
+  return [...previousPeriods, currentPeriod];
+}
+
+function periodChartY(
+  value: number,
+  maxValue: number,
+  top: number,
+  height: number,
+): number {
+  return top + height - (value / maxValue) * height;
+}
+
+function periodChartX(
+  index: number,
+  pointCount: number,
+  left: number,
+  width: number,
+): number {
+  if (pointCount === 1) {
+    return left + width / 2;
+  }
+
+  return left + (width / (pointCount - 1)) * index;
+}
+
 function clampPercent(value: number): number {
   return Math.min(Math.max(value, 0), 100);
 }
@@ -249,6 +390,10 @@ function formatPeriodSignaling(
   fallback: number,
 ): string {
   return formatInteger(period?.signalingCount ?? fallback);
+}
+
+function formatSignalingBlockCount(value: number): string {
+  return `${formatInteger(value)} signaling ${value === 1 ? "block" : "blocks"}`;
 }
 
 function formatPeriodPercent(
@@ -369,4 +514,12 @@ class StyleRewriter implements HTMLRewriterElementContentHandlers {
   element(element: Element): void {
     element.setAttribute("style", this.style);
   }
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }
