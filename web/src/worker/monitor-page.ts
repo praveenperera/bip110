@@ -78,6 +78,15 @@ function rewriteMonitorPage(
       new MetaContentRewriter(metadata.canonicalUrl),
     )
     .on('meta[property="og:image"]', new MetaContentRewriter(metadata.imageUrl))
+    .on(
+      'meta[property="og:image:secure_url"]',
+      new MetaContentRewriter(metadata.imageUrl),
+    )
+    .on('meta[property="og:image:type"]', new MetaContentRewriter("image/png"))
+    .on(
+      'meta[property="og:image:alt"]',
+      new MetaContentRewriter(metadata.imageAlt),
+    )
     .on('meta[name="twitter:title"]', new MetaContentRewriter(metadata.title))
     .on(
       'meta[name="twitter:description"]',
@@ -87,8 +96,11 @@ function rewriteMonitorPage(
       'meta[name="twitter:image"]',
       new MetaContentRewriter(metadata.imageUrl),
     )
-    .on("title", new InnerContentRewriter(metadata.title))
-    .on("head", new HeadAppender(extraMetaTags(metadata)));
+    .on(
+      'meta[name="twitter:image:alt"]',
+      new MetaContentRewriter(metadata.imageAlt),
+    )
+    .on("title", new InnerContentRewriter(metadata.title));
 
   for (const [field, value] of Object.entries(fields)) {
     rewriter = rewriter.on(
@@ -323,31 +335,8 @@ function monitorImageUrl(request: Request, data: MonitorData): string {
   return url.href;
 }
 
-function extraMetaTags(metadata: MonitorMetadata): string {
-  return [
-    metaProperty("og:image:type", "image/png"),
-    metaProperty("og:image:alt", metadata.imageAlt),
-    metaName("twitter:image:alt", metadata.imageAlt),
-  ].join("");
-}
-
-function metaProperty(property: string, content: string): string {
-  return `<meta property="${escapeHtmlAttribute(property)}" content="${escapeHtmlAttribute(content)}">`;
-}
-
-function metaName(name: string, content: string): string {
-  return `<meta name="${escapeHtmlAttribute(name)}" content="${escapeHtmlAttribute(content)}">`;
-}
-
 function isHtmlResponse(response: Response): boolean {
   return response.headers.get("content-type")?.includes("text/html") ?? false;
-}
-
-function escapeHtmlAttribute(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("<", "&lt;");
 }
 
 class MetaContentRewriter implements HTMLRewriterElementContentHandlers {
@@ -371,14 +360,6 @@ class InnerHtmlRewriter implements HTMLRewriterElementContentHandlers {
 
   element(element: Element): void {
     element.setInnerContent(this.html, { html: true });
-  }
-}
-
-class HeadAppender implements HTMLRewriterElementContentHandlers {
-  constructor(private readonly html: string) {}
-
-  element(element: Element): void {
-    element.append(this.html, { html: true });
   }
 }
 
