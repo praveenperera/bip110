@@ -471,6 +471,25 @@ function generatePeriodBlocks(data: MonitorData): PeriodGridBlock[] {
   }));
 }
 
+function currentPeriodFromMonitorData(data: MonitorData): Period {
+  return {
+    periodNum: data.periodNum,
+    startBlock: data.periodStart,
+    endBlock: data.periodEnd,
+    signalingCount: data.signalingCount,
+    totalBlocks: data.totalBlocks,
+    pct: data.pct,
+  };
+}
+
+function monitorHistoryPeriods(data: MonitorData): Period[] {
+  const previousPeriods = data.periods
+    .filter((period) => period.periodNum !== data.periodNum)
+    .sort((a, b) => b.periodNum - a.periodNum);
+
+  return [currentPeriodFromMonitorData(data), ...previousPeriods];
+}
+
 function StatusCard({
   label,
   value,
@@ -1236,16 +1255,14 @@ export function MonitorDashboard() {
       REQUIRED_SIGNALING_BLOCKS - data.signalingCount,
       0,
     );
-    const sortedPeriods = [...data.periods].sort(
-      (a, b) => b.periodNum - a.periodNum,
-    );
+    const historyPeriods = monitorHistoryPeriods(data);
 
     return {
       blocksLeft,
       periodProgress,
       activationProgress,
       signalingDeficit,
-      sortedPeriods,
+      historyPeriods,
     };
   }, [data]);
 
@@ -1535,7 +1552,7 @@ export function MonitorDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
-                {stats.sortedPeriods.map((period) => (
+                {stats.historyPeriods.map((period) => (
                   <tr key={period.periodNum}>
                     <td className="py-3 pr-4 font-medium">
                       {period.periodNum}
