@@ -14,9 +14,9 @@ const MONITOR_URL = "https://bip110monitor.com";
 const URSF_MONITOR_URL = "/ursf-monitor";
 const MEMPOOL_BLOCK_URL = "https://mempool.space/block";
 const CACHE_KEY = "bip110-monitor-data";
+const MONITOR_DATA_EVENT = "bip110-monitor-data";
 const CACHE_VERSION = 1;
 const CACHE_TTL_MS = 60_000;
-const REFRESH_INTERVAL_MS = 60_000;
 const PERIOD_BLOCK_COUNT = 2016;
 const ACTIVATION_THRESHOLD = 55;
 const VOLUNTARY_DEADLINE_BLOCK = 961542;
@@ -91,6 +91,11 @@ type CachedMonitorData = {
   cachedAt: number;
   data: MonitorData;
   version: typeof CACHE_VERSION;
+};
+
+type MonitorDataEventDetail = {
+  cachedAt: number;
+  data: MonitorData;
 };
 
 type MonitorBlocksPayload = {
@@ -199,6 +204,36 @@ function writeCachedMonitorData(data: MonitorData, cachedAt: number) {
       JSON.stringify({ cachedAt, data, version: CACHE_VERSION }),
     );
   } catch {}
+
+  window.dispatchEvent(
+    new CustomEvent<MonitorDataEventDetail>(MONITOR_DATA_EVENT, {
+      detail: { cachedAt, data },
+    }),
+  );
+}
+
+function isPageVisible() {
+  return document.visibilityState === "visible";
+}
+
+function isCacheStale(cachedAt: number) {
+  return Date.now() - cachedAt > CACHE_TTL_MS;
+}
+
+function shouldRefreshCachedMonitorData() {
+  const cached = readCachedMonitorData();
+  return !cached || isCacheStale(cached.cachedAt);
+}
+
+function isMonitorDataEvent(
+  event: Event,
+): event is CustomEvent<MonitorDataEventDetail> {
+  return (
+    event instanceof CustomEvent &&
+    isRecord(event.detail) &&
+    typeof event.detail.cachedAt === "number" &&
+    isMonitorData(event.detail.data)
+  );
 }
 
 function isLocalDevHost() {
@@ -250,6 +285,7 @@ function useMonitorBlocks(onBlocks: (payload: MonitorBlocksPayload) => void) {
   const [blockDataStatus, setBlockDataStatus] =
     useState<BlockDataStatus>("loading");
   const onBlocksRef = useRef(onBlocks);
+  const lastLoadedAtRef = useRef<number | null>(null);
 
   useEffect(() => {
     onBlocksRef.current = onBlocks;
@@ -257,14 +293,20 @@ function useMonitorBlocks(onBlocks: (payload: MonitorBlocksPayload) => void) {
 
   useEffect(() => {
     let active = true;
-    const controller = new AbortController();
-    let interval: number | undefined;
+    let controller: AbortController | null = null;
+    let loading = false;
 
-    const loadBlocks = async (signal?: AbortSignal) => {
+    const loadBlocks = async () => {
+      if (loading || !isPageVisible()) return;
+
+      loading = true;
+      controller = new AbortController();
+
       try {
-        const payload = await fetchMonitorBlocks(signal);
+        const payload = await fetchMonitorBlocks(controller.signal);
         if (!active) return;
 
+        lastLoadedAtRef.current = Date.now();
         onBlocksRef.current(payload);
         setBlockDataStatus("live");
       } catch (nextError) {
@@ -278,16 +320,28 @@ function useMonitorBlocks(onBlocks: (payload: MonitorBlocksPayload) => void) {
         if (active) {
           setBlockDataStatus("unavailable");
         }
+      } finally {
+        loading = false;
       }
     };
 
-    void loadBlocks(controller.signal);
-    interval = window.setInterval(() => void loadBlocks(), REFRESH_INTERVAL_MS);
+    const loadBlocksIfStale = () => {
+      const lastLoadedAt = lastLoadedAtRef.current;
+
+      if (!lastLoadedAt || isCacheStale(lastLoadedAt)) {
+        void loadBlocks();
+      }
+    };
+
+    void loadBlocks();
+    window.addEventListener("focus", loadBlocksIfStale);
+    document.addEventListener("visibilitychange", loadBlocksIfStale);
 
     return () => {
       active = false;
-      controller.abort();
-      window.clearInterval(interval);
+      controller?.abort();
+      window.removeEventListener("focus", loadBlocksIfStale);
+      document.removeEventListener("visibilitychange", loadBlocksIfStale);
     };
   }, []);
 
@@ -512,39 +566,40 @@ export function MonitorHighlights() {
   useEffect(() => {
     const controller = new AbortController();
     const cached = readCachedMonitorData();
-    let interval: number | undefined;
-    let timeout: number | undefined;
+    let refreshInFlight = false;
+
+    const refreshData = (signal?: AbortSignal) => {
+      if (refreshInFlight) return;
+
+      refreshInFlight = true;
+      void loadData(signal).finally(() => {
+        refreshInFlight = false;
+      });
+    };
 
     if (cached) {
-      const age = Date.now() - cached.cachedAt;
       setData(cached.data);
       setCacheInfo({ cachedAt: cached.cachedAt, source: "cache" });
       setLoading(false);
-
-      if (age < CACHE_TTL_MS) {
-        timeout = window.setTimeout(() => {
-          void loadData();
-          interval = window.setInterval(
-            () => void loadData(),
-            REFRESH_INTERVAL_MS,
-          );
-        }, CACHE_TTL_MS - age);
-      } else {
-        void loadData(controller.signal);
-        interval = window.setInterval(
-          () => void loadData(),
-          REFRESH_INTERVAL_MS,
-        );
-      }
-    } else {
-      void loadData(controller.signal);
-      interval = window.setInterval(() => void loadData(), REFRESH_INTERVAL_MS);
     }
+
+    if (!cached || isCacheStale(cached.cachedAt)) {
+      refreshData(controller.signal);
+    }
+
+    const loadDataIfStale = () => {
+      if (isPageVisible() && shouldRefreshCachedMonitorData()) {
+        refreshData();
+      }
+    };
+
+    window.addEventListener("focus", loadDataIfStale);
+    document.addEventListener("visibilitychange", loadDataIfStale);
 
     return () => {
       controller.abort();
-      window.clearTimeout(timeout);
-      window.clearInterval(interval);
+      window.removeEventListener("focus", loadDataIfStale);
+      document.removeEventListener("visibilitychange", loadDataIfStale);
     };
   }, [loadData]);
 
@@ -951,44 +1006,92 @@ export function MonitorBlockGrid({
   useEffect(() => {
     const controller = new AbortController();
     const cached = readCachedMonitorData();
+    let active = true;
+    let refreshInFlight = false;
+
+    const applyCachedData = (nextData: MonitorData) => {
+      if (!active) return;
+
+      setData(nextData);
+      setError(null);
+    };
+
+    const applyData = (nextData: MonitorData) => {
+      if (!active) return;
+
+      const cachedAt = Date.now();
+      applyCachedData(nextData);
+      writeCachedMonitorData(nextData, cachedAt);
+    };
+
+    const handleError = (nextError: unknown) => {
+      if (!active) return;
+
+      if (
+        nextError instanceof DOMException &&
+        nextError.name === "AbortError"
+      ) {
+        return;
+      }
+
+      setError(
+        nextError instanceof Error
+          ? nextError.message
+          : "Monitor data could not be loaded",
+      );
+    };
+
+    const loadData = (signal?: AbortSignal) => {
+      if (refreshInFlight) return;
+
+      refreshInFlight = true;
+      fetchMonitorData(signal)
+        .then(applyData)
+        .catch(handleError)
+        .finally(() => {
+          refreshInFlight = false;
+
+          if (active) {
+            setLoading(false);
+          }
+        });
+    };
 
     if (cached) {
       setData(cached.data);
       setLoading(false);
     }
 
-    if (!cached || Date.now() - cached.cachedAt > CACHE_TTL_MS) {
-      fetchMonitorData(controller.signal)
-        .then((nextData) => {
-          const cachedAt = Date.now();
-
-          setData(nextData);
-          setError(null);
-          writeCachedMonitorData(nextData, cachedAt);
-        })
-        .catch((nextError) => {
-          if (
-            nextError instanceof DOMException &&
-            nextError.name === "AbortError"
-          ) {
-            return;
-          }
-
-          setError(
-            nextError instanceof Error
-              ? nextError.message
-              : "Monitor data could not be loaded",
-          );
-        })
-        .finally(() => {
-          setLoading(false);
-        });
+    if (!cached || isCacheStale(cached.cachedAt)) {
+      loadData(controller.signal);
     }
 
-    return () => {
-      controller.abort();
+    const loadDataIfStale = () => {
+      if (mode === "ursf") return;
+      if (!isPageVisible() || !shouldRefreshCachedMonitorData()) return;
+
+      loadData();
     };
-  }, []);
+
+    const handleMonitorDataEvent = (event: Event) => {
+      if (!isMonitorDataEvent(event)) return;
+
+      applyCachedData(event.detail.data);
+      setLoading(false);
+    };
+
+    window.addEventListener("focus", loadDataIfStale);
+    document.addEventListener("visibilitychange", loadDataIfStale);
+    window.addEventListener(MONITOR_DATA_EVENT, handleMonitorDataEvent);
+
+    return () => {
+      active = false;
+      controller.abort();
+      window.removeEventListener("focus", loadDataIfStale);
+      document.removeEventListener("visibilitychange", loadDataIfStale);
+      window.removeEventListener(MONITOR_DATA_EVENT, handleMonitorDataEvent);
+    };
+  }, [mode]);
 
   if (loading && !data) {
     return (
@@ -1086,37 +1189,40 @@ export function MonitorDashboard() {
   useEffect(() => {
     const controller = new AbortController();
     const cached = readCachedMonitorData();
-    let timeout: number | undefined;
-    let interval: number | undefined;
+    let refreshInFlight = false;
 
-    const startPolling = () => {
-      interval = window.setInterval(() => void loadData(), REFRESH_INTERVAL_MS);
+    const refreshData = (signal?: AbortSignal) => {
+      if (refreshInFlight) return;
+
+      refreshInFlight = true;
+      void loadData(signal).finally(() => {
+        refreshInFlight = false;
+      });
     };
 
     if (cached) {
-      const age = Date.now() - cached.cachedAt;
       setData(cached.data);
       setCacheInfo({ cachedAt: cached.cachedAt, source: "cache" });
       setLoading(false);
-
-      if (age < CACHE_TTL_MS) {
-        timeout = window.setTimeout(() => {
-          void loadData();
-          startPolling();
-        }, CACHE_TTL_MS - age);
-      } else {
-        void loadData(controller.signal);
-        startPolling();
-      }
-    } else {
-      void loadData(controller.signal);
-      startPolling();
     }
+
+    if (!cached || isCacheStale(cached.cachedAt)) {
+      refreshData(controller.signal);
+    }
+
+    const loadDataIfStale = () => {
+      if (isPageVisible() && shouldRefreshCachedMonitorData()) {
+        refreshData();
+      }
+    };
+
+    window.addEventListener("focus", loadDataIfStale);
+    document.addEventListener("visibilitychange", loadDataIfStale);
 
     return () => {
       controller.abort();
-      window.clearTimeout(timeout);
-      window.clearInterval(interval);
+      window.removeEventListener("focus", loadDataIfStale);
+      document.removeEventListener("visibilitychange", loadDataIfStale);
     };
   }, [loadData]);
 
@@ -1230,10 +1336,7 @@ export function MonitorDashboard() {
               )}
             </div>
             <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center">
-              <span>
-                Public BIP-{data.bip} monitor data refreshes every minute and
-                caches locally.
-              </span>
+              <span>Public BIP-{data.bip} monitor data is cached locally.</span>
               <span
                 className="hidden size-1 rounded-full bg-muted-foreground/40 sm:block"
                 aria-hidden="true"

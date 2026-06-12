@@ -407,6 +407,7 @@ const historyRows = [
       const API_URL = "/api/monitor";
       const LOCAL_DEV_API_URL = "https://bip110monitor.com/api";
       const CACHE_KEY = "bip110-monitor-data";
+      const MONITOR_DATA_EVENT = "bip110-monitor-data";
       const CACHE_VERSION = 1;
       const CACHE_TTL_MS = 60_000;
       const PERIOD_BLOCK_COUNT = 2016;
@@ -455,6 +456,25 @@ const historyRows = [
             JSON.stringify({ cachedAt, data, version: CACHE_VERSION }),
           );
         } catch {}
+
+        window.dispatchEvent(
+          new CustomEvent(MONITOR_DATA_EVENT, {
+            detail: { cachedAt, data },
+          }),
+        );
+      }
+
+      function isPageVisible() {
+        return document.visibilityState === "visible";
+      }
+
+      function isCacheStale(cachedAt) {
+        return Date.now() - cachedAt > CACHE_TTL_MS;
+      }
+
+      function shouldRefreshCachedMonitorData() {
+        const cached = readCachedMonitorData();
+        return !cached || isCacheStale(cached.cachedAt);
       }
 
       function isLocalDevHost() {
@@ -565,10 +585,18 @@ const historyRows = [
         renderChainState(cachedMonitorData.data);
       }
 
-      if (
-        !cachedMonitorData ||
-        Date.now() - cachedMonitorData.cachedAt > CACHE_TTL_MS
-      ) {
+      let refreshInFlight = false;
+
+      function refreshMonitorDataIfStale() {
+        if (
+          refreshInFlight ||
+          !isPageVisible() ||
+          !shouldRefreshCachedMonitorData()
+        ) {
+          return;
+        }
+
+        refreshInFlight = true;
         fetchMonitorData()
           .then((data) => {
             if (!isMonitorData(data)) return;
@@ -577,8 +605,18 @@ const historyRows = [
             writeCachedMonitorData(data, cachedAt);
             renderChainState(data);
           })
-          .catch(() => {});
+          .catch(() => {})
+          .finally(() => {
+            refreshInFlight = false;
+          });
       }
+
+      refreshMonitorDataIfStale();
+      window.addEventListener("focus", refreshMonitorDataIfStale);
+      document.addEventListener(
+        "visibilitychange",
+        refreshMonitorDataIfStale,
+      );
     </script>
 
     <Footer />
