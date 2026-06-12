@@ -291,7 +291,7 @@ const historyRows = [
                   class="border-b border-border/50 text-xs uppercase tracking-wide text-muted-foreground"
                 >
                   <tr>
-                    <th class="py-3 pr-4 font-medium">Period</th>
+                    <th class="py-3 pl-4 pr-4 font-medium">Period</th>
                     <th class="py-3 pr-4 font-medium">First block</th>
                     <th class="py-3 pr-4 font-medium">Last block</th>
                     <th class="py-3 pr-4 font-medium">Blocks tracked</th>
@@ -303,7 +303,7 @@ const historyRows = [
                   {
                     historyRows.map((row) => (
                       <tr class={row.isCurrent ? "bg-primary/5" : undefined}>
-                        <td class="py-3 pr-4 font-medium">
+                        <td class="py-3 pl-4 pr-4 font-medium">
                           <div class="flex flex-wrap items-center gap-2">
                             <span data-monitor-field={row.periodField}>
                               {row.period}

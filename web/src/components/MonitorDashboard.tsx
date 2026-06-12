@@ -1543,7 +1543,7 @@ export function MonitorDashboard() {
             <table className="w-full min-w-160 text-left text-sm">
               <thead className="border-b border-border/50 text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
-                  <th className="py-3 pr-4 font-medium">Period</th>
+                  <th className="py-3 pl-4 pr-4 font-medium">Period</th>
                   <th className="py-3 pr-4 font-medium">First block</th>
                   <th className="py-3 pr-4 font-medium">Last block</th>
                   <th className="py-3 pr-4 font-medium">Blocks tracked</th>
@@ -1560,7 +1560,7 @@ export function MonitorDashboard() {
                       key={period.periodNum}
                       className={cn(isCurrentPeriod && "bg-primary/5")}
                     >
-                      <td className="py-3 pr-4 font-medium">
+                      <td className="py-3 pl-4 pr-4 font-medium">
                         <div className="flex flex-wrap items-center gap-2">
                           <span>{period.periodNum}</span>
                           {isCurrentPeriod && (
