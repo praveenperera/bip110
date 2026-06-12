@@ -64,7 +64,10 @@ export async function fetchCachedMonitorResponse(
   const cached = await cache.match(cacheKey);
 
   if (cached) {
-    return { response: cached, cacheStatus: "HIT" };
+    return {
+      response: await normalizedMonitorResponse(cached),
+      cacheStatus: "HIT",
+    };
   }
 
   const upstreamResponse = await fetch(UPSTREAM_MONITOR_API, {
@@ -86,21 +89,26 @@ export async function fetchCachedMonitorResponse(
     };
   }
 
-  const response = new Response(upstreamResponse.body, {
-    headers: {
-      "access-control-allow-origin": "*",
-      "cache-control": `public, max-age=${CACHE_TTL_SECONDS}`,
-      "content-type":
-        upstreamResponse.headers.get("content-type") ??
-        "application/json; charset=utf-8",
-    },
-    status: upstreamResponse.status,
-    statusText: upstreamResponse.statusText,
-  });
+  const response = await normalizedMonitorResponse(upstreamResponse);
 
   ctx.waitUntil(cache.put(cacheKey, response.clone()).catch(() => {}));
 
   return { response, cacheStatus: "MISS" };
+}
+
+async function normalizedMonitorResponse(
+  response: Response,
+): Promise<Response> {
+  const data = parseMonitorData(await response.clone().json());
+
+  return jsonResponse(data, {
+    headers: {
+      "access-control-allow-origin": "*",
+      "cache-control": `public, max-age=${CACHE_TTL_SECONDS}`,
+    },
+    status: response.status,
+    statusText: response.statusText,
+  });
 }
 
 export async function handleMonitorApiRequest(
@@ -164,11 +172,32 @@ export function parseMonitorData(value: unknown): MonitorData {
     updatedAt: stringField(value, "updatedAt"),
   };
 
-  if (!isReasonableMonitorData(data)) {
+  const normalizedData = {
+    ...data,
+    periods: monitorPeriods(data),
+  };
+
+  if (!isReasonableMonitorData(normalizedData)) {
     throw new Error("monitor API response contains invalid values");
   }
 
-  return data;
+  return normalizedData;
+}
+
+function monitorPeriods(data: MonitorData): MonitorPeriod[] {
+  const currentPeriod = {
+    periodNum: data.periodNum,
+    startBlock: data.periodStart,
+    endBlock: data.periodEnd,
+    signalingCount: data.signalingCount,
+    totalBlocks: data.totalBlocks,
+    pct: data.pct,
+  };
+  const previousPeriods = data.periods
+    .filter((period) => period.periodNum !== data.periodNum)
+    .sort((a, b) => b.periodNum - a.periodNum);
+
+  return [currentPeriod, ...previousPeriods];
 }
 
 export function isReasonableMonitorData(data: MonitorData): boolean {
