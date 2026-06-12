@@ -1552,33 +1552,47 @@ export function MonitorDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
-                {stats.historyPeriods.map((period) => (
-                  <tr key={period.periodNum}>
-                    <td className="py-3 pr-4 font-medium">
-                      {period.periodNum}
-                    </td>
-                    <td className="py-3 pr-4">
-                      <PeriodBlockLink block={period.startBlock}>
-                        {formatNumber(period.startBlock)}
-                      </PeriodBlockLink>
-                    </td>
-                    <td className="py-3 pr-4">
-                      <PeriodBlockLink block={period.endBlock}>
-                        {formatNumber(period.endBlock)}
-                      </PeriodBlockLink>
-                    </td>
-                    <td className="py-3 pr-4 text-muted-foreground">
-                      {formatNumber(period.totalBlocks)} /{" "}
-                      {formatNumber(PERIOD_BLOCK_COUNT)}
-                    </td>
-                    <td className="py-3 pr-4 text-muted-foreground">
-                      {formatNumber(period.signalingCount)}
-                    </td>
-                    <td className="py-3 font-mono text-muted-foreground">
-                      {formatPercent(period.pct)}
-                    </td>
-                  </tr>
-                ))}
+                {stats.historyPeriods.map((period) => {
+                  const isCurrentPeriod = period.periodNum === data.periodNum;
+
+                  return (
+                    <tr
+                      key={period.periodNum}
+                      className={cn(isCurrentPeriod && "bg-primary/5")}
+                    >
+                      <td className="py-3 pr-4 font-medium">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span>{period.periodNum}</span>
+                          {isCurrentPeriod && (
+                            <span className="inline-flex h-5 items-center rounded-full border border-primary/25 bg-primary/10 px-2 text-[0.7rem] font-medium leading-none text-primary">
+                              Current
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 pr-4">
+                        <PeriodBlockLink block={period.startBlock}>
+                          {formatNumber(period.startBlock)}
+                        </PeriodBlockLink>
+                      </td>
+                      <td className="py-3 pr-4">
+                        <PeriodBlockLink block={period.endBlock}>
+                          {formatNumber(period.endBlock)}
+                        </PeriodBlockLink>
+                      </td>
+                      <td className="py-3 pr-4 text-muted-foreground">
+                        {formatNumber(period.totalBlocks)} /{" "}
+                        {formatNumber(PERIOD_BLOCK_COUNT)}
+                      </td>
+                      <td className="py-3 pr-4 text-muted-foreground">
+                        {formatNumber(period.signalingCount)}
+                      </td>
+                      <td className="py-3 font-mono text-muted-foreground">
+                        {formatPercent(period.pct)}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

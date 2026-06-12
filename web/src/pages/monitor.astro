@@ -33,6 +33,7 @@ const stats = [
 
 const historyRows = [
   {
+    isCurrent: true,
     periodField: "history-current-period",
     period: "current",
     firstBlockField: "history-current-start",
@@ -47,6 +48,7 @@ const historyRows = [
     percent: "Loading",
   },
   {
+    isCurrent: false,
     periodField: "history-previous-period",
     period: "previous",
     firstBlockField: "history-previous-start",
@@ -300,12 +302,18 @@ const historyRows = [
                 <tbody class="divide-y divide-border/50">
                   {
                     historyRows.map((row) => (
-                      <tr>
-                        <td
-                          class="py-3 pr-4 font-medium"
-                          data-monitor-field={row.periodField}
-                        >
-                          {row.period}
+                      <tr class={row.isCurrent ? "bg-primary/5" : undefined}>
+                        <td class="py-3 pr-4 font-medium">
+                          <div class="flex flex-wrap items-center gap-2">
+                            <span data-monitor-field={row.periodField}>
+                              {row.period}
+                            </span>
+                            {row.isCurrent && (
+                              <span class="inline-flex h-5 items-center rounded-full border border-primary/25 bg-primary/10 px-2 text-[0.7rem] font-medium leading-none text-primary">
+                                Current
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td
                           class="py-3 pr-4 text-muted-foreground"
