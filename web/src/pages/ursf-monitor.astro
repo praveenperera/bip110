@@ -641,7 +641,8 @@ const historyRows = [
           return;
         }
 
-        const chartWidth = Math.max(640, periods.length * 76 + 88);
+        const availableWidth = Math.floor(chart.getBoundingClientRect().width);
+        const chartWidth = Math.max(640, availableWidth, periods.length * 76 + 88);
         const chartHeight = 288;
         const margin = { bottom: 58, left: 64, right: 24, top: 28 };
         const plotHeight = chartHeight - margin.top - margin.bottom;

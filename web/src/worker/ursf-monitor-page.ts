@@ -222,7 +222,7 @@ function ursfPeriodChartHtml(data: MonitorData): string {
     ].join("");
   }
 
-  const chartWidth = Math.max(640, periods.length * 76 + 88);
+  const chartWidth = Math.max(1440, periods.length * 160 + 160);
   const chartHeight = 288;
   const margin = { bottom: 58, left: 64, right: 24, top: 28 };
   const plotHeight = chartHeight - margin.top - margin.bottom;
