@@ -35,6 +35,8 @@ const stats = [
 
 const historyRows = [
   {
+    isCurrent: true,
+    periodField: "history-current-period",
     period: "current",
     firstBlock: "Loading",
     firstBlockField: "history-current-start",
@@ -46,6 +48,8 @@ const historyRows = [
     percent: "0.00%",
   },
   {
+    isCurrent: false,
+    periodField: "history-previous-period",
     period: "previous",
     firstBlock: "Loading",
     firstBlockField: "history-previous-start",
@@ -53,17 +57,6 @@ const historyRows = [
     lastBlockField: "history-previous-end",
     tracked: "Loading",
     trackedField: "history-previous-tracked",
-    signaling: "0",
-    percent: "0.00%",
-  },
-  {
-    period: "all time",
-    firstBlock: "Loading",
-    firstBlockField: "history-all-start",
-    lastBlock: "Loading",
-    lastBlockField: "history-all-end",
-    tracked: "Loading",
-    trackedField: "history-all-tracked",
     signaling: "0",
     percent: "0.00%",
   },
@@ -283,6 +276,80 @@ const historyRows = [
         </div>
 
         <section
+          id="difficulty-adjustment-period-history"
+          class="ursf-card mt-6 scroll-mt-24 rounded-lg border p-5"
+        >
+          <h2 class="ursf-heading text-xl font-semibold tracking-tight">
+            Difficulty Adjustment Period History
+          </h2>
+          <div class="mt-5" data-ursf-period-chart>
+            <div
+              class="ursf-muted rounded-lg border border-dashed border-[var(--ursf-border)] bg-[var(--ursf-soft)] p-6 text-sm"
+            >
+              Loading period chart
+            </div>
+          </div>
+
+          <div class="mt-6 overflow-x-auto">
+            <table class="w-full min-w-160 text-left text-sm">
+              <thead
+                class="ursf-border ursf-label border-b text-xs uppercase tracking-wide"
+              >
+                <tr>
+                  <th class="py-3 pl-4 pr-4 font-medium">Period</th>
+                  <th class="py-3 pr-4 font-medium">First block</th>
+                  <th class="py-3 pr-4 font-medium">Last block</th>
+                  <th class="py-3 pr-4 font-medium">Blocks tracked</th>
+                  <th class="py-3 pr-4 font-medium">Signaling</th>
+                  <th class="py-3 font-medium">Signal %</th>
+                </tr>
+              </thead>
+              <tbody class="ursf-history-body" data-ursf-history-body>
+                {
+                  historyRows.map((row) => (
+                    <tr class={row.isCurrent ? "ursf-current-period" : undefined}>
+                      <td class="ursf-heading py-3 pl-4 pr-4 font-medium">
+                        <div class="flex flex-wrap items-center gap-2">
+                          <span data-ursf-field={row.periodField}>
+                            {row.period}
+                          </span>
+                          {row.isCurrent && (
+                            <span class="ursf-current-badge inline-flex h-5 items-center rounded-full border px-2 text-[0.7rem] font-medium leading-none">
+                              Current
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td class="ursf-muted py-3 pr-4 font-mono">
+                        <span data-ursf-field={row.firstBlockField}>
+                          {row.firstBlock}
+                        </span>
+                      </td>
+                      <td class="ursf-muted py-3 pr-4 font-mono">
+                        <span data-ursf-field={row.lastBlockField}>
+                          {row.lastBlock}
+                        </span>
+                      </td>
+                      <td class="ursf-muted py-3 pr-4 font-mono">
+                        <span data-ursf-field={row.trackedField}>
+                          {row.tracked}
+                        </span>
+                      </td>
+                      <td class="ursf-alert py-3 pr-4 font-mono font-semibold">
+                        {row.signaling}
+                      </td>
+                      <td class="ursf-alert py-3 font-mono font-semibold">
+                        {row.percent}
+                      </td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section
           class="ursf-card mt-6 rounded-lg border p-5"
           data-ursf-static
           aria-labelledby="ursf-static-block-grid-title"
@@ -331,60 +398,6 @@ const historyRows = [
           <MonitorBlockGrid mode="ursf" client:load />
         </div>
 
-        <section class="ursf-card mt-6 rounded-lg border p-5">
-          <h2 class="ursf-heading text-xl font-semibold tracking-tight">
-            Difficulty Adjustment Period History
-          </h2>
-          <div class="mt-4 overflow-x-auto">
-            <table class="w-full min-w-[720px] text-left text-sm">
-              <thead
-                class="ursf-border ursf-label border-b text-xs uppercase tracking-wide"
-              >
-                <tr>
-                  <th class="py-3 pr-4 font-medium">Period</th>
-                  <th class="py-3 pr-4 font-medium">First block</th>
-                  <th class="py-3 pr-4 font-medium">Last block</th>
-                  <th class="py-3 pr-4 font-medium">Blocks tracked</th>
-                  <th class="py-3 pr-4 font-medium">Signaling</th>
-                  <th class="py-3 font-medium">Signal %</th>
-                </tr>
-              </thead>
-              <tbody class="ursf-history-body">
-                {
-                  historyRows.map((row) => (
-                    <tr>
-                      <td class="ursf-heading py-3 pr-4 font-medium">
-                        {row.period}
-                      </td>
-                      <td class="ursf-muted py-3 pr-4 font-mono">
-                        <span data-ursf-field={row.firstBlockField}>
-                          {row.firstBlock}
-                        </span>
-                      </td>
-                      <td class="ursf-muted py-3 pr-4 font-mono">
-                        <span data-ursf-field={row.lastBlockField}>
-                          {row.lastBlock}
-                        </span>
-                      </td>
-                      <td class="ursf-muted py-3 pr-4 font-mono">
-                        <span data-ursf-field={row.trackedField}>
-                          {row.tracked}
-                        </span>
-                      </td>
-                      <td class="ursf-alert py-3 pr-4 font-mono font-semibold">
-                        {row.signaling}
-                      </td>
-                      <td class="ursf-alert py-3 font-mono font-semibold">
-                        {row.percent}
-                      </td>
-                    </tr>
-                  ))
-                }
-              </tbody>
-            </table>
-          </div>
-        </section>
-
         <a
           href="/monitor"
           class="ursf-monitor-link mt-6 block rounded-lg border p-5 transition-colors"
@@ -408,7 +421,7 @@ const historyRows = [
       const LOCAL_DEV_API_URL = "https://bip110monitor.com/api";
       const CACHE_KEY = "bip110-monitor-data";
       const MONITOR_DATA_EVENT = "bip110-monitor-data";
-      const CACHE_VERSION = 1;
+      const CACHE_VERSION = 2;
       const CACHE_TTL_MS = 60_000;
       const PERIOD_BLOCK_COUNT = 2016;
 
@@ -416,15 +429,30 @@ const historyRows = [
         return typeof value === "object" && value !== null;
       }
 
+      function isFiniteNumber(value) {
+        return typeof value === "number" && Number.isFinite(value);
+      }
+
+      function isPeriod(value) {
+        return (
+          isRecord(value) &&
+          isFiniteNumber(value.periodNum) &&
+          isFiniteNumber(value.startBlock) &&
+          isFiniteNumber(value.endBlock) &&
+          isFiniteNumber(value.totalBlocks)
+        );
+      }
+
       function isMonitorData(value) {
         return (
           isRecord(value) &&
-          typeof value.tip === "number" &&
-          typeof value.chainTip === "number" &&
-          typeof value.periodNum === "number" &&
-          typeof value.periodStart === "number" &&
-          typeof value.periodEnd === "number" &&
-          typeof value.totalBlocks === "number"
+          isFiniteNumber(value.tip) &&
+          isFiniteNumber(value.chainTip) &&
+          isFiniteNumber(value.periodNum) &&
+          isFiniteNumber(value.periodStart) &&
+          isFiniteNumber(value.periodEnd) &&
+          isFiniteNumber(value.totalBlocks) &&
+          (!Array.isArray(value.periods) || value.periods.every(isPeriod))
         );
       }
 
@@ -522,6 +550,18 @@ const historyRows = [
         return `~${minutes} minutes`;
       }
 
+      function formatPercent(value) {
+        return `${value.toFixed(2)}%`;
+      }
+
+      function escapeHtml(value) {
+        return value
+          .replaceAll("&", "&amp;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;");
+      }
+
       function setText(field, value) {
         for (const element of document.querySelectorAll(
           `[data-ursf-field="${field}"]`,
@@ -530,14 +570,164 @@ const historyRows = [
         }
       }
 
+      function currentPeriodFromMonitorData(data) {
+        return {
+          endBlock: data.periodEnd,
+          periodNum: data.periodNum,
+          startBlock: data.periodStart,
+          totalBlocks: data.totalBlocks,
+        };
+      }
+
+      function historyPeriodsFor(data) {
+        const previousPeriods = Array.isArray(data.periods)
+          ? data.periods
+              .filter((period) => period.periodNum !== data.periodNum)
+              .sort((a, b) => b.periodNum - a.periodNum)
+          : [
+              {
+                endBlock: data.periodStart - 1,
+                periodNum: data.periodNum - 1,
+                startBlock: data.periodStart - PERIOD_BLOCK_COUNT,
+                totalBlocks: PERIOD_BLOCK_COUNT,
+              },
+            ];
+
+        return [currentPeriodFromMonitorData(data), ...previousPeriods];
+      }
+
+      function renderUrsfHistory(data) {
+        const body = document.querySelector("[data-ursf-history-body]");
+        if (!(body instanceof HTMLElement)) return;
+
+        body.innerHTML = historyPeriodsFor(data)
+          .map((period) => {
+            const isCurrentPeriod = period.periodNum === data.periodNum;
+            const rowClass = isCurrentPeriod ? ' class="ursf-current-period"' : "";
+            const badge = isCurrentPeriod
+              ? '<span class="ursf-current-badge inline-flex h-5 items-center rounded-full border px-2 text-[0.7rem] font-medium leading-none">Current</span>'
+              : "";
+
+            return [
+              `<tr${rowClass}>`,
+              '<td class="ursf-heading py-3 pl-4 pr-4 font-medium">',
+              '<div class="flex flex-wrap items-center gap-2">',
+              `<span>${formatNumber(period.periodNum)}</span>`,
+              badge,
+              "</div>",
+              "</td>",
+              `<td class="ursf-muted py-3 pr-4 font-mono">${formatNumber(period.startBlock)}</td>`,
+              `<td class="ursf-muted py-3 pr-4 font-mono">${formatNumber(period.endBlock)}</td>`,
+              `<td class="ursf-muted py-3 pr-4 font-mono">${formatNumber(period.totalBlocks)} / ${formatNumber(PERIOD_BLOCK_COUNT)}</td>`,
+              '<td class="ursf-alert py-3 pr-4 font-mono font-semibold">0</td>',
+              '<td class="ursf-alert py-3 font-mono font-semibold">0.00%</td>',
+              "</tr>",
+            ].join("");
+          })
+          .join("");
+      }
+
+      function renderUrsfPeriodChart(data) {
+        const chart = document.querySelector("[data-ursf-period-chart]");
+        if (!(chart instanceof HTMLElement)) return;
+
+        const periods = [...historyPeriodsFor(data)].sort(
+          (a, b) => a.periodNum - b.periodNum,
+        );
+
+        if (periods.length === 0) {
+          chart.innerHTML =
+            '<div class="ursf-muted rounded-lg border border-dashed border-[var(--ursf-border)] bg-[var(--ursf-soft)] p-6 text-sm">No period history available for charting.</div>';
+          return;
+        }
+
+        const chartWidth = Math.max(640, periods.length * 76 + 88);
+        const chartHeight = 288;
+        const margin = { bottom: 58, left: 64, right: 24, top: 28 };
+        const plotHeight = chartHeight - margin.top - margin.bottom;
+        const plotWidth = chartWidth - margin.left - margin.right;
+        const maxValue = 5;
+        const yTicks = [maxValue, Math.round(maxValue / 2), 0];
+        const pointY = margin.top + plotHeight;
+        const points = periods.map((period, index) => ({
+          period,
+          x:
+            periods.length === 1
+              ? margin.left + plotWidth / 2
+              : margin.left + (plotWidth / (periods.length - 1)) * index,
+        }));
+        const linePath = points
+          .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${pointY}`)
+          .join(" ");
+        const yTickHtml = yTicks
+          .map((tick) => {
+            const y = margin.top + plotHeight - (tick / maxValue) * plotHeight;
+
+            return [
+              "<g>",
+              `<line x1="${margin.left}" x2="${chartWidth - margin.right}" y1="${y}" y2="${y}" stroke="currentColor" stroke-opacity="0.16" />`,
+              `<text x="${margin.left - 12}" y="${y + 4}" text-anchor="end" class="fill-current font-mono text-[11px]">${formatNumber(tick)}</text>`,
+              "</g>",
+            ].join("");
+          })
+          .join("");
+        const pointHtml = points
+          .map(({ period, x }) => {
+            const isCurrentPeriod = period.periodNum === data.periodNum;
+            const title = escapeHtml(
+              `Period ${period.periodNum}: 0 signaling blocks (${formatPercent(0)})`,
+            );
+            const currentLabel = isCurrentPeriod
+              ? `<text x="${x}" y="${chartHeight - 14}" text-anchor="middle" class="fill-[var(--ursf-alert)] text-[10px] font-medium">current</text>`
+              : "";
+
+            return [
+              `<g aria-label="${title}" class="period-chart-point outline-none" role="img" tabindex="0">`,
+              `<title>${title}</title>`,
+              `<circle cx="${x}" cy="${pointY}" r="${isCurrentPeriod ? "5.5" : "4.5"}" class="transition-[r,fill] duration-150" fill="var(--ursf-alert)" stroke="var(--ursf-bg)" stroke-width="3" />`,
+              '<g class="period-chart-tooltip">',
+              `<rect x="${x - 34}" y="${pointY - 40}" width="68" height="24" rx="6" class="fill-[var(--ursf-card)] stroke-[var(--ursf-border)]" />`,
+              `<text x="${x}" y="${pointY - 23}" text-anchor="middle" class="fill-[var(--ursf-heading)] font-mono text-[11px]">0.00%</text>`,
+              "</g>",
+              `<text x="${x}" y="${pointY - 12}" text-anchor="middle" class="fill-current font-mono text-[11px]">0</text>`,
+              `<text x="${x}" y="${chartHeight - 31}" text-anchor="middle" class="fill-current font-mono text-[11px]">${formatNumber(period.periodNum)}</text>`,
+              currentLabel,
+              "</g>",
+            ].join("");
+          })
+          .join("");
+
+        chart.innerHTML = [
+          '<div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">',
+          "<div>",
+          '<h3 class="ursf-heading text-base font-semibold tracking-tight">URSF blocks by period</h3>',
+          '<p class="ursf-muted mt-1 text-sm">The line remains at zero because no URSF signaling blocks are tracked.</p>',
+          "</div>",
+          '<div class="ursf-muted flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">',
+          '<span class="inline-flex items-center gap-2"><span class="size-3 rounded-full border-2 border-[var(--ursf-alert)] bg-[var(--ursf-bg)]" aria-hidden="true"></span>URSF blocks</span>',
+          "</div>",
+          "</div>",
+          `<div class="ursf-muted mt-5 overflow-x-auto" role="img" aria-label="URSF block counts by difficulty adjustment period. Chart maximum is ${formatNumber(maxValue)} blocks.">`,
+          '<div class="w-max">',
+          `<svg class="max-w-none" width="${chartWidth}" height="${chartHeight}" viewBox="0 0 ${chartWidth} ${chartHeight}">`,
+          yTickHtml,
+          `<line x1="${margin.left}" x2="${margin.left}" y1="${margin.top}" y2="${margin.top + plotHeight}" stroke="currentColor" stroke-opacity="0.28" />`,
+          `<line x1="${margin.left}" x2="${chartWidth - margin.right}" y1="${margin.top + plotHeight}" y2="${margin.top + plotHeight}" stroke="currentColor" stroke-opacity="0.28" />`,
+          `<path d="${linePath}" fill="none" stroke="var(--ursf-alert)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" />`,
+          pointHtml,
+          "</svg>",
+          '<p class="text-center text-[11px]">difficulty adjustment period</p>',
+          "</div>",
+          "</div>",
+        ].join("");
+      }
+
       function renderChainState(data) {
         const blocksLeft = Math.max(data.periodEnd - data.tip, 0);
         const progressPercent = Math.min(
           Math.max((data.totalBlocks / PERIOD_BLOCK_COUNT) * 100, 0),
           100,
         );
-        const previousPeriodStart = data.periodStart - PERIOD_BLOCK_COUNT;
-        const previousPeriodEnd = data.periodStart - 1;
 
         setText("indexed-tip", formatNumber(data.tip));
         setText("indexed-tip-detail", "Current Bitcoin block height");
@@ -555,21 +745,10 @@ const historyRows = [
         );
         setText("history-current-start", formatNumber(data.periodStart));
         setText("history-current-end", formatNumber(data.periodEnd));
+        setText("history-current-period", formatNumber(data.periodNum));
         setText(
           "history-current-tracked",
           `${formatNumber(data.totalBlocks)} / ${formatNumber(PERIOD_BLOCK_COUNT)}`,
-        );
-        setText("history-previous-start", formatNumber(previousPeriodStart));
-        setText("history-previous-end", formatNumber(previousPeriodEnd));
-        setText(
-          "history-previous-tracked",
-          `${formatNumber(PERIOD_BLOCK_COUNT)} / ${formatNumber(PERIOD_BLOCK_COUNT)}`,
-        );
-        setText("history-all-start", formatNumber(previousPeriodStart));
-        setText("history-all-end", formatNumber(data.tip));
-        setText(
-          "history-all-tracked",
-          formatNumber(data.tip - previousPeriodStart + 1),
         );
 
         const progress = document.querySelector(
@@ -578,6 +757,9 @@ const historyRows = [
         if (progress instanceof HTMLElement) {
           progress.style.width = `${progressPercent}%`;
         }
+
+        renderUrsfPeriodChart(data);
+        renderUrsfHistory(data);
       }
 
       const cachedMonitorData = readCachedMonitorData();
@@ -792,5 +974,15 @@ const historyRows = [
 
   .ursf-history-body tr + tr {
     border-top: 1px solid var(--ursf-border);
+  }
+
+  .ursf-current-period {
+    background-color: oklch(0.53 0.2 28 / 8%);
+  }
+
+  .ursf-current-badge {
+    background-color: oklch(0.53 0.2 28 / 10%);
+    border-color: oklch(0.53 0.2 28 / 25%);
+    color: var(--ursf-alert);
   }
 </style>
