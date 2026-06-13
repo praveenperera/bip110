@@ -73,14 +73,19 @@ const historyRows = [
   <main class="min-h-screen">
     <Header />
 
-    <section class="pt-24 pb-24 px-6">
+    <section id="overview" class="pt-24 pb-24 px-6">
       <div class="max-w-6xl mx-auto">
         <div class="mb-12 max-w-3xl">
           <p class="text-sm font-medium uppercase tracking-wide text-primary">
             Live monitor
           </p>
           <h1 class="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">
-            BIP-110 Signaling Status
+            <a
+              href="#overview"
+              class="inline-flex rounded-sm text-current transition-colors hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              BIP-110 Signaling Status
+            </a>
           </h1>
           <p class="mt-4 text-lg text-muted-foreground">
             Current activation signaling, period progress, and historical
@@ -143,11 +148,19 @@ const historyRows = [
           <div
             class="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]"
           >
-            <section class="rounded-lg border border-border/50 bg-card/50 p-6">
+            <section
+              id="current-period"
+              class="scroll-mt-24 rounded-lg border border-border/50 bg-card/50 p-6"
+            >
               <h2 class="text-xl font-semibold">
-                Difficulty Adjustment Period <span
-                  data-monitor-field="period-num">N/A</span
+                <a
+                  href="#current-period"
+                  class="inline-flex rounded-sm text-current transition-colors hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
+                  Difficulty Adjustment Period <span
+                    data-monitor-field="period-num">N/A</span
+                  >
+                </a>
               </h2>
               <div class="mt-6 grid gap-4 sm:grid-cols-3">
                 <div class="rounded-lg bg-muted/50 p-4">
@@ -256,8 +269,18 @@ const historyRows = [
               </div>
             </section>
 
-            <section class="rounded-lg border border-border/50 bg-card/50 p-6">
-              <h2 class="text-xl font-semibold">BIP-110 Rules</h2>
+            <section
+              id="rules"
+              class="scroll-mt-24 rounded-lg border border-border/50 bg-card/50 p-6"
+            >
+              <h2 class="text-xl font-semibold">
+                <a
+                  href="#rules"
+                  class="inline-flex rounded-sm text-current transition-colors hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                >
+                  BIP-110 Rules
+                </a>
+              </h2>
               <div class="mt-4 space-y-4 text-sm text-muted-foreground">
                 <p>
                   BIP-110 is a temporary soft fork that limits data field sizes
@@ -286,7 +309,12 @@ const historyRows = [
             class="scroll-mt-24 rounded-lg border border-border/50 bg-card/50 p-6"
           >
             <h2 class="text-xl font-semibold">
-              Difficulty Adjustment Period History
+              <a
+                href="#difficulty-adjustment-period-history"
+                class="inline-flex rounded-sm text-current transition-colors hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              >
+                Difficulty Adjustment Period History
+              </a>
             </h2>
             <div class="mt-5" data-monitor-period-chart>
               <div
@@ -365,6 +393,7 @@ const historyRows = [
           </section>
 
           <section
+            id="block-grid"
             class="rounded-lg border border-border/50 bg-card/50 p-6"
             aria-labelledby="static-block-grid-title"
           >
@@ -381,7 +410,12 @@ const historyRows = [
                   id="static-block-grid-title"
                   class="mt-1 text-xl font-semibold tracking-tight"
                 >
-                  Block signaling grid
+                  <a
+                    href="#block-grid"
+                    class="inline-flex rounded-sm text-current transition-colors hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  >
+                    Block signaling grid
+                  </a>
                 </h2>
                 <p class="mt-2 max-w-2xl text-sm text-muted-foreground">
                   A server-rendered snapshot of recent blocks. Enable JavaScript

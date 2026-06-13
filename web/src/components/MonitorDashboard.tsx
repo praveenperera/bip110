@@ -31,7 +31,16 @@ const ACTIVATION_THRESHOLD = 55;
 const VOLUNTARY_DEADLINE_BLOCK = 961542;
 const VOLUNTARY_DEADLINE_PERIOD = 476;
 const SIGNAL_BIT = 4;
+const CURRENT_PERIOD_SECTION_ID = "current-period";
+const RULES_SECTION_ID = "rules";
 const HISTORY_SECTION_ID = "difficulty-adjustment-period-history";
+const BLOCK_GRID_SECTION_ID = "block-grid";
+const MONITOR_SECTION_IDS = [
+  CURRENT_PERIOD_SECTION_ID,
+  RULES_SECTION_ID,
+  HISTORY_SECTION_ID,
+  BLOCK_GRID_SECTION_ID,
+] as const;
 const REQUIRED_SIGNALING_BLOCKS = Math.ceil(
   PERIOD_BLOCK_COUNT * (ACTIVATION_THRESHOLD / 100),
 );
@@ -930,6 +939,28 @@ function PeriodBlockLink({
   );
 }
 
+function SectionTitleLink({
+  children,
+  className,
+  id,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  id: string;
+}) {
+  return (
+    <a
+      href={`#${id}`}
+      className={cn(
+        "inline-flex w-fit rounded-sm text-current transition-colors hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        className,
+      )}
+    >
+      {children}
+    </a>
+  );
+}
+
 function BlockTooltip({
   block,
   mode,
@@ -1076,8 +1107,9 @@ function PeriodBlockGrid({
 
   return (
     <Card
+      id={BLOCK_GRID_SECTION_ID}
       className={cn(
-        "overflow-visible border-border/50 bg-card/50 backdrop-blur",
+        "scroll-mt-24 overflow-visible border-border/50 bg-card/50 backdrop-blur",
         mode === "ursf" && "ursf-card border shadow-none",
       )}
     >
@@ -1097,7 +1129,14 @@ function PeriodBlockGrid({
               mode === "ursf" && "ursf-heading font-sans",
             )}
           >
-            {mode === "ursf" ? "All quiet" : "Block signaling grid"}
+            <SectionTitleLink
+              id={BLOCK_GRID_SECTION_ID}
+              className={cn(
+                mode === "ursf" && "hover:text-[var(--ursf-accent)]",
+              )}
+            >
+              {mode === "ursf" ? "All quiet" : "Block signaling grid"}
+            </SectionTitleLink>
           </CardTitle>
           <p
             className={cn(
@@ -1290,6 +1329,14 @@ export function MonitorBlockGrid({
     };
   }, [mode]);
 
+  useEffect(() => {
+    if (!data || window.location.hash !== `#${BLOCK_GRID_SECTION_ID}`) return;
+
+    document
+      .querySelector(`[data-monitor-react] #${BLOCK_GRID_SECTION_ID}`)
+      ?.scrollIntoView();
+  }, [data]);
+
   if (loading && !data) {
     return (
       <Card
@@ -1348,7 +1395,6 @@ export function MonitorDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const historySectionRef = useRef<HTMLDivElement>(null);
 
   const loadData = useCallback(async (signal?: AbortSignal) => {
     setRefreshing(true);
@@ -1384,20 +1430,30 @@ export function MonitorDashboard() {
   }, []);
   const blockDataStatus = useMonitorBlocks(applyMonitorBlocks);
 
-  const scrollToHistorySection = useCallback(() => {
-    if (window.location.hash !== `#${HISTORY_SECTION_ID}`) return;
+  const scrollToMonitorSection = useCallback(() => {
+    const sectionId = window.location.hash.slice(1);
 
-    historySectionRef.current?.scrollIntoView();
+    if (
+      !MONITOR_SECTION_IDS.includes(
+        sectionId as (typeof MONITOR_SECTION_IDS)[number],
+      )
+    ) {
+      return;
+    }
+
+    document
+      .querySelector(`[data-monitor-react] #${sectionId}`)
+      ?.scrollIntoView();
   }, []);
 
   useEffect(() => {
-    scrollToHistorySection();
+    scrollToMonitorSection();
 
-    window.addEventListener("hashchange", scrollToHistorySection);
+    window.addEventListener("hashchange", scrollToMonitorSection);
     return () => {
-      window.removeEventListener("hashchange", scrollToHistorySection);
+      window.removeEventListener("hashchange", scrollToMonitorSection);
     };
-  }, [data, scrollToHistorySection]);
+  }, [data, scrollToMonitorSection]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -1624,9 +1680,16 @@ export function MonitorDashboard() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
-        <Card className="border-border/50 bg-card/50 backdrop-blur">
+        <Card
+          id={CURRENT_PERIOD_SECTION_ID}
+          className="scroll-mt-24 border-border/50 bg-card/50 backdrop-blur"
+        >
           <CardHeader>
-            <CardTitle>Difficulty Adjustment Period {data.periodNum}</CardTitle>
+            <CardTitle>
+              <SectionTitleLink id={CURRENT_PERIOD_SECTION_ID}>
+                Difficulty Adjustment Period {data.periodNum}
+              </SectionTitleLink>
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-3">
@@ -1686,9 +1749,16 @@ export function MonitorDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/50 bg-card/50 backdrop-blur">
+        <Card
+          id={RULES_SECTION_ID}
+          className="scroll-mt-24 border-border/50 bg-card/50 backdrop-blur"
+        >
           <CardHeader>
-            <CardTitle>BIP-110 Rules</CardTitle>
+            <CardTitle>
+              <SectionTitleLink id={RULES_SECTION_ID}>
+                BIP-110 Rules
+              </SectionTitleLink>
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-sm text-muted-foreground">
             <p>
@@ -1724,11 +1794,14 @@ export function MonitorDashboard() {
 
       <Card
         id={HISTORY_SECTION_ID}
-        ref={historySectionRef}
         className="scroll-mt-24 border-border/50 bg-card/50 backdrop-blur"
       >
         <CardHeader>
-          <CardTitle>Difficulty Adjustment Period History</CardTitle>
+          <CardTitle>
+            <SectionTitleLink id={HISTORY_SECTION_ID}>
+              Difficulty Adjustment Period History
+            </SectionTitleLink>
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <PeriodSignalingChart

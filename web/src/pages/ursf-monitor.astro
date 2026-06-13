@@ -72,7 +72,7 @@ const historyRows = [
   <main class="ursf-monitor-page min-h-screen">
     <Header />
 
-    <section class="px-4 pb-20 pt-24 sm:px-6">
+    <section id="overview" class="px-4 pb-20 pt-24 sm:px-6">
       <div class="mx-auto max-w-6xl">
         <div
           class="ursf-border mb-8 flex flex-col gap-5 border-b pb-6 lg:flex-row lg:items-end lg:justify-between"
@@ -81,7 +81,12 @@ const historyRows = [
             <h1
               class="ursf-heading font-mono text-3xl font-semibold tracking-normal sm:text-5xl"
             >
-              URSF MONITOR
+              <a
+                href="#overview"
+                class="inline-flex rounded-sm text-current transition-colors hover:text-[var(--ursf-accent)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ursf-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ursf-bg)]"
+              >
+                URSF MONITOR
+              </a>
             </h1>
             <p class="ursf-muted mt-2 text-sm">
               Bitcoin signaling monitor - no URSF blocks observed
@@ -140,7 +145,10 @@ const historyRows = [
         <div
           class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)]"
         >
-          <section class="ursf-card rounded-lg border p-5">
+          <section
+            id="current-period"
+            class="ursf-card scroll-mt-24 rounded-lg border p-5"
+          >
             <div
               class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
             >
@@ -148,7 +156,12 @@ const historyRows = [
                 <p
                   class="ursf-label text-xs font-medium uppercase tracking-wide"
                 >
-                  Current Difficulty Adjustment Period
+                  <a
+                    href="#current-period"
+                    class="inline-flex rounded-sm text-current transition-colors hover:text-[var(--ursf-accent)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ursf-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ursf-card)]"
+                  >
+                    Current Difficulty Adjustment Period
+                  </a>
                 </p>
                 <p
                   class="ursf-heading mt-2 font-mono text-5xl font-semibold tracking-normal"
@@ -258,9 +271,17 @@ const historyRows = [
             </div>
           </section>
 
-          <aside class="ursf-card rounded-lg border p-5">
+          <aside
+            id="rules"
+            class="ursf-card scroll-mt-24 rounded-lg border p-5"
+          >
             <p class="ursf-label text-xs font-medium uppercase tracking-wide">
-              URSF Rules
+              <a
+                href="#rules"
+                class="inline-flex rounded-sm text-current transition-colors hover:text-[var(--ursf-accent)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ursf-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ursf-card)]"
+              >
+                URSF Rules
+              </a>
             </p>
             <div class="ursf-muted mt-4 space-y-3 text-sm">
               <div class="ursf-card rounded-md border p-3">
@@ -280,7 +301,12 @@ const historyRows = [
           class="ursf-card mt-6 scroll-mt-24 rounded-lg border p-5"
         >
           <h2 class="ursf-heading text-xl font-semibold tracking-tight">
-            Difficulty Adjustment Period History
+            <a
+              href="#difficulty-adjustment-period-history"
+              class="inline-flex rounded-sm text-current transition-colors hover:text-[var(--ursf-accent)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ursf-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ursf-card)]"
+            >
+              Difficulty Adjustment Period History
+            </a>
           </h2>
           <div class="mt-5" data-ursf-period-chart>
             <div
@@ -350,6 +376,7 @@ const historyRows = [
         </section>
 
         <section
+          id="block-grid"
           class="ursf-card mt-6 rounded-lg border p-5"
           data-ursf-static
           aria-labelledby="ursf-static-block-grid-title"
@@ -365,7 +392,12 @@ const historyRows = [
                 id="ursf-static-block-grid-title"
                 class="ursf-heading mt-1 text-xl font-semibold tracking-tight"
               >
-                All quiet
+                <a
+                  href="#block-grid"
+                  class="inline-flex rounded-sm text-current transition-colors hover:text-[var(--ursf-accent)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ursf-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ursf-card)]"
+                >
+                  All quiet
+                </a>
               </h2>
               <p class="ursf-muted mt-2 max-w-2xl text-sm">
                 Server-rendered Bitcoin block snapshot. Enable JavaScript for
