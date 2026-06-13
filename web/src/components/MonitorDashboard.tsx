@@ -1384,11 +1384,20 @@ export function MonitorDashboard() {
   }, []);
   const blockDataStatus = useMonitorBlocks(applyMonitorBlocks);
 
-  useEffect(() => {
+  const scrollToHistorySection = useCallback(() => {
     if (window.location.hash !== `#${HISTORY_SECTION_ID}`) return;
 
     historySectionRef.current?.scrollIntoView();
   }, []);
+
+  useEffect(() => {
+    scrollToHistorySection();
+
+    window.addEventListener("hashchange", scrollToHistorySection);
+    return () => {
+      window.removeEventListener("hashchange", scrollToHistorySection);
+    };
+  }, [data, scrollToHistorySection]);
 
   useEffect(() => {
     const controller = new AbortController();
