@@ -316,7 +316,7 @@ function periodSignalingChartHtml(data: MonitorData): string {
     `<path d="${linePath}" fill="none" stroke="var(--primary)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" />`,
     pointHtml,
     "</svg>",
-    `<p class="text-left text-[11px] text-muted-foreground" style="padding-left: ${margin.left}px; padding-right: ${margin.right}px;">difficulty adjustment period</p>`,
+    '<p class="text-center text-[11px] text-muted-foreground">difficulty adjustment period</p>',
     "</div>",
     "</div>",
   ].join("");

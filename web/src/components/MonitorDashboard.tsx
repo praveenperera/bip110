@@ -700,7 +700,7 @@ function PeriodSignalingChart({
               </LineChart>
             </ResponsiveContainer>
           </div>
-          <p className="pl-14 pr-5 text-left text-[11px] text-muted-foreground">
+          <p className="text-center text-[11px] text-muted-foreground">
             difficulty adjustment period
           </p>
         </div>
