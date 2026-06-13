@@ -1722,12 +1722,6 @@ export function MonitorDashboard() {
         </Card>
       </div>
 
-      <PeriodBlockGrid
-        blockDataStatus={blockDataStatus}
-        blocks={blocks}
-        data={data}
-      />
-
       <Card
         id={HISTORY_SECTION_ID}
         ref={historySectionRef}
@@ -1801,6 +1795,12 @@ export function MonitorDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      <PeriodBlockGrid
+        blockDataStatus={blockDataStatus}
+        blocks={blocks}
+        data={data}
+      />
     </div>
   );
 }
