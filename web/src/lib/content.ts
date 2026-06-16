@@ -169,6 +169,12 @@ export const faqItems = [
     category: "technical",
   },
   {
+    question: "Why does the OP_RETURN limit removal matter?",
+    answer:
+      "Bitcoin Core v30's default policy changed OP_RETURN from a small metadata field into a much larger relay path for arbitrary data. The deeper issue is not one opcode: defaults shape what most nodes and miners see, standardness rules already make judgments about network health, and node operators absorb storage, bandwidth, and legal costs that miners do not. BIP-110 responds by temporarily making the worst data-storage patterns invalid instead of depending on relay defaults that maintainers can change.",
+    category: "technical",
+  },
+  {
     question: "Is this optional for miners?",
     answer:
       "During the signaling phase, miners choose whether to signal support. If 55% signal in a retarget period, the softfork locks in early. If not, mandatory signaling kicks in before the deadline — blocks that don't signal are rejected, guaranteeing lock-in. Once activated, the new rules are enforced at the consensus level: any block that violates them is rejected by all enforcing nodes, regardless of the miner's preference.",
@@ -256,6 +262,33 @@ export const installOptions = [
 
 export const articles = [
   {
+    title: "CAPTURE: The Merge",
+    description:
+      "Part three of hodlonaut's CAPTURE series traces how a documentation change, Luke's filter patch, and the OP_RETURN uncap PRs built toward Bitcoin Core's contested 2025 merge.",
+    author: "hodlonaut",
+    date: "Jun 15, 2026",
+    link: "https://www.citadel21.com/the-merge",
+    image: null,
+  },
+  {
+    title: "CAPTURE: The Lever",
+    description:
+      "Part two examines how funding, review influence, and institutional weight can sideline inconvenient contributors without a formal governance process.",
+    author: "hodlonaut",
+    date: "Apr 29, 2026",
+    link: "https://www.citadel21.com/the-lever",
+    image: null,
+  },
+  {
+    title: "CAPTURE: The Network",
+    description:
+      "Part one documents the people, institutions, and incentives that hodlonaut argues shaped Bitcoin Core's informal power structure before the OP_RETURN controversy.",
+    author: "hodlonaut",
+    date: "Mar 27, 2026",
+    link: "https://www.citadel21.com/the-network",
+    image: null,
+  },
+  {
     title: "BIP-110 Objections: Asymmetry of Scale",
     description:
       "Every objection raised against BIP-110, triaged against the data. Millions of spam transactions vs. hypothetical edge cases and rhetorical tactics.",
@@ -273,6 +306,15 @@ export const articles = [
     link: "https://privkey.substack.com/p/bip-110-neutralizes-bitcoins-biggest",
     image:
       "https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F1696de22-fb9f-4e41-bf9d-85a2124d8af8_1408x768.jpeg",
+  },
+  {
+    title: "The OP_RETURN Limit Removal: Gaslighting or Technical Necessity?",
+    description:
+      "Melvin Carvalho's research report weighs the stated technical case for removing Bitcoin's 80-byte OP_RETURN limit against process concerns, conflicts of interest, and BIP-110's response.",
+    author: "Melvin Carvalho",
+    date: "Feb 2026",
+    link: "https://melvin.me/public/articles/opreturn.html",
+    image: null,
   },
   {
     title: "Bitcoin Has a Squatter Problem. BIP 110 Is the Eviction Notice.",
