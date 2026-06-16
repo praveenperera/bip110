@@ -268,7 +268,8 @@ export const articles = [
     author: "hodlonaut",
     date: "Jun 15, 2026",
     link: "https://www.citadel21.com/the-merge",
-    image: null,
+    image:
+      "https://static1.squarespace.com/static/5e2372d18e3cf11ebaf2d20d/t/6a2f0f26dbedb812c32a3ac3/1781468966816/MergeWide.jpg?format=1500w",
   },
   {
     title: "CAPTURE: The Lever",
@@ -277,7 +278,8 @@ export const articles = [
     author: "hodlonaut",
     date: "Apr 29, 2026",
     link: "https://www.citadel21.com/the-lever",
-    image: null,
+    image:
+      "https://static1.squarespace.com/static/5e2372d18e3cf11ebaf2d20d/t/69f0f9576afb6c0173521995/1777400151577/wide.jpg?format=1500w",
   },
   {
     title: "CAPTURE: The Network",
@@ -286,7 +288,8 @@ export const articles = [
     author: "hodlonaut",
     date: "Mar 27, 2026",
     link: "https://www.citadel21.com/the-network",
-    image: null,
+    image:
+      "https://static1.squarespace.com/static/5e2372d18e3cf11ebaf2d20d/t/69c69f53c2f49f1bfc82a196/1777287880656/HeadingFrontPage.jpg?format=1500w",
   },
   {
     title: "BIP-110 Objections: Asymmetry of Scale",
