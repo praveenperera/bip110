@@ -385,8 +385,22 @@ function formatNumber(value: number) {
   return new Intl.NumberFormat("en-US").format(value);
 }
 
+function formatBlockCount(value: number) {
+  return `${formatNumber(value)} ${value === 1 ? "block" : "blocks"}`;
+}
+
 function formatSignalingBlockCount(value: number) {
   return `${formatNumber(value)} signaling ${value === 1 ? "block" : "blocks"}`;
+}
+
+function monitorLagStatus(data: MonitorData) {
+  const lagBlocks = Math.max(data.chainTip - data.tip, 0);
+
+  if (data.synced && lagBlocks === 0) return null;
+
+  if (lagBlocks === 0) return "Monitor index catching up";
+
+  return `Monitor lagging by ${formatBlockCount(lagBlocks)}`;
 }
 
 function formatPercent(value: number) {
@@ -838,13 +852,12 @@ export function MonitorHighlights() {
     ];
   }, [data]);
 
-  const statusLabel = data
-    ? data.synced
-      ? "Synced to chain tip"
-      : "Index catching up"
-    : loading
+  const lagStatus = data ? monitorLagStatus(data) : null;
+  const transientStatus = !data
+    ? loading
       ? "Loading live status"
-      : "Monitor unavailable";
+      : "Monitor unavailable"
+    : null;
 
   return (
     <section className="px-6 py-24" data-monitor-react>
@@ -862,15 +875,18 @@ export function MonitorHighlights() {
             <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "border-border/60 bg-background/70 text-xs",
-                      data?.synced && "border-primary/25 text-primary",
-                    )}
-                  >
-                    {statusLabel}
-                  </Badge>
+                  {(lagStatus || transientStatus) && (
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "border-border/60 bg-background/70 text-xs",
+                        lagStatus &&
+                          "border-primary/30 bg-primary/10 text-primary",
+                      )}
+                    >
+                      {lagStatus ?? transientStatus}
+                    </Badge>
+                  )}
                   {cacheInfo && (
                     <span className="text-xs text-muted-foreground">
                       Updated {formatCacheAge(cacheInfo.cachedAt)}
@@ -1568,7 +1584,7 @@ export function MonitorDashboard() {
     );
   }
 
-  const syncBadge = data.synced ? "Synced" : "Syncing";
+  const lagStatus = monitorLagStatus(data);
 
   return (
     <div className="space-y-6">
@@ -1576,23 +1592,18 @@ export function MonitorDashboard() {
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="min-w-0 space-y-2">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-              <Badge
-                variant="outline"
-                className={cn(
-                  "gap-1.5 border-primary/20 bg-primary/10 text-primary",
-                  !data.synced &&
-                    "border-border bg-secondary text-secondary-foreground",
-                )}
-              >
-                <span
-                  className={cn(
-                    "size-1.5 rounded-full bg-current",
-                    !data.synced && "animate-pulse",
-                  )}
-                  aria-hidden="true"
-                />
-                {syncBadge}
-              </Badge>
+              {lagStatus && (
+                <Badge
+                  variant="outline"
+                  className="gap-1.5 border-primary/30 bg-primary/10 text-primary"
+                >
+                  <span
+                    className="size-1.5 rounded-full bg-current animate-pulse"
+                    aria-hidden="true"
+                  />
+                  {lagStatus}
+                </Badge>
+              )}
               <span className="text-sm text-foreground/80">
                 Updated {formatUpdatedAt(data.updatedAt)}
               </span>

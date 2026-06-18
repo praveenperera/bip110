@@ -62,7 +62,8 @@ function rewriteMonitorPage(
   blocks: MonitorBlock[],
 ): Response {
   const metadata = monitorMetadata(request, data);
-  const fields = monitorPageFields(data);
+  const syncStatus = monitorSyncStatus(data);
+  const fields = monitorPageFields(data, syncStatus);
   let rewriter = new HTMLRewriter()
     .on(
       'meta[name="description"]',
@@ -121,6 +122,12 @@ function rewriteMonitorPage(
       new StyleRewriter(`width: ${periodProgressPercent(data).toFixed(2)}%`),
     )
     .on(
+      "[data-monitor-sync-status]",
+      new ClassRewriter(
+        syncStatus ? "font-medium text-sm text-primary" : "hidden",
+      ),
+    )
+    .on(
       "[data-monitor-period-chart]",
       new InnerHtmlRewriter(periodSignalingChartHtml(data)),
     )
@@ -154,7 +161,10 @@ async function readMonitorPageBlocks(
   }
 }
 
-function monitorPageFields(data: MonitorData): Record<string, string> {
+function monitorPageFields(
+  data: MonitorData,
+  syncStatus: string,
+): Record<string, string> {
   const blocksLeft = Math.max(data.periodEnd - data.tip, 0);
   const requiredSignalBlocks = Math.ceil(
     PERIOD_SIZE * (ACTIVATION_THRESHOLD / 100),
@@ -209,10 +219,24 @@ function monitorPageFields(data: MonitorData): Record<string, string> {
       `${formatInteger(signalingDeficit)} more needed for lock-in`,
     ].join(", "),
     signals: formatInteger(data.signalingCount),
-    "sync-status": data.synced ? "Synced" : "Syncing",
+    "sync-status": syncStatus,
     threshold: formatInteger(requiredSignalBlocks),
     "updated-at": formatUpdatedAt(data.updatedAt),
   };
+}
+
+function monitorSyncStatus(data: MonitorData): string {
+  const lagBlocks = Math.max(data.chainTip - data.tip, 0);
+
+  if (data.synced && lagBlocks === 0) return "";
+
+  if (lagBlocks === 0) return "Monitor index catching up";
+
+  return `Monitor lagging by ${formatBlockCount(lagBlocks)}`;
+}
+
+function formatBlockCount(value: number): string {
+  return `${formatInteger(value)} ${value === 1 ? "block" : "blocks"}`;
 }
 
 function activationProgressPercent(data: MonitorData): number {
@@ -513,6 +537,14 @@ class StyleRewriter implements HTMLRewriterElementContentHandlers {
 
   element(element: Element): void {
     element.setAttribute("style", this.style);
+  }
+}
+
+class ClassRewriter implements HTMLRewriterElementContentHandlers {
+  constructor(private readonly className: string) {}
+
+  element(element: Element): void {
+    element.setAttribute("class", this.className);
   }
 }
 
