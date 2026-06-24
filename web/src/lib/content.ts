@@ -272,15 +272,6 @@ export const articles = [
       "https://static1.squarespace.com/static/5e2372d18e3cf11ebaf2d20d/t/6a2f0f26dbedb812c32a3ac3/1781468966816/MergeWide.jpg?format=1500w",
   },
   {
-    title: "WTF Happened in Feb 2023?",
-    description:
-      "A blockspace pressure observatory documenting the February 2023 spam wave, its fee impact, node resource costs, and policy choices.",
-    author: "WTF Happened",
-    date: "Updated Jun 7, 2026",
-    link: "https://wtfhappenedinfeb2023.com/",
-    image: "https://wtfhappenedinfeb2023.com/og/home.png",
-  },
-  {
     title: "CAPTURE: The Lever",
     description:
       "Part two examines how funding, review influence, and institutional weight can sideline inconvenient contributors without a formal governance process.",
