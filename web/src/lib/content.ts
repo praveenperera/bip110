@@ -260,95 +260,122 @@ export const installOptions = [
   },
 ];
 
-export const articles = [
+export const articleSections = [
   {
-    title: "CAPTURE: The Merge",
+    title: "Context",
     description:
-      "Part three of hodlonaut's CAPTURE series traces how a documentation change, Luke's filter patch, and the OP_RETURN uncap PRs built toward Bitcoin Core's contested 2025 merge.",
-    author: "hodlonaut",
-    date: "Jun 15, 2026",
-    link: "https://www.citadel21.com/the-merge",
-    image:
-      "https://static1.squarespace.com/static/5e2372d18e3cf11ebaf2d20d/t/6a2f0f26dbedb812c32a3ac3/1781468966816/MergeWide.jpg?format=1500w",
+      "Start with the institutional and technical background: the network, the leverage points, the merge, and the OP_RETURN policy change.",
+    articles: [
+      {
+        title: "CAPTURE: The Network",
+        description:
+          "Part one documents the people, institutions, and incentives that hodlonaut argues shaped Bitcoin Core's informal power structure before the OP_RETURN controversy.",
+        author: "hodlonaut",
+        date: "Mar 27, 2026",
+        link: "https://www.citadel21.com/the-network",
+        image:
+          "https://static1.squarespace.com/static/5e2372d18e3cf11ebaf2d20d/t/69c69f53c2f49f1bfc82a196/1777287880656/HeadingFrontPage.jpg?format=1500w",
+      },
+      {
+        title: "CAPTURE: The Lever",
+        description:
+          "Part two examines how funding, review influence, and institutional weight can sideline inconvenient contributors without a formal governance process.",
+        author: "hodlonaut",
+        date: "Apr 29, 2026",
+        link: "https://www.citadel21.com/the-lever",
+        image:
+          "https://static1.squarespace.com/static/5e2372d18e3cf11ebaf2d20d/t/69f0f9576afb6c0173521995/1777400151577/wide.jpg?format=1500w",
+      },
+      {
+        title: "CAPTURE: The Merge",
+        description:
+          "Part three of hodlonaut's CAPTURE series traces how a documentation change, Luke's filter patch, and the OP_RETURN uncap PRs built toward Bitcoin Core's contested 2025 merge.",
+        author: "hodlonaut",
+        date: "Jun 15, 2026",
+        link: "https://www.citadel21.com/the-merge",
+        image:
+          "https://static1.squarespace.com/static/5e2372d18e3cf11ebaf2d20d/t/6a2f0f26dbedb812c32a3ac3/1781468966816/MergeWide.jpg?format=1500w",
+      },
+      {
+        title:
+          "The OP_RETURN Limit Removal: Gaslighting or Technical Necessity?",
+        description:
+          "Melvin Carvalho's research report weighs the stated technical case for removing Bitcoin's 80-byte OP_RETURN limit against process concerns, conflicts of interest, and BIP-110's response.",
+        author: "Melvin Carvalho",
+        date: "Feb 2026",
+        link: "https://melvin.me/public/articles/opreturn.html",
+        image: null,
+      },
+    ],
   },
   {
-    title: "CAPTURE: The Lever",
+    title: "BIP-110",
     description:
-      "Part two examines how funding, review influence, and institutional weight can sideline inconvenient contributors without a formal governance process.",
-    author: "hodlonaut",
-    date: "Apr 29, 2026",
-    link: "https://www.citadel21.com/the-lever",
-    image:
-      "https://static1.squarespace.com/static/5e2372d18e3cf11ebaf2d20d/t/69f0f9576afb6c0173521995/1777400151577/wide.jpg?format=1500w",
+      "Then move into the proposal itself: activation mechanics, game theory, legal exposure, and the objections to the soft fork.",
+    articles: [
+      {
+        title: "BIP-110: The Temporary Softfork",
+        description:
+          "A deep-dive game theory analysis and code audit examining what the mechanism design reveals and what the code actually does.",
+        author: "Melvin Carvalho",
+        date: "Feb 2026",
+        link: "https://melvin.me/public/articles/bip110.html",
+        image: "https://melvin.me/public/articles/og-bip110.png",
+      },
+      {
+        title:
+          "Bitcoin Has a Squatter Problem. BIP 110 Is the Eviction Notice.",
+        description:
+          "Why a temporary soft fork is the most important thing happening in Bitcoin right now, and why the FUD about it is dead wrong.",
+        author: "Kyle Santiago",
+        date: "Feb 17, 2026",
+        link: "https://privkey.substack.com/p/bitcoin-has-a-squatter-problem-bip",
+        image:
+          "https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fe8ab2984-2b66-4bea-a15b-a6ff47912471_1408x768.jpeg",
+      },
+      {
+        title: "BIP 110 Neutralizes Bitcoin's Biggest Legal Attack Vector",
+        description:
+          "Arbitrary data on the blockchain creates untested legal exposure for every node operator on the network. BIP 110 is the protocol-level fix that shrinks it.",
+        author: "Kyle Santiago",
+        date: "Feb 24, 2026",
+        link: "https://privkey.substack.com/p/bip-110-neutralizes-bitcoins-biggest",
+        image:
+          "https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F1696de22-fb9f-4e41-bf9d-85a2124d8af8_1408x768.jpeg",
+      },
+      {
+        title: "BIP-110 Objections: Asymmetry of Scale",
+        description:
+          "Every objection raised against BIP-110, triaged against the data. Millions of spam transactions vs. hypothetical edge cases and rhetorical tactics.",
+        author: "Melvin Carvalho",
+        date: "Mar 7, 2026",
+        link: "https://melvin.me/public/articles/bip110-objections.html",
+        image: "https://melvin.me/public/articles/og-bip110-objections.png",
+      },
+    ],
   },
   {
-    title: "CAPTURE: The Network",
+    title: "Further analysis",
     description:
-      "Part one documents the people, institutions, and incentives that hodlonaut argues shaped Bitcoin Core's informal power structure before the OP_RETURN controversy.",
-    author: "hodlonaut",
-    date: "Mar 27, 2026",
-    link: "https://www.citadel21.com/the-network",
-    image:
-      "https://static1.squarespace.com/static/5e2372d18e3cf11ebaf2d20d/t/69c69f53c2f49f1bfc82a196/1777287880656/HeadingFrontPage.jpg?format=1500w",
+      "Additional modeling and follow-up work that extends the framework.",
+    articles: [
+      {
+        title: "BIP-110: The Corrected Analysis",
+        description:
+          "Issue #5's simulation had bugs. The real numbers are bigger and more interesting.",
+        author: "Renaud Cuny",
+        date: "Jan 29, 2026",
+        link: "https://blockspaceweekly.substack.com/p/issue-8-bip-110-the-corrected-analysis",
+        image:
+          "https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F0f30a913-6cdc-49f2-9c6a-ab71f2c2c400_1420x1134.png",
+      },
+    ],
   },
-  {
-    title: "BIP-110 Objections: Asymmetry of Scale",
-    description:
-      "Every objection raised against BIP-110, triaged against the data. Millions of spam transactions vs. hypothetical edge cases and rhetorical tactics.",
-    author: "Melvin Carvalho",
-    date: "Mar 7, 2026",
-    link: "https://melvin.me/public/articles/bip110-objections.html",
-    image: "https://melvin.me/public/articles/og-bip110-objections.png",
-  },
-  {
-    title: "BIP 110 Neutralizes Bitcoin's Biggest Legal Attack Vector",
-    description:
-      "Arbitrary data on the blockchain creates untested legal exposure for every node operator on the network. BIP 110 is the protocol-level fix that shrinks it.",
-    author: "Kyle Santiago",
-    date: "Feb 24, 2026",
-    link: "https://privkey.substack.com/p/bip-110-neutralizes-bitcoins-biggest",
-    image:
-      "https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F1696de22-fb9f-4e41-bf9d-85a2124d8af8_1408x768.jpeg",
-  },
-  {
-    title: "The OP_RETURN Limit Removal: Gaslighting or Technical Necessity?",
-    description:
-      "Melvin Carvalho's research report weighs the stated technical case for removing Bitcoin's 80-byte OP_RETURN limit against process concerns, conflicts of interest, and BIP-110's response.",
-    author: "Melvin Carvalho",
-    date: "Feb 2026",
-    link: "https://melvin.me/public/articles/opreturn.html",
-    image: null,
-  },
-  {
-    title: "Bitcoin Has a Squatter Problem. BIP 110 Is the Eviction Notice.",
-    description:
-      "Why a temporary soft fork is the most important thing happening in Bitcoin right now, and why the FUD about it is dead wrong.",
-    author: "Kyle Santiago",
-    date: "Feb 17, 2026",
-    link: "https://privkey.substack.com/p/bitcoin-has-a-squatter-problem-bip",
-    image:
-      "https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fe8ab2984-2b66-4bea-a15b-a6ff47912471_1408x768.jpeg",
-  },
-  {
-    title: "BIP-110: The Temporary Softfork",
-    description:
-      "A deep-dive game theory analysis and code audit examining what the mechanism design reveals and what the code actually does.",
-    author: "Melvin Carvalho",
-    date: "Feb 2026",
-    link: "https://melvin.me/public/articles/bip110.html",
-    image: "https://melvin.me/public/articles/og-bip110.png",
-  },
-  {
-    title: "BIP-110: The Corrected Analysis",
-    description:
-      "Issue #5's simulation had bugs. The real numbers are bigger and more interesting.",
-    author: "Renaud Cuny",
-    date: "Jan 29, 2026",
-    link: "https://blockspaceweekly.substack.com/p/issue-8-bip-110-the-corrected-analysis",
-    image:
-      "https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F0f30a913-6cdc-49f2-9c6a-ab71f2c2c400_1420x1134.png",
-  },
-];
+] as const;
+
+export const articles = articleSections.flatMap((section) => section.articles);
+
+export type Article = (typeof articles)[number];
 
 export const tradeoffs = {
   headline: "Important Considerations",

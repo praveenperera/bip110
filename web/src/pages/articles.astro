@@ -1,13 +1,22 @@
 ---
-import Layout from '@/layouts/Layout.astro';
-import Header from '@/components/Header.astro';
-import Footer from '@/components/Footer.astro';
-import { articles } from '@/lib/content';
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import ArticleCard from "@/components/ArticleCard.astro";
+import { articleSections } from "@/lib/content";
+
+const articleSectionLinks = articleSections.map((section) => ({
+  ...section,
+  id: section.title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, ""),
+}));
 ---
 
 <Layout
-  title="Articles on BIP-110 — In-Depth Reading on Bitcoin's Future"
-  description="Read deep-dive analyses, game theory breakdowns, and technical audits of BIP-110, the temporary soft fork protecting Bitcoin's purpose as money."
+  title="Articles on BIP-110: In-Depth Reading on Bitcoin's Future"
+  description="Start with the context behind Bitcoin's arbitrary data problem, then read the game theory, legal analysis, and technical audits of BIP-110."
   ogImage="/images/bip110-og-articles-dark.png"
 >
   <main class="min-h-screen">
@@ -16,61 +25,64 @@ import { articles } from '@/lib/content';
     <section class="pt-24 pb-24 px-6">
       <div class="max-w-4xl mx-auto">
         <h1 class="text-4xl font-bold mb-4">Articles</h1>
-        <p class="text-xl text-muted-foreground mb-12">
-          In-depth reading on BIP-110 and why it matters
+        <p class="text-xl text-muted-foreground mb-16 max-w-3xl">
+          Start with the context behind Bitcoin's arbitrary data problem, then
+          move into the <span class="whitespace-nowrap">BIP-110</span> proposal and
+          its tradeoffs.
         </p>
 
-        <div class="grid gap-6 md:grid-cols-2">
-          {articles.map((article) => (
-            <a
-              href={article.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="block group h-full"
-            >
-              <div class="h-full flex flex-col rounded-xl border border-border/50 bg-card/50 backdrop-blur overflow-hidden transition-colors group-hover:border-primary/30">
-                <div class="aspect-video overflow-hidden bg-muted shrink-0">
-                  {article.image ? (
-                    <img
-                      src={article.image}
-                      alt=""
-                      class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <>
-                      <img
-                        src="/images/bip110-article-placeholder-light.svg"
-                        alt=""
-                        class="w-full h-full object-cover dark:hidden"
-                        loading="lazy"
-                      />
-                      <img
-                        src="/images/bip110-article-placeholder-dark.svg"
-                        alt=""
-                        class="w-full h-full object-cover hidden dark:block"
-                        loading="lazy"
-                      />
-                    </>
-                  )}
+        <nav
+          aria-labelledby="article-toc-heading"
+          class="mb-16 border-y border-border/60 py-5"
+        >
+          <h2
+            id="article-toc-heading"
+            class="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground"
+          >
+            Table of contents
+          </h2>
+          <ul class="grid gap-3 sm:grid-cols-3">
+            {
+              articleSectionLinks.map((section) => (
+                <li>
+                  <a
+                    href={`#${section.id}`}
+                    class="group block rounded-md px-3 py-2 transition-colors hover:bg-primary/10"
+                  >
+                    <span class="block font-semibold transition-colors group-hover:text-primary">
+                      {section.title}
+                    </span>
+                    <span class="mt-1 block text-sm text-muted-foreground">
+                      {section.articles.length === 1
+                        ? "1 article"
+                        : `${section.articles.length} articles`}
+                    </span>
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </nav>
+
+        <div class="space-y-20">
+          {
+            articleSectionLinks.map((section) => (
+              <section aria-labelledby={section.id} class="scroll-mt-24">
+                <div class="mb-8 max-w-2xl">
+                  <h2 id={section.id} class="text-2xl font-bold mb-2">
+                    {section.title}
+                  </h2>
+                  <p class="text-muted-foreground">{section.description}</p>
                 </div>
-                <div class="p-5 flex flex-col flex-1">
-                  <h3 class="font-semibold text-lg mb-2 group-hover:text-primary transition-colors">
-                    {article.title}
-                    <svg aria-hidden="true" class="w-4 h-4 inline-block ml-2 text-muted-foreground group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                  </h3>
-                  <p class="text-sm text-muted-foreground mb-3 flex-1">{article.description}</p>
-                  <div class="flex gap-4 text-xs text-muted-foreground/70">
-                    <span>{article.author}</span>
-                    <span aria-hidden="true">&bull;</span>
-                    <span>{article.date}</span>
-                  </div>
+
+                <div class="grid gap-6 md:grid-cols-2">
+                  {section.articles.map((article) => (
+                    <ArticleCard article={article} />
+                  ))}
                 </div>
-              </div>
-            </a>
-          ))}
+              </section>
+            ))
+          }
         </div>
       </div>
     </section>

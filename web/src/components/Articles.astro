@@ -1,5 +1,6 @@
 ---
 import { articles } from '@/lib/content';
+import ArticleCard from '@/components/ArticleCard.astro';
 
 const displayArticles = articles.slice(0, 4);
 ---
@@ -8,59 +9,13 @@ const displayArticles = articles.slice(0, 4);
   <div class="max-w-4xl mx-auto">
     <h2 class="text-3xl font-bold text-center mb-4">Articles</h2>
     <p class="text-muted-foreground text-center mb-12 max-w-2xl mx-auto">
-      In-depth reading on BIP-110 and why it matters
+      Start with the background, then continue into the
+      <span class="whitespace-nowrap">BIP-110</span> analysis
     </p>
 
     <div class="grid gap-6 md:grid-cols-2">
       {displayArticles.map((article) => (
-        <a
-          href={article.link}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="block group h-full"
-        >
-          <div class="h-full flex flex-col rounded-xl border border-border/50 bg-card/50 backdrop-blur overflow-hidden transition-colors group-hover:border-primary/30">
-            <div class="aspect-video overflow-hidden bg-muted shrink-0">
-              {article.image ? (
-                <img
-                  src={article.image}
-                  alt=""
-                  class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  loading="lazy"
-                />
-              ) : (
-                <>
-                  <img
-                    src="/images/bip110-article-placeholder-light.svg"
-                    alt=""
-                    class="w-full h-full object-cover dark:hidden"
-                    loading="lazy"
-                  />
-                  <img
-                    src="/images/bip110-article-placeholder-dark.svg"
-                    alt=""
-                    class="w-full h-full object-cover hidden dark:block"
-                    loading="lazy"
-                  />
-                </>
-              )}
-            </div>
-            <div class="p-5 flex flex-col flex-1">
-              <h3 class="font-semibold text-lg mb-2 group-hover:text-primary transition-colors">
-                {article.title}
-                <svg aria-hidden="true" class="w-4 h-4 inline-block ml-2 text-muted-foreground group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </h3>
-              <p class="text-sm text-muted-foreground mb-3 flex-1">{article.description}</p>
-              <div class="flex gap-4 text-xs text-muted-foreground/70">
-                <span>{article.author}</span>
-                <span aria-hidden="true">&bull;</span>
-                <span>{article.date}</span>
-              </div>
-            </div>
-          </div>
-        </a>
+        <ArticleCard article={article} />
       ))}
     </div>
 
@@ -70,7 +25,7 @@ const displayArticles = articles.slice(0, 4);
           href="/articles"
           class="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium transition-colors"
         >
-          More Articles
+          Full Reading Path
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
           </svg>
