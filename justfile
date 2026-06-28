@@ -1,6 +1,11 @@
 # development server
-dev:
-    cd web && npm run dev -- --open
+dev: dev-stop
+    cd web && npm run dev -- --host --open
+
+# stop any existing astro development server
+[private]
+dev-stop:
+    cd web && npm run astro -- dev stop
 
 # build the site
 build: install
