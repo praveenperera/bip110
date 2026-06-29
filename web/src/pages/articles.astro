@@ -12,6 +12,12 @@ const articleSectionLinks = articleSections.map((section) => ({
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, ""),
 }));
+
+const articleCountLabel = (count: number) =>
+  count === 1 ? "1 article" : `${count} articles`;
+
+const articleGridClass = (count: number) =>
+  count === 1 ? "grid gap-6 md:max-w-xl" : "grid gap-6 md:grid-cols-2";
 ---
 
 <Layout
@@ -33,30 +39,38 @@ const articleSectionLinks = articleSections.map((section) => ({
 
         <nav
           aria-labelledby="article-toc-heading"
-          class="mb-16 border-y border-border/60 py-5"
+          class="mb-16 border-y border-border/60"
         >
           <h2
             id="article-toc-heading"
-            class="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground"
+            class="border-b border-border/50 py-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground"
           >
-            Table of contents
+            Sections
           </h2>
-          <ul class="grid gap-3 sm:grid-cols-3">
+          <ul class="divide-y divide-border/60">
             {
               articleSectionLinks.map((section) => (
                 <li>
                   <a
                     href={`#${section.id}`}
-                    class="group block rounded-md px-3 py-2 transition-colors hover:bg-primary/10"
+                    class="group relative flex items-center justify-between gap-6 rounded-md py-4 outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/40"
                   >
-                    <span class="block font-semibold transition-colors group-hover:text-primary">
-                      {section.title}
+                    <span class="flex min-w-0 items-center gap-3">
+                      <span
+                        aria-hidden="true"
+                        class="h-1.5 w-1.5 shrink-0 rounded-full bg-border transition-colors group-hover:bg-primary group-focus-visible:bg-primary"
+                      />
+                      <span class="block truncate font-semibold">
+                        {section.title}
+                      </span>
                     </span>
-                    <span class="mt-1 block text-sm text-muted-foreground">
-                      {section.articles.length === 1
-                        ? "1 article"
-                        : `${section.articles.length} articles`}
+                    <span class="shrink-0 text-sm text-muted-foreground transition-colors group-hover:text-foreground group-focus-visible:text-foreground">
+                      {articleCountLabel(section.articles.length)}
                     </span>
+                    <span
+                      aria-hidden="true"
+                      class="absolute bottom-0 left-0 h-px w-12 bg-primary opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+                    />
                   </a>
                 </li>
               ))
@@ -64,18 +78,30 @@ const articleSectionLinks = articleSections.map((section) => ({
           </ul>
         </nav>
 
-        <div class="space-y-20">
+        <div class="space-y-16">
           {
             articleSectionLinks.map((section) => (
-              <section aria-labelledby={section.id} class="scroll-mt-24">
+              <section
+                id={section.id}
+                aria-labelledby={`${section.id}-heading`}
+                class="scroll-mt-24 border-t border-border/60 pt-12"
+              >
                 <div class="mb-8 max-w-2xl">
-                  <h2 id={section.id} class="text-2xl font-bold mb-2">
-                    {section.title}
+                  <div aria-hidden="true" class="mb-5 h-px w-10 bg-primary" />
+                  <h2 class="group mb-2 flex items-center gap-2 text-2xl font-bold">
+                    <span id={`${section.id}-heading`}>{section.title}</span>
+                    <a
+                      href={`#${section.id}`}
+                      aria-label={`Link to ${section.title} section`}
+                      class="text-muted-foreground opacity-0 outline-none transition-opacity hover:text-foreground group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-[3px] focus-visible:ring-ring/40"
+                    >
+                      #
+                    </a>
                   </h2>
                   <p class="text-muted-foreground">{section.description}</p>
                 </div>
 
-                <div class="grid gap-6 md:grid-cols-2">
+                <div class={articleGridClass(section.articles.length)}>
                   {section.articles.map((article) => (
                     <ArticleCard article={article} />
                   ))}
