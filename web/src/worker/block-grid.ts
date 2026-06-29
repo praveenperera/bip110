@@ -1,7 +1,7 @@
 import { formatInteger, PERIOD_SIZE } from "./monitor-data";
 import type { MonitorBlock, MonitorData } from "./types";
 
-const MEMPOOL_BLOCK_URL = "https://mempool.space/block";
+const MEMPOOL_BLOCK_URL = "https://mempool.guide/block";
 const STATIC_GRID_BLOCK_COUNT = 144;
 
 export function bip110BlockGridHtml(
