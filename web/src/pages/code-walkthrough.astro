@@ -78,48 +78,85 @@ const highlightCpp = (code: string): SyntaxToken[] => {
 
 const rules = [
   {
+    id: "rule-1",
     label: "Rule 1",
     title: "Limit new output scripts",
     text: "New scriptPubKeys above 34 bytes are invalid, except OP_RETURN outputs, which can be up to 83 bytes.",
     code: "src/consensus/tx_verify.cpp",
   },
   {
+    id: "rule-2",
     label: "Rule 2",
     title: "Reduce large data pushes",
     text: "OP_PUSHDATA payloads and witness argument items are capped at 256 bytes, with a narrow P2SH redeemScript exception.",
     code: "src/script/interpreter.cpp",
   },
   {
+    id: "rule-3",
     label: "Rule 3",
     title: "Spend only defined witness versions",
     text: "Spends using undefined witness or tapleaf versions are rejected during the deployment. Creating those outputs is still allowed.",
     code: "src/script/interpreter.cpp",
   },
   {
+    id: "rule-4",
     label: "Rule 4",
     title: "Reject Taproot annexes",
     text: "Witness stacks that include a Taproot annex fail while the reduced-data rules are active.",
     code: "src/script/interpreter.cpp",
   },
   {
+    id: "rule-5",
     label: "Rule 5",
     title: "Cap Taproot control blocks",
     text: "Taproot control blocks are limited to 257 bytes, enough for a tree with 128 script leaves.",
     code: "src/script/interpreter.cpp",
   },
   {
+    id: "rule-6",
     label: "Rule 6",
     title: "Disable OP_SUCCESS escape hatches",
     text: "Tapscripts containing OP_SUCCESS opcodes are invalid, even when the opcode is not executed.",
     code: "src/script/interpreter.cpp",
   },
   {
+    id: "rule-7",
     label: "Rule 7",
     title: "Reject OP_IF and OP_NOTIF in Tapscript",
     text: "Executed OP_IF and OP_NOTIF instructions fail in Tapscript, nudging Taproot scripts toward separate leaves.",
     code: "src/script/interpreter.cpp",
   },
 ];
+
+const topicReferences = [
+  {
+    id: "reference-activation",
+    label: "Activation",
+    title: "Temporary enforcement window",
+    text: "Deployment state decides when the reduced-data checks become active and when mandatory signaling applies.",
+  },
+  {
+    id: "reference-grandfathering",
+    label: "Grandfathering",
+    title: "Existing coins stay spendable",
+    text: "Inputs spending coins created before activation clear the reduced-data flags for that input only.",
+  },
+  {
+    id: "reference-expiry",
+    label: "Expiry",
+    title: "Rules turn off automatically",
+    text: "Versionbits records the activation height so the temporary deployment can expire after its active duration.",
+  },
+  {
+    id: "reference-threshold",
+    label: "Threshold",
+    title: "BIP-110 can set its own threshold",
+    text: "The deployment can use a specific signaling threshold while other deployments keep the network default.",
+  },
+];
+
+const referenceChipClass =
+  "inline-flex h-7 items-center rounded-full border border-border/70 bg-background px-2.5 font-mono text-[11px] font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/40";
 
 const readingPasses = [
   {
@@ -220,6 +257,7 @@ const codeSections = [
     title: "Output size checks",
     summary:
       "BIP-110 adds one small transaction-output gate, then runs it from contextual input validation when the deployment is active.",
+    references: [{ label: "Rule 1", href: "#rule-1" }],
     notes: [
       {
         line: "167",
@@ -285,6 +323,10 @@ const codeSections = [
     title: "Temporary activation state",
     summary:
       "Deployment status keeps permanent soft forks unchanged while adding expiry and mandatory-signaling windows for temporary deployments.",
+    references: [
+      { label: "Activation", href: "#reference-activation" },
+      { label: "Expiry", href: "#reference-expiry" },
+    ],
     notes: [
       {
         line: "27",
@@ -373,6 +415,7 @@ const codeSections = [
     title: "Reduced script element sizes",
     summary:
       "The interpreter reuses existing push-size checks, but chooses the reduced limit when the reduced-data verification flag is set.",
+    references: [{ label: "Rule 2", href: "#rule-2" }],
     notes: [
       {
         line: "436",
@@ -427,6 +470,11 @@ const codeSections = [
     title: "Taproot restrictions",
     summary:
       "When BIP-110 is active, Taproot annexes fail, control blocks use the smaller cap, Tapscript OP_IF is rejected, and pay-to-anchor spends must have an empty witness stack.",
+    references: [
+      { label: "Rule 4", href: "#rule-4" },
+      { label: "Rule 5", href: "#rule-5" },
+      { label: "Rule 7", href: "#rule-7" },
+    ],
     notes: [
       {
         line: "623",
@@ -505,6 +553,7 @@ const codeSections = [
     title: "P2SH redeemScript exception",
     summary:
       "The redeemScript push keeps its compatibility exception, then the rest of the P2SH stack is checked against the reduced element limit.",
+    references: [{ label: "Rule 2", href: "#rule-2" }],
     notes: [
       {
         line: "2033",
@@ -562,6 +611,11 @@ const codeSections = [
     title: "Block-level enforcement and grandfathering",
     summary:
       "Block connection turns deployment state into script flags, output checks, and per-input overrides for coins created before activation.",
+    references: [
+      { label: "Rule 1", href: "#rule-1" },
+      { label: "Rules 2-7", href: "#rule-2" },
+      { label: "Grandfathering", href: "#reference-grandfathering" },
+    ],
     notes: [
       {
         line: "2683",
@@ -658,6 +712,7 @@ const codeSections = [
     title: "Mandatory signaling check",
     summary:
       "Header validation rejects blocks that fail to signal during the mandatory-signaling window near maximum activation height.",
+    references: [{ label: "Activation", href: "#reference-activation" }],
     notes: [
       {
         line: "4636",
@@ -722,6 +777,11 @@ const codeSections = [
     title: "Versionbits lock-in, expiry, and threshold",
     summary:
       "Versionbits learns the maximum activation height, records when temporary deployments became active, expires them after their duration, and reads a per-deployment threshold.",
+    references: [
+      { label: "Activation", href: "#reference-activation" },
+      { label: "Expiry", href: "#reference-expiry" },
+      { label: "Threshold", href: "#reference-threshold" },
+    ],
     notes: [
       {
         line: "99",
@@ -987,6 +1047,20 @@ const heroFacts = [
                     <p class="mt-3 leading-7 text-muted-foreground">
                       {section.summary}
                     </p>
+                    <div class="mt-4 flex flex-wrap items-center gap-2">
+                      <span class="text-xs font-semibold text-muted-foreground">
+                        Related
+                      </span>
+                      {section.references.map((reference) => (
+                        <a
+                          href={reference.href}
+                          class={referenceChipClass}
+                          aria-label={`Jump to ${reference.label} reference`}
+                        >
+                          {reference.label}
+                        </a>
+                      ))}
+                    </div>
                   </div>
                   <div class="flex flex-col gap-3 lg:items-end">
                     <a
@@ -1099,7 +1173,10 @@ const heroFacts = [
         <div class="grid gap-3">
           {
             rules.map((rule) => (
-              <article class="grid gap-4 rounded-xl border border-border/60 bg-card/50 p-5 md:grid-cols-[8rem_minmax(0,1fr)_16rem] md:items-start">
+              <article
+                id={rule.id}
+                class="scroll-mt-24 grid gap-4 rounded-xl border border-border/60 bg-card/50 p-5 md:grid-cols-[8rem_minmax(0,1fr)_16rem] md:items-start"
+              >
                 <div class="font-mono text-sm font-semibold text-primary">
                   {rule.label}
                 </div>
@@ -1120,6 +1197,30 @@ const heroFacts = [
               </article>
             ))
           }
+        </div>
+
+        <div class="mt-8 border-t border-border/60 pt-6">
+          <p class="mb-3 text-sm font-semibold text-muted-foreground">
+            Deployment references
+          </p>
+          <div class="grid gap-3 md:grid-cols-2">
+            {
+              topicReferences.map((reference) => (
+                <article
+                  id={reference.id}
+                  class="scroll-mt-24 rounded-xl border border-border/60 bg-card/40 p-4"
+                >
+                  <div class="font-mono text-xs font-semibold text-primary">
+                    {reference.label}
+                  </div>
+                  <h3 class="mt-2 font-semibold">{reference.title}</h3>
+                  <p class="mt-2 text-sm leading-6 text-muted-foreground">
+                    {reference.text}
+                  </p>
+                </article>
+              ))
+            }
+          </div>
         </div>
       </div>
     </section>
