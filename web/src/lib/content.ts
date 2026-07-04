@@ -323,15 +323,6 @@ export const articleSections = [
         image: "https://melvin.me/public/articles/og-bip110.png",
       },
       {
-        title: "BIP-110 Code Walkthrough",
-        description:
-          "A guided version of the Bitcoin Knots code review, organized by rule, source file, activation state, grandfathering, and expiry.",
-        author: "BIP110.org",
-        date: "Jul 2026",
-        link: "/code-walkthrough",
-        image: null,
-      },
-      {
         title:
           "Bitcoin Has a Squatter Problem. BIP 110 Is the Eviction Notice.",
         description:
@@ -368,6 +359,15 @@ export const articleSections = [
     description:
       "Additional modeling and follow-up work that extends the framework.",
     articles: [
+      {
+        title: "BIP-110 Code Walkthrough",
+        description:
+          "A guided version of the Bitcoin Knots code review, organized by rule, source file, activation state, grandfathering, and expiry.",
+        author: "BIP110.org",
+        date: "Jul 2026",
+        link: "/code-walkthrough",
+        image: null,
+      },
       {
         title: "BIP-110: The Corrected Analysis",
         description:
