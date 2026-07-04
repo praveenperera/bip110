@@ -1,16 +1,20 @@
 ---
-import { Separator } from '@/components/ui/separator';
-import { bipMeta } from '@/lib/content';
+import { Separator } from "@/components/ui/separator";
+import { bipMeta } from "@/lib/content";
 ---
 
 <footer class="py-12 px-6">
   <div class="max-w-4xl mx-auto">
     <Separator className="mb-8" />
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+    <div
+      class="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground"
+    >
       <div>
         BIP-{bipMeta.number}: {bipMeta.title}
       </div>
-      <div class="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 sm:flex-wrap">
+      <div
+        class="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 sm:flex-wrap"
+      >
         <a
           href="https://github.com/bitcoin/bips/blob/master/bip-0110.mediawiki"
           target="_blank"
@@ -18,9 +22,26 @@ import { bipMeta } from '@/lib/content';
           class="inline-flex items-center gap-1 hover:text-primary transition-colors"
         >
           Full BIP
-          <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          <svg
+            class="h-3 w-3"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+            ></path>
           </svg>
+        </a>
+        <span class="hidden sm:inline">•</span>
+        <a
+          href="/code-walkthrough"
+          class="inline-flex items-center gap-1 hover:text-primary transition-colors"
+        >
+          Code Walkthrough
         </a>
         <span class="hidden sm:inline">•</span>
         <span>By {bipMeta.author}</span>

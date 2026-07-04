@@ -1,17 +1,18 @@
 ---
-import type { Article } from '@/lib/content';
+import type { Article } from "@/lib/content";
 
 interface Props {
   article: Article;
 }
 
 const { article } = Astro.props;
+const isExternal = /^https?:\/\//.test(article.link);
 ---
 
 <a
   href={article.link}
-  target="_blank"
-  rel="noopener noreferrer"
+  target={isExternal ? "_blank" : undefined}
+  rel={isExternal ? "noopener noreferrer" : undefined}
   class="block group h-full"
 >
   <div
@@ -49,20 +50,39 @@ const { article } = Astro.props;
         class="font-semibold text-lg mb-2 group-hover:text-primary transition-colors"
       >
         {article.title}
-        <svg
-          aria-hidden="true"
-          class="w-4 h-4 inline-block ml-2 text-muted-foreground group-hover:text-primary transition-colors"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-          ></path>
-        </svg>
+        {
+          isExternal ? (
+            <svg
+              aria-hidden="true"
+              class="w-4 h-4 inline-block ml-2 text-muted-foreground group-hover:text-primary transition-colors"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+              />
+            </svg>
+          ) : (
+            <svg
+              aria-hidden="true"
+              class="w-4 h-4 inline-block ml-2 text-muted-foreground group-hover:text-primary transition-colors"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17 8l4 4m0 0l-4 4m4-4H3"
+              />
+            </svg>
+          )
+        }
       </h3>
       <p class="text-sm text-muted-foreground mb-3 flex-1">
         {article.description}

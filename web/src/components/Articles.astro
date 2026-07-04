@@ -1,6 +1,6 @@
 ---
-import { articles } from '@/lib/content';
-import ArticleCard from '@/components/ArticleCard.astro';
+import { articles } from "@/lib/content";
+import ArticleCard from "@/components/ArticleCard.astro";
 
 const displayArticles = articles.slice(0, 4);
 ---
@@ -10,27 +10,59 @@ const displayArticles = articles.slice(0, 4);
     <h2 class="text-3xl font-bold text-center mb-4">Articles</h2>
     <p class="text-muted-foreground text-center mb-12 max-w-2xl mx-auto">
       Start with the background, then continue into the
+      {" "}
       <span class="whitespace-nowrap">BIP-110</span> analysis
     </p>
 
     <div class="grid gap-6 md:grid-cols-2">
-      {displayArticles.map((article) => (
-        <ArticleCard article={article} />
-      ))}
+      {displayArticles.map((article) => <ArticleCard article={article} />)}
     </div>
 
-    {articles.length > displayArticles.length && (
-      <div class="text-center mt-10">
-        <a
-          href="/articles"
-          class="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium transition-colors"
+    <div
+      class="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row"
+    >
+      <a
+        href="/code-walkthrough"
+        class="inline-flex items-center justify-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+      >
+        Code Walkthrough
+        <svg
+          class="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
         >
-          Full Reading Path
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-          </svg>
-        </a>
-      </div>
-    )}
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+        </svg>
+      </a>
+
+      {
+        articles.length > displayArticles.length && (
+          <a
+            href="/articles"
+            class="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium transition-colors"
+          >
+            Full Reading Path
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17 8l4 4m0 0l-4 4m4-4H3"
+              />
+            </svg>
+          </a>
+        )
+      }
+    </div>
   </div>
 </section>

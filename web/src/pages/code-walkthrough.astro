@@ -1,0 +1,1388 @@
+---
+import Footer from "@/components/Footer.astro";
+import Header from "@/components/Header.astro";
+import Layout from "@/layouts/Layout.astro";
+import { createHighlighter } from "shiki";
+
+const sourceUrl = "https://bitcoinknots.org/learn/bip110-code-walkthrough.html";
+const githubTag = "v29.3.knots20260210+bip110-v0.4.1";
+const githubTagPath = "v29.3.knots20260210%2Bbip110-v0.4.1";
+const githubBaseUrl = `https://github.com/dathonohm/bitcoin/blob/${githubTagPath}`;
+const githubFileUrl = (file: string, lines = "") =>
+  `${githubBaseUrl}/${file}${lines}`;
+
+const codeLineClass = (type: string) =>
+  [
+    "grid min-w-max grid-cols-[1.75rem_3.25rem_minmax(30rem,1fr)] gap-3 px-3 py-0.5 font-mono text-[12px] leading-5",
+    type === "added" && "bg-emerald-50/80 dark:bg-emerald-950/25",
+    type === "removed" &&
+      "bg-red-50/80 text-muted-foreground dark:bg-red-950/25",
+    type === "skip" && "text-muted-foreground/60",
+    type === "context" && "text-muted-foreground",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+const codeLineMarkerClass = (type: string) =>
+  [
+    "select-none text-center",
+    type === "added" && "text-emerald-700 dark:text-emerald-400",
+    type === "removed" && "text-red-700 dark:text-red-400",
+    type !== "added" && type !== "removed" && "text-muted-foreground/70",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+const codeLineMarker = (type: string) => {
+  if (type === "added") return "+";
+  if (type === "removed") return "-";
+  return "";
+};
+
+const highlighter = await createHighlighter({
+  langs: ["cpp"],
+  themes: ["github-light", "github-dark"],
+});
+
+type SyntaxToken = {
+  text: string;
+  style: string;
+};
+
+const shikiTokenStyle = (
+  htmlStyle?: Record<string, string | number>,
+): string => {
+  if (!htmlStyle) return "";
+
+  return Object.entries(htmlStyle)
+    .map(([property, value]) => `${property}:${value}`)
+    .join(";");
+};
+
+const highlightCpp = (code: string): SyntaxToken[] => {
+  const result = highlighter.codeToTokens(code, {
+    lang: "cpp",
+    themes: {
+      light: "github-light",
+      dark: "github-dark",
+    },
+  });
+
+  const tokens = result.tokens[0] ?? [];
+
+  return tokens.map((token) => ({
+    text: token.content,
+    style: shikiTokenStyle(token.htmlStyle),
+  }));
+};
+
+const rules = [
+  {
+    label: "Rule 1",
+    title: "Limit new output scripts",
+    text: "New scriptPubKeys above 34 bytes are invalid, except OP_RETURN outputs, which can be up to 83 bytes.",
+    code: "src/consensus/tx_verify.cpp",
+  },
+  {
+    label: "Rule 2",
+    title: "Reduce large data pushes",
+    text: "OP_PUSHDATA payloads and witness argument items are capped at 256 bytes, with a narrow P2SH redeemScript exception.",
+    code: "src/script/interpreter.cpp",
+  },
+  {
+    label: "Rule 3",
+    title: "Spend only defined witness versions",
+    text: "Spends using undefined witness or tapleaf versions are rejected during the deployment. Creating those outputs is still allowed.",
+    code: "src/script/interpreter.cpp",
+  },
+  {
+    label: "Rule 4",
+    title: "Reject Taproot annexes",
+    text: "Witness stacks that include a Taproot annex fail while the reduced-data rules are active.",
+    code: "src/script/interpreter.cpp",
+  },
+  {
+    label: "Rule 5",
+    title: "Cap Taproot control blocks",
+    text: "Taproot control blocks are limited to 257 bytes, enough for a tree with 128 script leaves.",
+    code: "src/script/interpreter.cpp",
+  },
+  {
+    label: "Rule 6",
+    title: "Disable OP_SUCCESS escape hatches",
+    text: "Tapscripts containing OP_SUCCESS opcodes are invalid, even when the opcode is not executed.",
+    code: "src/script/interpreter.cpp",
+  },
+  {
+    label: "Rule 7",
+    title: "Reject OP_IF and OP_NOTIF in Tapscript",
+    text: "Executed OP_IF and OP_NOTIF instructions fail in Tapscript, nudging Taproot scripts toward separate leaves.",
+    code: "src/script/interpreter.cpp",
+  },
+];
+
+const readingPasses = [
+  {
+    name: "Start with outputs",
+    detail:
+      "Confirm that every new transaction output is checked against the 34-byte or 83-byte OP_RETURN limit.",
+  },
+  {
+    name: "Follow the activation switch",
+    detail:
+      "Watch how deployment state decides whether reduced-data verification flags are added.",
+  },
+  {
+    name: "Trace script execution",
+    detail:
+      "See the interpreter reuse existing script checks with tighter constants when BIP-110 is active.",
+  },
+  {
+    name: "Check grandfathering",
+    detail:
+      "Inputs spending coins created before activation clear the new flags for that input only.",
+  },
+  {
+    name: "Verify the timer",
+    detail:
+      "Versionbits handles forced lock-in near the deadline and expiry after the active duration.",
+  },
+];
+
+const files = [
+  {
+    file: "src/consensus/tx_verify.cpp",
+    label: "Output gate",
+    summary:
+      "Adds the transaction output-size check and wires it into input validation when the deployment says to enforce it.",
+    details: [
+      "Empty output scripts are skipped before reading their first opcode.",
+      "Non-OP_RETURN outputs use the 34-byte script limit.",
+      "OP_RETURN outputs use the 83-byte data limit.",
+    ],
+    rules: ["Rule 1"],
+  },
+  {
+    file: "src/deploymentstatus.h",
+    label: "Deployment state",
+    summary:
+      "Teaches deployments how to expire and how to require signaling during the final pre-activation window.",
+    details: [
+      "Permanent deployments bypass the new duration logic.",
+      "Temporary deployments compare current height against activation height plus active duration.",
+      "Mandatory signaling is checked only while the deployment is still in STARTED state.",
+    ],
+    rules: ["Activation", "Expiry"],
+  },
+  {
+    file: "src/script/interpreter.cpp",
+    label: "Script rules",
+    summary:
+      "Applies the reduced-data flag inside script and witness evaluation, using stricter sizes and Taproot restrictions only when active.",
+    details: [
+      "Witness arguments and pushed elements use the reduced 256-byte limit.",
+      "Taproot annexes, oversized control blocks, OP_SUCCESS, and Tapscript OP_IF or OP_NOTIF are rejected.",
+      "The P2SH redeemScript push keeps its exception, then the remaining stack items are checked.",
+    ],
+    rules: ["Rules 2-7"],
+  },
+  {
+    file: "src/validation.cpp",
+    label: "Block connection",
+    summary:
+      "Turns the deployment state into block and input checks, including per-input flags for grandfathered coins.",
+    details: [
+      "Coinbase outputs are checked separately because they do not pass through normal input validation.",
+      "Inputs spending pre-activation coins can be verified without the reduced-data flags.",
+      "Script-check caching is skipped when per-input flags are present, avoiding a stale cache assumption.",
+    ],
+    rules: ["Rule 1", "Rules 2-7", "Grandfathering"],
+  },
+  {
+    file: "src/versionbits.cpp",
+    label: "Versionbits timer",
+    summary:
+      "Extends versionbits so BIP-110 can lock in by deadline, remember activation height, and later expire.",
+    details: [
+      "A per-deployment threshold can override the default activation threshold.",
+      "The period before maximum activation height can force LOCKED_IN.",
+      "ACTIVE moves to EXPIRED once the deployment duration has passed.",
+    ],
+    rules: ["Activation", "Expiry", "Threshold"],
+  },
+];
+
+const codeSections = [
+  {
+    id: "output-size-check",
+    file: "src/consensus/tx_verify.cpp",
+    href: githubFileUrl("src/consensus/tx_verify.cpp", "#L164-L185"),
+    title: "Output size checks",
+    summary:
+      "BIP-110 adds one small transaction-output gate, then runs it from contextual input validation when the deployment is active.",
+    notes: [
+      {
+        line: "167",
+        title: "Guard the empty script case",
+        text: "The first opcode is read only after the script is known to contain at least one byte.",
+      },
+      {
+        line: "168",
+        title: "Pick the limit by output type",
+        text: "Ordinary outputs use the 34-byte script limit. OP_RETURN gets the separate 83-byte limit.",
+      },
+      {
+        line: "184",
+        title: "Run only when requested",
+        text: "The check is behind CheckTxInputsRules so inactive deployments do not change validation.",
+      },
+    ],
+    lines: [
+      {
+        number: "164",
+        type: "added",
+        code: `bool Consensus::CheckOutputSizes(const CTransaction& tx, TxValidationState& state)`,
+      },
+      { number: "165", type: "added", code: `{` },
+      {
+        number: "166",
+        type: "added",
+        code: `    for (const auto& txout : tx.vout) {`,
+      },
+      {
+        number: "167",
+        type: "added",
+        code: `        if (txout.scriptPubKey.empty()) continue;`,
+      },
+      {
+        number: "168",
+        type: "added",
+        code: `        if (txout.scriptPubKey.size() > ((txout.scriptPubKey[0] == OP_RETURN) ? MAX_OUTPUT_DATA_SIZE : MAX_OUTPUT_SCRIPT_SIZE)) {`,
+      },
+      {
+        number: "169",
+        type: "added",
+        code: `            return state.Invalid(TxValidationResult::TX_PREMATURE_SPEND, "bad-txns-vout-script-toolarge");`,
+      },
+      { number: "170", type: "added", code: `        }` },
+      { number: "171", type: "added", code: `    }` },
+      { number: "172", type: "added", code: `    return true;` },
+      { number: "173", type: "added", code: `}` },
+      { number: "", type: "skip", code: "..." },
+      {
+        number: "184",
+        type: "added",
+        code: `    if (rules.test(CheckTxInputsRules::OutputSizeLimit) && !CheckOutputSizes(tx, state)) {`,
+      },
+      { number: "185", type: "added", code: `        return false;` },
+      { number: "186", type: "added", code: `    }` },
+    ],
+  },
+  {
+    id: "deployment-state",
+    file: "src/deploymentstatus.h",
+    href: githubFileUrl("src/deploymentstatus.h", "#L20-L70"),
+    title: "Temporary activation state",
+    summary:
+      "Deployment status keeps permanent soft forks unchanged while adding expiry and mandatory-signaling windows for temporary deployments.",
+    notes: [
+      {
+        line: "27",
+        title: "Permanent deployments stay simple",
+        text: "Existing soft forks keep the old behavior by using an unlimited active duration.",
+      },
+      {
+        line: "29",
+        title: "Expiry needs the start height",
+        text: "Temporary deployments compare the current height with the height where ACTIVE began.",
+      },
+      {
+        line: "69",
+        title: "Mandatory signaling has a narrow window",
+        text: "The rule applies during the two retarget periods before maximum activation, not forever.",
+      },
+    ],
+    lines: [
+      {
+        number: "20",
+        type: "context",
+        code: `inline bool DeploymentActiveAfter(const CBlockIndex* pindexPrev, const Consensus::Params& params, Consensus::DeploymentPos dep, VersionBitsCache& versionbitscache)`,
+      },
+      {
+        number: "25",
+        type: "context",
+        code: `    const auto& deployment = params.vDeployments[dep];`,
+      },
+      {
+        number: "27",
+        type: "added",
+        code: `    if (deployment.active_duration == std::numeric_limits<int>::max()) return true;`,
+      },
+      {
+        number: "29",
+        type: "added",
+        code: `    const int activation_height = versionbitscache.StateSinceHeight(pindexPrev, params, dep);`,
+      },
+      {
+        number: "30",
+        type: "added",
+        code: `    const int height = pindexPrev == nullptr ? 0 : pindexPrev->nHeight + 1;`,
+      },
+      {
+        number: "31",
+        type: "added",
+        code: `    return height < activation_height + deployment.active_duration;`,
+      },
+      { number: "", type: "skip", code: "..." },
+      {
+        number: "61",
+        type: "context",
+        code: `inline bool DeploymentMustSignalAfter(const CBlockIndex* pindexPrev, const Consensus::Params& params, Consensus::DeploymentPos dep, ThresholdState state)`,
+      },
+      {
+        number: "65",
+        type: "added",
+        code: `    if (deployment.max_activation_height >= std::numeric_limits<int>::max()) return false;`,
+      },
+      {
+        number: "66",
+        type: "added",
+        code: `    if (state != ThresholdState::STARTED) return false;`,
+      },
+      {
+        number: "68",
+        type: "added",
+        code: `    const int nHeight = pindexPrev == nullptr ? 0 : pindexPrev->nHeight + 1;`,
+      },
+      {
+        number: "69",
+        type: "added",
+        code: `    return nHeight >= deployment.max_activation_height - (2 * nPeriod)`,
+      },
+      {
+        number: "70",
+        type: "added",
+        code: `        && nHeight < deployment.max_activation_height - nPeriod;`,
+      },
+    ],
+  },
+  {
+    id: "script-limits",
+    file: "src/script/interpreter.cpp",
+    href: githubFileUrl("src/script/interpreter.cpp", "#L436-L449"),
+    title: "Reduced script element sizes",
+    summary:
+      "The interpreter reuses existing push-size checks, but chooses the reduced limit when the reduced-data verification flag is set.",
+    notes: [
+      {
+        line: "436",
+        title: "Reuse existing checks",
+        text: "The interpreter already checked push sizes. BIP-110 swaps in the lower limit when active.",
+      },
+      {
+        line: "448",
+        title: "One path for old and new limits",
+        text: "The same error path is used whether the ordinary or reduced limit was selected.",
+      },
+      {
+        line: "1868",
+        title: "Witness arguments get the same treatment",
+        text: "Witness stack elements use the reduced 256-byte limit under the same flag.",
+      },
+    ],
+    lines: [
+      {
+        number: "436",
+        type: "added",
+        code: `    const unsigned int max_element_size = (flags & SCRIPT_VERIFY_REDUCED_DATA) ? MAX_SCRIPT_ELEMENT_SIZE_REDUCED : MAX_SCRIPT_ELEMENT_SIZE;`,
+      },
+      { number: "", type: "skip", code: "..." },
+      {
+        number: "448",
+        type: "context",
+        code: `            if (vchPushValue.size() > max_element_size)`,
+      },
+      {
+        number: "449",
+        type: "context",
+        code: `                return set_error(serror, SCRIPT_ERR_PUSH_SIZE);`,
+      },
+      { number: "", type: "skip", code: "..." },
+      {
+        number: "1868",
+        type: "added",
+        code: `    const unsigned int max_element_size = (flags & SCRIPT_VERIFY_REDUCED_DATA) ? MAX_SCRIPT_ELEMENT_SIZE_REDUCED : MAX_SCRIPT_ELEMENT_SIZE;`,
+      },
+      {
+        number: "1870",
+        type: "context",
+        code: `        if (elem.size() > max_element_size) return set_error(serror, SCRIPT_ERR_PUSH_SIZE);`,
+      },
+    ],
+  },
+  {
+    id: "taproot-restrictions",
+    file: "src/script/interpreter.cpp",
+    href: githubFileUrl("src/script/interpreter.cpp", "#L621-L2005"),
+    title: "Taproot restrictions",
+    summary:
+      "When BIP-110 is active, Taproot annexes fail, control blocks use the smaller cap, Tapscript OP_IF is rejected, and pay-to-anchor spends must have an empty witness stack.",
+    notes: [
+      {
+        line: "623",
+        title: "Tapscript conditionals fail while active",
+        text: "OP_IF and OP_NOTIF reuse the minimal-if error as a stricter form of the same rule.",
+      },
+      {
+        line: "1964",
+        title: "Annex data is rejected",
+        text: "The existing annex detection remains, but reduced-data mode stops the spend there.",
+      },
+      {
+        line: "1983",
+        title: "Control blocks use a reduced cap",
+        text: "The size check stays in one place. Only the selected maximum changes.",
+      },
+      {
+        line: "2004",
+        title: "Anchor spends must be empty",
+        text: "Pay-to-anchor is accepted only when there is no witness stack attached.",
+      },
+    ],
+    lines: [
+      {
+        number: "623",
+        type: "added",
+        code: `                            if (flags & SCRIPT_VERIFY_REDUCED_DATA) {`,
+      },
+      {
+        number: "624",
+        type: "added",
+        code: `                                return set_error(serror, SCRIPT_ERR_TAPSCRIPT_MINIMALIF);`,
+      },
+      { number: "625", type: "added", code: `                            }` },
+      { number: "", type: "skip", code: "..." },
+      {
+        number: "1964",
+        type: "added",
+        code: `            if (flags & SCRIPT_VERIFY_REDUCED_DATA) {`,
+      },
+      {
+        number: "1965",
+        type: "added",
+        code: `                return set_error(serror, SCRIPT_ERR_PUSH_SIZE);`,
+      },
+      { number: "1966", type: "added", code: `            }` },
+      { number: "", type: "skip", code: "..." },
+      {
+        number: "1983",
+        type: "added",
+        code: `            const unsigned int max_control_size = (flags & SCRIPT_VERIFY_REDUCED_DATA) ? TAPROOT_CONTROL_MAX_SIZE_REDUCED : TAPROOT_CONTROL_MAX_SIZE;`,
+      },
+      {
+        number: "1984",
+        type: "context",
+        code: `            if (control.size() < TAPROOT_CONTROL_BASE_SIZE || control.size() > max_control_size || ((control.size() - TAPROOT_CONTROL_BASE_SIZE) % TAPROOT_CONTROL_NODE_SIZE) != 0) {`,
+      },
+      { number: "", type: "skip", code: "..." },
+      {
+        number: "old",
+        type: "removed",
+        code: `    } else if (!is_p2sh && CScript::IsPayToAnchor(witversion, program)) {`,
+      },
+      {
+        number: "2004",
+        type: "added",
+        code: `    } else if (stack.empty() && !is_p2sh && CScript::IsPayToAnchor(witversion, program)) {`,
+      },
+      { number: "2005", type: "context", code: `        return true;` },
+    ],
+  },
+  {
+    id: "p2sh-exception",
+    file: "src/script/interpreter.cpp",
+    href: githubFileUrl("src/script/interpreter.cpp", "#L2033-L2097"),
+    title: "P2SH redeemScript exception",
+    summary:
+      "The redeemScript push keeps its compatibility exception, then the rest of the P2SH stack is checked against the reduced element limit.",
+    notes: [
+      {
+        line: "2033",
+        title: "Detect the P2SH path first",
+        text: "The exception is scoped to P2SH instead of weakening the reduced-data flag globally.",
+      },
+      {
+        line: "2035",
+        title: "Clear the flag for the redeemScript push",
+        text: "Only this initial scriptSig evaluation runs without SCRIPT_VERIFY_REDUCED_DATA.",
+      },
+      {
+        line: "2094",
+        title: "Then check what remains",
+        text: "After the redeemScript is removed, the rest of the stack still has to fit the reduced limit.",
+      },
+    ],
+    lines: [
+      {
+        number: "2033",
+        type: "added",
+        code: `    if (scriptPubKey.IsPayToScriptHash()) {`,
+      },
+      {
+        number: "2035",
+        type: "added",
+        code: `        if (!EvalScript(stack, scriptSig, flags & ~SCRIPT_VERIFY_REDUCED_DATA, checker, SigVersion::BASE, serror))`,
+      },
+      { number: "2037", type: "added", code: `            return false;` },
+      { number: "2038", type: "added", code: `    } else` },
+      { number: "", type: "skip", code: "..." },
+      {
+        number: "2090",
+        type: "added",
+        code: `        if (flags & SCRIPT_VERIFY_REDUCED_DATA) {`,
+      },
+      {
+        number: "2094",
+        type: "added",
+        code: `            for (const valtype& elem : stack) {`,
+      },
+      {
+        number: "2095",
+        type: "added",
+        code: `                if (elem.size() > MAX_SCRIPT_ELEMENT_SIZE_REDUCED) return set_error(serror, SCRIPT_ERR_PUSH_SIZE);`,
+      },
+      { number: "2096", type: "added", code: `            }` },
+      { number: "2097", type: "added", code: `        }` },
+    ],
+  },
+  {
+    id: "block-connection",
+    file: "src/validation.cpp",
+    href: githubFileUrl("src/validation.cpp", "#L2683-L2984"),
+    title: "Block-level enforcement and grandfathering",
+    summary:
+      "Block connection turns deployment state into script flags, output checks, and per-input overrides for coins created before activation.",
+    notes: [
+      {
+        line: "2683",
+        title: "Deployment state selects script flags",
+        text: "When reduced data is active, mandatory verification flags are added for script checks.",
+      },
+      {
+        line: "2911",
+        title: "Coinbase needs a separate output check",
+        text: "The generation transaction has no inputs, so it does not pass through CheckTxInputs.",
+      },
+      {
+        line: "2956",
+        title: "Grandfathering is per input",
+        text: "Inputs spending coins from before activation clear the new flags without affecting other inputs.",
+      },
+      {
+        line: "2984",
+        title: "Per-input flags reach script verification",
+        text: "The override list is passed into CheckInputScripts so each input gets the intended rules.",
+      },
+    ],
+    lines: [
+      {
+        number: "2683",
+        type: "added",
+        code: `    if (DeploymentActiveAt(block_index, chainman, Consensus::DEPLOYMENT_REDUCED_DATA)) {`,
+      },
+      {
+        number: "2684",
+        type: "added",
+        code: `        flags |= REDUCED_DATA_MANDATORY_VERIFY_FLAGS;`,
+      },
+      { number: "2685", type: "added", code: `    }` },
+      { number: "", type: "skip", code: "..." },
+      {
+        number: "2902",
+        type: "added",
+        code: `    const auto reduced_data_start_height = DeploymentActiveAt(*pindex, m_chainman, Consensus::DEPLOYMENT_REDUCED_DATA)`,
+      },
+      {
+        number: "2903",
+        type: "added",
+        code: `        ? m_chainman.m_versionbitscache.StateSinceHeight(pindex->pprev, params.GetConsensus(), Consensus::DEPLOYMENT_REDUCED_DATA)`,
+      },
+      {
+        number: "2906",
+        type: "added",
+        code: `    const CheckTxInputsRules chk_input_rules{DeploymentActiveAt(*pindex, m_chainman, Consensus::DEPLOYMENT_REDUCED_DATA) ? CheckTxInputsRules::OutputSizeLimit : CheckTxInputsRules::None};`,
+      },
+      { number: "", type: "skip", code: "..." },
+      {
+        number: "2911",
+        type: "added",
+        code: `        if (!Consensus::CheckOutputSizes(*block.vtx[0], tx_state)) {`,
+      },
+      { number: "", type: "skip", code: "..." },
+      {
+        number: "2923",
+        type: "added",
+        code: `    std::vector<unsigned int> flags_per_input;`,
+      },
+      {
+        number: "2935",
+        type: "added",
+        code: `            if (!Consensus::CheckTxInputs(tx, tx_state, view, pindex->nHeight, txfee, chk_input_rules)) {`,
+      },
+      {
+        number: "2956",
+        type: "added",
+        code: `                if (prevheights[j] < reduced_data_start_height) {`,
+      },
+      {
+        number: "2957",
+        type: "added",
+        code: `                    flags_per_input.resize(tx.vin.size(), flags);`,
+      },
+      {
+        number: "2958",
+        type: "added",
+        code: `                    flags_per_input[j] = flags & ~REDUCED_DATA_MANDATORY_VERIFY_FLAGS;`,
+      },
+      {
+        number: "2984",
+        type: "added",
+        code: `            if (fScriptChecks && !CheckInputScripts(tx, tx_state, view, flags, fCacheResults, fCacheResults, txsdata[i], m_chainman.m_validation_cache, parallel_script_checks ? &vChecks : nullptr, flags_per_input)) {`,
+      },
+    ],
+  },
+  {
+    id: "mandatory-signaling",
+    file: "src/validation.cpp",
+    href: githubFileUrl("src/validation.cpp", "#L4631-L4655"),
+    title: "Mandatory signaling check",
+    summary:
+      "Header validation rejects blocks that fail to signal during the mandatory-signaling window near maximum activation height.",
+    notes: [
+      {
+        line: "4636",
+        title: "Check every versionbits deployment",
+        text: "The helper is generic, so any deployment with a maximum activation height can use it.",
+      },
+      {
+        line: "4642",
+        title: "Require both versionbits shape and bit",
+        text: "A block must use the versionbits top bits and set the deployment bit.",
+      },
+      {
+        line: "4647",
+        title: "Bad signaling becomes consensus failure",
+        text: "During the mandatory window, missing signaling rejects the block header.",
+      },
+    ],
+    lines: [
+      {
+        number: "4631",
+        type: "added",
+        code: `static bool ContextualCheckBlockHeaderVolatile(const CBlockHeader& block, BlockValidationState& state, const ChainstateManager& chainman, const CBlockIndex* pindexPrev) EXCLUSIVE_LOCKS_REQUIRED(::cs_main)`,
+      },
+      { number: "4632", type: "added", code: `{` },
+      {
+        number: "4636",
+        type: "added",
+        code: `    for (int i = 0; i < (int)Consensus::MAX_VERSION_BITS_DEPLOYMENTS; i++) {`,
+      },
+      {
+        number: "4640",
+        type: "added",
+        code: `        if (DeploymentMustSignalAfter(pindexPrev, consensusParams, pos, deployment_state)) {`,
+      },
+      {
+        number: "4642",
+        type: "added",
+        code: `            const bool fVersionBits = (block.nVersion & VERSIONBITS_TOP_MASK) == VERSIONBITS_TOP_BITS;`,
+      },
+      {
+        number: "4643",
+        type: "added",
+        code: `            const bool fDeploymentBit = (block.nVersion & (uint32_t{1} << deployment.bit)) != 0;`,
+      },
+      {
+        number: "4645",
+        type: "added",
+        code: `            if (!(fVersionBits && fDeploymentBit)) {`,
+      },
+      {
+        number: "4647",
+        type: "added",
+        code: `                return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS,`,
+      },
+      { number: "4655", type: "added", code: `    return true;` },
+    ],
+  },
+  {
+    id: "versionbits-timer",
+    file: "src/versionbits.cpp",
+    href: githubFileUrl("src/versionbits.cpp", "#L94-L240"),
+    title: "Versionbits lock-in, expiry, and threshold",
+    summary:
+      "Versionbits learns the maximum activation height, records when temporary deployments became active, expires them after their duration, and reads a per-deployment threshold.",
+    notes: [
+      {
+        line: "99",
+        title: "Force lock-in before the deadline",
+        text: "If ordinary signaling has not locked in, the period before maximum activation does it.",
+      },
+      {
+        line: "115",
+        title: "Remember activation height",
+        text: "Temporary deployments need the first ACTIVE height so expiry can be calculated later.",
+      },
+      {
+        line: "123",
+        title: "Expire after the active duration",
+        text: "Once the active duration is reached, the deployment moves from ACTIVE to EXPIRED.",
+      },
+      {
+        line: "240",
+        title: "Use the deployment threshold when set",
+        text: "BIP-110 can use its own threshold while other deployments keep the global default.",
+      },
+    ],
+    lines: [
+      {
+        number: "99",
+        type: "added",
+        code: `                } else if (max_activation_height < std::numeric_limits<int>::max() && pindexPrev->nHeight + 1 >= max_activation_height - nPeriod) {`,
+      },
+      {
+        number: "103",
+        type: "added",
+        code: `                    stateNext = ThresholdState::LOCKED_IN;`,
+      },
+      { number: "", type: "skip", code: "..." },
+      {
+        number: "114",
+        type: "added",
+        code: `                    if (active_duration < std::numeric_limits<int>::max()) {`,
+      },
+      {
+        number: "115",
+        type: "added",
+        code: `                        activation_height = pindexPrev->nHeight + 1;`,
+      },
+      { number: "116", type: "added", code: `                    }` },
+      { number: "", type: "skip", code: "..." },
+      {
+        number: "121",
+        type: "added",
+        code: `                if (active_duration < std::numeric_limits<int>::max() &&`,
+      },
+      {
+        number: "122",
+        type: "added",
+        code: `                    pindexPrev->nHeight + 1 >= activation_height + active_duration) {`,
+      },
+      {
+        number: "123",
+        type: "added",
+        code: `                    stateNext = ThresholdState::EXPIRED;`,
+      },
+      { number: "", type: "skip", code: "..." },
+      {
+        number: "239",
+        type: "added",
+        code: `        int deploymentThreshold = params.vDeployments[id].threshold;`,
+      },
+      {
+        number: "240",
+        type: "added",
+        code: `        return deploymentThreshold > 0 ? deploymentThreshold : params.nRuleChangeActivationThreshold;`,
+      },
+    ],
+  },
+];
+
+const heroFacts = [
+  ["8", "guided code sections"],
+  ["5", "source files to verify"],
+  ["34 / 83 bytes", "new output limits"],
+  ["256 bytes", "push and witness limit"],
+];
+---
+
+<Layout
+  title="BIP-110 Code Walkthrough"
+  description="A public guide to the Bitcoin Knots BIP-110 code: what changes, why it matters, where to verify it, and how the temporary deployment works."
+  ogImage="/images/bip110-og-code-walkthrough-dark.png"
+>
+  <main class="min-h-screen">
+    <Header />
+
+    <section class="px-6 pt-24 pb-14">
+      <div
+        class="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-end"
+      >
+        <div>
+          <p
+            class="mb-4 text-sm font-semibold uppercase tracking-wide text-primary"
+          >
+            Public guide to the code
+          </p>
+          <h1 class="max-w-4xl text-4xl font-bold leading-tight md:text-5xl">
+            BIP-110 Code Walkthrough
+          </h1>
+          <p class="mt-6 max-w-3xl text-lg leading-8 text-muted-foreground">
+            See what BIP-110 changes in Bitcoin Knots without reading the source
+            cold. Start with the seven consensus limits, follow where each one
+            is checked, then review the activation, grandfathering, and expiry
+            logic that keep the deployment temporary.
+          </p>
+          <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+            <a
+              href="#code-review"
+              class="inline-flex h-11 items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:ring-[3px] focus-visible:ring-ring/40"
+            >
+              Review code notes
+            </a>
+            <a
+              href="#rule-reference"
+              class="inline-flex h-11 items-center justify-center rounded-lg border border-border/70 bg-background px-5 text-sm font-semibold transition-colors hover:border-primary/40 hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/40"
+            >
+              Start with the rules
+            </a>
+            <a
+              href={sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex h-11 items-center justify-center rounded-lg border border-border/70 bg-background px-5 text-sm font-semibold transition-colors hover:border-primary/40 hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/40"
+            >
+              Original Bitcoin Knots review
+            </a>
+          </div>
+        </div>
+
+        <aside
+          aria-label="Source review summary"
+          class="overflow-hidden rounded-xl border border-border/60 bg-card/60"
+        >
+          <div class="border-b border-border/60 p-5">
+            <div class="flex items-center justify-between gap-4">
+              <p class="text-sm font-semibold">Source overview</p>
+              <span
+                class="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
+              >
+                BIP-110
+              </span>
+            </div>
+            <p class="mt-3 text-sm leading-6 text-muted-foreground">
+              Follow the proposal from rule to source: what changes, why each
+              check matters, and where to verify it in the tagged Bitcoin Knots
+              release.
+            </p>
+          </div>
+
+          <dl class="grid grid-cols-2 border-b border-border/60">
+            {
+              heroFacts.map(([value, label]) => (
+                <div class="border-r border-b border-border/60 p-4 even:border-r-0 [&:nth-last-child(-n+2)]:border-b-0">
+                  <dt class="text-xs leading-5 text-muted-foreground">
+                    {label}
+                  </dt>
+                  <dd class="mt-1 font-mono text-sm font-semibold text-foreground">
+                    {value}
+                  </dd>
+                </div>
+              ))
+            }
+          </dl>
+
+          <div class="bg-muted/35 p-5">
+            <a
+              href={githubBaseUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="group block text-xs font-medium text-muted-foreground transition-colors hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/40"
+            >
+              GitHub tag
+              <span
+                class="mt-1 block break-all font-mono text-[11px] text-foreground/80 group-hover:text-primary"
+              >
+                {githubTag}
+              </span>
+            </a>
+            <a
+              href="#code-review"
+              class="mt-4 inline-flex h-10 items-center justify-center rounded-lg border border-primary/30 bg-background px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-primary-foreground focus-visible:ring-[3px] focus-visible:ring-ring/40"
+            >
+              Start with the code
+            </a>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="code-review" class="scroll-mt-24 px-6 py-14">
+      <div class="mx-auto max-w-7xl">
+        <div class="mb-8 border-y border-border/60 py-8">
+          <div>
+            <p
+              class="mb-3 text-sm font-semibold uppercase tracking-wide text-primary"
+            >
+              Guided source
+            </p>
+            <div
+              class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-end"
+            >
+              <div>
+                <h2 class="text-3xl font-bold">
+                  Code with plain-language notes
+                </h2>
+                <p class="mt-4 max-w-3xl text-muted-foreground">
+                  Each panel shows the important C++ lines, why they matter, and
+                  a direct link to the tagged source. Notes stay attached to the
+                  lines they explain, so the source remains the main reading
+                  surface.
+                </p>
+              </div>
+              <div class="flex flex-wrap gap-2 lg:justify-end">
+                <span
+                  class="inline-flex h-8 items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 font-mono text-xs font-semibold text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-950/30 dark:text-emerald-300"
+                >
+                  + new check
+                </span>
+                <span
+                  class="inline-flex h-8 items-center rounded-full border border-red-200 bg-red-50 px-3 font-mono text-xs font-semibold text-red-700 dark:border-red-900/70 dark:bg-red-950/30 dark:text-red-300"
+                >
+                  - replaced path
+                </span>
+                <a
+                  href={githubBaseUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex h-8 max-w-full items-center rounded-full border border-border/70 bg-background px-3 font-mono text-xs font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/40"
+                >
+                  <span class="mr-1 text-foreground/70">tag</span>
+                  <span class="truncate">{githubTag}</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-10">
+          {
+            codeSections.map((section) => (
+              <article
+                id={section.id}
+                class="scroll-mt-24 rounded-xl border border-border/70 bg-card/60"
+              >
+                <div class="grid gap-5 border-b border-border/60 p-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
+                  <div>
+                    <a
+                      href={githubFileUrl(section.file)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="font-mono text-sm text-primary break-all underline-offset-4 hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/40"
+                    >
+                      {section.file}
+                    </a>
+                    <h3 class="mt-2 text-xl font-semibold">{section.title}</h3>
+                    <p class="mt-3 leading-7 text-muted-foreground">
+                      {section.summary}
+                    </p>
+                  </div>
+                  <div class="flex flex-col gap-3 lg:items-end">
+                    <a
+                      href={section.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="inline-flex h-10 items-center justify-center rounded-lg border border-border/70 bg-background px-4 text-sm font-semibold transition-colors hover:border-primary/40 hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/40"
+                    >
+                      GitHub lines
+                    </a>
+                    <a
+                      href={sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="text-sm text-muted-foreground underline-offset-4 hover:text-primary hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/40"
+                    >
+                      Original walkthrough
+                    </a>
+                  </div>
+                </div>
+                <div>
+                  <div
+                    class="code-scroll overflow-x-auto bg-muted/40 py-4"
+                    aria-label={`${section.title} source code`}
+                  >
+                    <div class="min-w-full">
+                      {section.lines.map((line) => {
+                        const note = section.notes.find(
+                          (item) => item.line === line.number,
+                        );
+
+                        return (
+                          <div class={codeLineClass(line.type)}>
+                            <span class={codeLineMarkerClass(line.type)}>
+                              {codeLineMarker(line.type)}
+                            </span>
+                            <span class="select-none text-right text-muted-foreground/70">
+                              {line.number}
+                            </span>
+                            <div class="flex min-w-max items-start gap-3">
+                              <span class="whitespace-pre">
+                                {highlightCpp(line.code).map((token) => (
+                                  <span
+                                    class="syntax-token"
+                                    style={token.style}
+                                  >
+                                    {token.text}
+                                  </span>
+                                ))}
+                              </span>
+                              {note && (
+                                <details
+                                  class="line-note"
+                                  name="code-walkthrough-line-note"
+                                >
+                                  <summary
+                                    id={`${section.id}-note-${note.line}`}
+                                    style={`anchor-name: --${section.id}-note-${note.line}`}
+                                    aria-label={`Show note for line ${note.line}`}
+                                    class="line-note-trigger"
+                                  >
+                                    note
+                                  </summary>
+                                  <div
+                                    class="line-note-card"
+                                    style={`position-anchor: --${section.id}-note-${note.line}`}
+                                  >
+                                    <p class="font-mono text-[11px] font-semibold text-primary">
+                                      line {note.line}
+                                    </p>
+                                    <p class="mt-1 font-sans text-sm font-semibold text-foreground">
+                                      {note.title}
+                                    </p>
+                                    <p class="mt-2 font-sans text-sm leading-6 text-muted-foreground">
+                                      {note.text}
+                                    </p>
+                                  </div>
+                                </details>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section id="rule-reference" class="scroll-mt-24 px-6 py-14">
+      <div class="mx-auto max-w-7xl">
+        <div class="mb-8 max-w-3xl">
+          <p
+            class="mb-3 text-sm font-semibold uppercase tracking-wide text-primary"
+          >
+            Rule reference
+          </p>
+          <h2 class="text-3xl font-bold">Seven rules, one enforcement flag</h2>
+          <p class="mt-4 text-muted-foreground">
+            The easiest way to understand BIP-110 is rule by rule. Rule 1 limits
+            new transaction outputs. Rules 2 through 7 apply while scripts are
+            being checked, once the reduced-data flag is active.
+          </p>
+        </div>
+
+        <div class="grid gap-3">
+          {
+            rules.map((rule) => (
+              <article class="grid gap-4 rounded-xl border border-border/60 bg-card/50 p-5 md:grid-cols-[8rem_minmax(0,1fr)_16rem] md:items-start">
+                <div class="font-mono text-sm font-semibold text-primary">
+                  {rule.label}
+                </div>
+                <div>
+                  <h3 class="font-semibold">{rule.title}</h3>
+                  <p class="mt-2 text-sm leading-6 text-muted-foreground">
+                    {rule.text}
+                  </p>
+                </div>
+                <a
+                  href={githubFileUrl(rule.code)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="rounded-lg bg-muted/60 px-3 py-2 font-mono text-xs text-muted-foreground transition-colors hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/40 md:text-right"
+                >
+                  {rule.code}
+                </a>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="px-6 py-14">
+      <div class="mx-auto max-w-7xl">
+        <div class="grid gap-10 lg:grid-cols-[20rem_minmax(0,1fr)]">
+          <div>
+            <p
+              class="mb-3 text-sm font-semibold uppercase tracking-wide text-primary"
+            >
+              Reading order
+            </p>
+            <h2 class="text-3xl font-bold">Follow the change in five steps</h2>
+            <p class="mt-4 text-muted-foreground">
+              This order keeps the review simple: output limits, activation,
+              script checks, grandfathering, then expiry.
+            </p>
+          </div>
+
+          <ol class="grid gap-4">
+            {
+              readingPasses.map((pass, index) => (
+                <li class="grid gap-4 rounded-xl border border-border/60 bg-card/50 p-5 sm:grid-cols-[3rem_minmax(0,1fr)]">
+                  <span class="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 font-mono text-sm font-semibold text-primary">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <div>
+                    <h3 class="font-semibold">{pass.name}</h3>
+                    <p class="mt-2 text-sm leading-6 text-muted-foreground">
+                      {pass.detail}
+                    </p>
+                  </div>
+                </li>
+              ))
+            }
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section id="verification-map" class="scroll-mt-24 px-6 py-14">
+      <div class="mx-auto max-w-7xl">
+        <div class="mb-8 max-w-3xl">
+          <p
+            class="mb-3 text-sm font-semibold uppercase tracking-wide text-primary"
+          >
+            Verification map
+          </p>
+          <h2 class="text-3xl font-bold">Where to verify each part</h2>
+          <p class="mt-4 text-muted-foreground">
+            Use this as a checklist while reading the source. Each file has a
+            narrow job, so the change is easier to verify piece by piece.
+          </p>
+        </div>
+
+        <div class="space-y-5">
+          {
+            files.map((item) => (
+              <article class="rounded-xl border border-border/60 bg-card/50 p-5">
+                <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_16rem]">
+                  <div>
+                    <a
+                      href={githubFileUrl(item.file)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="font-mono text-sm text-primary underline-offset-4 hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/40"
+                    >
+                      {item.file}
+                    </a>
+                    <h3 class="mt-2 text-xl font-semibold">{item.label}</h3>
+                    <p class="mt-3 leading-7 text-muted-foreground">
+                      {item.summary}
+                    </p>
+                  </div>
+                  <div>
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Covers
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                      {item.rules.map((rule) => (
+                        <span class="rounded-full border border-border/70 bg-background px-2.5 py-1 text-xs font-medium">
+                          {rule}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <ul class="mt-5 grid gap-3 md:grid-cols-3">
+                  {item.details.map((detail) => (
+                    <li class="rounded-lg bg-muted/50 p-4 text-sm leading-6 text-muted-foreground">
+                      {detail}
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="px-6 py-14">
+      <div class="mx-auto max-w-7xl">
+        <div
+          class="rounded-xl border border-primary/30 bg-primary/5 p-6 md:p-8"
+        >
+          <div
+            class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-center"
+          >
+            <div>
+              <p
+                class="mb-3 text-sm font-semibold uppercase tracking-wide text-primary"
+              >
+                Important nuance
+              </p>
+              <h2 class="text-2xl font-bold">Grandfathering is per input</h2>
+              <p class="mt-4 max-w-3xl leading-7 text-muted-foreground">
+                BIP-110 does not treat a transaction as all old rules or all new
+                rules. During block connection, each input is compared with the
+                activation height. Inputs spending coins created before
+                activation clear the reduced-data flags, while other inputs in
+                the same transaction can still be checked under the new rules.
+              </p>
+            </div>
+            <div
+              class="rounded-lg border border-primary/20 bg-background/70 p-4"
+            >
+              <p class="font-mono text-sm font-semibold text-primary">
+                flags_per_input
+              </p>
+              <p class="mt-2 text-sm leading-6 text-muted-foreground">
+                This is why script-check caching is bypassed when per-input
+                overrides exist. The cache key assumes one flag set for every
+                input.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="px-6 pt-14 pb-24">
+      <div class="mx-auto max-w-7xl border-t border-border/60 pt-10">
+        <div
+          class="grid gap-8 md:grid-cols-[minmax(0,1fr)_18rem] md:items-start"
+        >
+          <div>
+            <h2 class="text-2xl font-bold">Read the original code review</h2>
+            <p class="mt-4 max-w-3xl leading-7 text-muted-foreground">
+              This page is a structured guide to the Bitcoin Knots walkthrough.
+              The original contains the C++ snippets beside line-by-line
+              explanations, so it is the best place to compare this guide
+              against the source.
+            </p>
+          </div>
+          <a
+            href={sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex h-11 items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:ring-[3px] focus-visible:ring-ring/40"
+          >
+            Open original review
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <Footer />
+  </main>
+</Layout>
+
+<style is:global>
+  .code-scroll {
+    overflow-y: visible;
+  }
+
+  .line-note {
+    position: relative;
+    display: inline-flex;
+    white-space: normal;
+  }
+
+  .line-note-trigger {
+    display: inline-flex;
+    height: 1.25rem;
+    cursor: pointer;
+    align-items: center;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in oklab, var(--primary) 30%, transparent);
+    background: var(--background);
+    padding: 0 0.5rem;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--primary);
+    transition:
+      background-color 150ms ease,
+      border-color 150ms ease,
+      color 150ms ease;
+  }
+
+  .line-note-trigger::-webkit-details-marker {
+    display: none;
+  }
+
+  .line-note-trigger::marker {
+    content: "";
+  }
+
+  .line-note-trigger:hover,
+  .line-note[open] > .line-note-trigger {
+    border-color: color-mix(in oklab, var(--primary) 60%, transparent);
+    background: color-mix(in oklab, var(--primary) 10%, transparent);
+  }
+
+  .line-note-card {
+    position: fixed;
+    top: 5rem;
+    right: max(1rem, calc((100vw - 80rem) / 2 + 1rem));
+    z-index: 80;
+    display: none;
+    width: min(24rem, calc(100vw - 2rem));
+    border-radius: 0.5rem;
+    border: 1px solid var(--border);
+    background: var(--popover);
+    padding: 1rem;
+    box-shadow:
+      0 20px 25px -5px rgb(0 0 0 / 0.08),
+      0 8px 10px -6px rgb(0 0 0 / 0.08);
+  }
+
+  @supports (top: anchor(top)) {
+    .line-note-card {
+      top: anchor(top);
+      right: auto;
+      left: calc(anchor(right) + 0.5rem);
+      position-try-fallbacks: flip-inline;
+    }
+  }
+
+  .line-note:hover .line-note-card,
+  .line-note:focus-within .line-note-card,
+  .line-note[open] .line-note-card {
+    display: block;
+  }
+
+  #code-review:has(.line-note:hover)
+    .line-note[open]:not(:hover)
+    .line-note-card {
+    display: none;
+  }
+
+  @media (max-width: 640px) {
+    .line-note-card {
+      top: auto;
+      right: 1rem;
+      bottom: 1rem;
+      left: auto;
+    }
+  }
+
+  .dark .syntax-token {
+    color: var(--shiki-dark) !important;
+  }
+</style>

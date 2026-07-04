@@ -16,11 +16,14 @@ const pages = [
   { label: "Home", href: "/" },
   { label: "Monitor", href: "/monitor" },
   { label: "How To", href: "/howto" },
+  { label: "Code Walkthrough", href: "/code-walkthrough" },
   { label: "Articles", href: "/articles" },
 ];
 
 const mobileLinkClass =
   "px-3 py-1.5 rounded-md text-sm hover:bg-accent hover:text-accent-foreground transition-colors";
+
+const normalizePath = (path: string) => path.replace(/\/+$/, "") || "/";
 
 function NavLink({
   href,
@@ -75,7 +78,7 @@ function DesktopNav() {
   const [currentPath, setCurrentPath] = useState("/");
 
   useEffect(() => {
-    setCurrentPath(window.location.pathname);
+    setCurrentPath(normalizePath(window.location.pathname));
   }, []);
 
   const open = () => {
@@ -133,6 +136,12 @@ function DesktopNav() {
       </NavLink>
       <NavLink href="/monitor" active={currentPath === "/monitor"}>
         Monitor
+      </NavLink>
+      <NavLink
+        href="/code-walkthrough"
+        active={currentPath === "/code-walkthrough"}
+      >
+        Code
       </NavLink>
       <NavLink href="/articles" active={currentPath.startsWith("/articles")}>
         Articles

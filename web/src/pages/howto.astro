@@ -1,7 +1,7 @@
 ---
-import Layout from '@/layouts/Layout.astro';
-import Header from '@/components/Header.astro';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 ---
 
 <Layout
@@ -16,15 +16,42 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
       <div class="max-w-4xl mx-auto">
         <h1 class="text-4xl font-bold mb-4">How to Run BIP-110</h1>
         <p class="text-xl text-muted-foreground mb-12">
-          Support BIP-110 by running a node that signals for activation. Choose your preferred installation method below.
+          Support BIP-110 by running a node that signals for activation. Choose
+          your preferred installation method below.
         </p>
 
-        <div class="mb-12 rounded-lg border border-primary/20 bg-primary/5 p-4">
-          <p class="font-medium mb-2">Point rented hashpower at your DATUM node</p>
-          <p class="text-sm text-muted-foreground">
-            If you want to rent Braiins hashpower and point it at a BIP-110 node through DATUM, follow the <a href="https://rentsomehash.com/guides/braiins-ocean/" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Rent Some Hash Braiins guide</a>.
-            You can also use the <a href="https://rentsomehash.com/calculator/" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">hashpower calculator</a> before funding a bid.
-          </p>
+        <div class="mb-12 grid gap-4 md:grid-cols-2">
+          <div class="rounded-lg border border-primary/20 bg-primary/5 p-4">
+            <p class="font-medium mb-2">
+              Point rented hashpower at your DATUM node
+            </p>
+            <p class="text-sm text-muted-foreground">
+              If you want to rent Braiins hashpower and point it at a BIP-110
+              node through DATUM, follow the <a
+                href="https://rentsomehash.com/guides/braiins-ocean/"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-primary hover:underline"
+                >Rent Some Hash Braiins guide</a
+              >. You can also use the <a
+                href="https://rentsomehash.com/calculator/"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-primary hover:underline">hashpower calculator</a
+              > before funding a bid.
+            </p>
+          </div>
+
+          <div class="rounded-lg border border-border/60 bg-card/50 p-4">
+            <p class="font-medium mb-2">Review the code before running it</p>
+            <p class="text-sm text-muted-foreground">
+              The <a
+                href="/code-walkthrough"
+                class="text-primary hover:underline">code walkthrough</a
+              > shows the tagged Bitcoin Knots source behind the output limits, script
+              rules, activation state, grandfathering, and expiry.
+            </p>
+          </div>
         </div>
 
         <div class="space-y-8">
@@ -34,15 +61,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
             </CardHeader>
             <CardContent className="space-y-4">
               <p class="text-muted-foreground">
-                Download the BIP-110 enabled Bitcoin Knots release directly from GitHub.
+                Download the BIP-110 enabled Bitcoin Knots release directly from
+                GitHub.
               </p>
               <div class="bg-muted/50 rounded-lg p-4 space-y-3">
                 <p class="font-medium">Installation steps:</p>
-                <ol class="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-                  <li>Download the release for your platform from the GitHub releases page</li>
+                <ol
+                  class="list-decimal list-inside space-y-2 text-sm text-muted-foreground"
+                >
+                  <li>
+                    Download the release for your platform from the GitHub
+                    releases page
+                  </li>
                   <li>Verify the download signatures (recommended)</li>
                   <li>Replace your existing Bitcoin Core/Knots installation</li>
-                  <li>Start your node - it will automatically begin signaling for BIP-110</li>
+                  <li>
+                    Start your node - it will automatically begin signaling for
+                    BIP-110
+                  </li>
                 </ol>
               </div>
               <a
@@ -52,214 +88,352 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                 class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
               >
                 Download from GitHub
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                  ></path>
                 </svg>
               </a>
             </CardContent>
           </Card>
 
           <div id="start9">
-          <Card>
-            <CardHeader>
-              <CardTitle>Start9</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p class="text-muted-foreground">
-                Install from the BIP-110 registry or download the package directly for your StartOS version.
-              </p>
-              <div class="bg-muted/50 rounded-lg p-4 space-y-3">
-                <p class="font-medium">Option A: Install from Registry (StartOS 0.3.5.1)</p>
-                <ol class="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-                  <li>Go to System and click 5 times on "Manage" to unlock dev tools</li>
-                  <li>Go to Marketplace → Change → Add Custom Registry</li>
-                  <li>Paste <code class="bg-background rounded px-1">https://start9.bip110.dev</code> and click "Save and Connect"</li>
-                  <li>Click on Bitcoin → "Bitcoin Knots (BIP-110 UASF)" → Reinstall</li>
-                </ol>
-              </div>
-              <div class="bg-muted/50 rounded-lg p-4 space-y-3">
-                <p class="font-medium">Option B: Sideload</p>
-                <ol class="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-                  <li>Download the .s9pk file for your StartOS version</li>
-                  <li>In your Start9 UI, go to System → Sideload</li>
-                  <li>Upload the .s9pk file</li>
-                </ol>
-              </div>
-              <div class="flex flex-col sm:flex-row sm:flex-wrap gap-3">
-                <a
-                  href="https://github.com/dathonohm/knots-startos/releases/tag/v29.3.knots20260210%2Bbip110-v0.4.1"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors w-full sm:w-auto"
-                >
-                  Download for StartOS 0.3.5.1
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </a>
-                <a
-                  href="https://github.com/dathonohm/knots-startos/releases/tag/v29.3.knots20260210%2Bbip110-v0.4.1-startos0.4.0"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors w-full sm:w-auto"
-                >
-                  Download for StartOS 0.4
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </a>
-              </div>
-              <p class="text-sm text-muted-foreground">
-                Using StartOS with DATUM? The <a href="https://rentsomehash.com/guides/startos/" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Rent Some Hash StartOS guide</a> shows how to expose DATUM before creating a Braiins bid.
-              </p>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Start9</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p class="text-muted-foreground">
+                  Install from the BIP-110 registry or download the package
+                  directly for your StartOS version.
+                </p>
+                <div class="bg-muted/50 rounded-lg p-4 space-y-3">
+                  <p class="font-medium">
+                    Option A: Install from Registry (StartOS 0.3.5.1)
+                  </p>
+                  <ol
+                    class="list-decimal list-inside space-y-2 text-sm text-muted-foreground"
+                  >
+                    <li>
+                      Go to System and click 5 times on "Manage" to unlock dev
+                      tools
+                    </li>
+                    <li>Go to Marketplace → Change → Add Custom Registry</li>
+                    <li>
+                      Paste <code class="bg-background rounded px-1"
+                        >https://start9.bip110.dev</code
+                      > and click "Save and Connect"
+                    </li>
+                    <li>
+                      Click on Bitcoin → "Bitcoin Knots (BIP-110 UASF)" →
+                      Reinstall
+                    </li>
+                  </ol>
+                </div>
+                <div class="bg-muted/50 rounded-lg p-4 space-y-3">
+                  <p class="font-medium">Option B: Sideload</p>
+                  <ol
+                    class="list-decimal list-inside space-y-2 text-sm text-muted-foreground"
+                  >
+                    <li>Download the .s9pk file for your StartOS version</li>
+                    <li>In your Start9 UI, go to System → Sideload</li>
+                    <li>Upload the .s9pk file</li>
+                  </ol>
+                </div>
+                <div class="flex flex-col sm:flex-row sm:flex-wrap gap-3">
+                  <a
+                    href="https://github.com/dathonohm/knots-startos/releases/tag/v29.3.knots20260210%2Bbip110-v0.4.1"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors w-full sm:w-auto"
+                  >
+                    Download for StartOS 0.3.5.1
+                    <svg
+                      class="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                      ></path>
+                    </svg>
+                  </a>
+                  <a
+                    href="https://github.com/dathonohm/knots-startos/releases/tag/v29.3.knots20260210%2Bbip110-v0.4.1-startos0.4.0"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors w-full sm:w-auto"
+                  >
+                    Download for StartOS 0.4
+                    <svg
+                      class="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                      ></path>
+                    </svg>
+                  </a>
+                </div>
+                <p class="text-sm text-muted-foreground">
+                  Using StartOS with DATUM? The <a
+                    href="https://rentsomehash.com/guides/startos/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-primary hover:underline"
+                    >Rent Some Hash StartOS guide</a
+                  > shows how to expose DATUM before creating a Braiins bid.
+                </p>
+              </CardContent>
+            </Card>
           </div>
 
           <div id="umbrel">
-          <Card>
-            <CardHeader>
-              <CardTitle>Umbrel</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p class="text-muted-foreground">
-                One-click install from the Umbrel community app store.
-              </p>
-              <div class="bg-muted/50 rounded-lg p-4 space-y-3">
-                <p class="font-medium">Installation steps:</p>
-                <ol class="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-                  <li>Open your Umbrel dashboard</li>
-                  <li>Update the Bitcoin Knots app if prompted in the App Store</li>
-                  <li>Open the Bitcoin Knots app</li>
-                  <li>Go to settings &gt; Bitcoin Knots version &gt; Select BIP110</li>
-                  <li>Save settings</li>
-                </ol>
-              </div>
-              <a
-                href="https://github.com/getumbrel/umbrel-apps/pull/4720"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-              >
-                View on GitHub
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </a>
-              <p class="text-sm text-muted-foreground">
-                Running DATUM on Umbrel too? The <a href="https://rentsomehash.com/guides/umbrel/" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Rent Some Hash Umbrel guide</a> walks through the endpoint Braiins needs.
-              </p>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Umbrel</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p class="text-muted-foreground">
+                  One-click install from the Umbrel community app store.
+                </p>
+                <div class="bg-muted/50 rounded-lg p-4 space-y-3">
+                  <p class="font-medium">Installation steps:</p>
+                  <ol
+                    class="list-decimal list-inside space-y-2 text-sm text-muted-foreground"
+                  >
+                    <li>Open your Umbrel dashboard</li>
+                    <li>
+                      Update the Bitcoin Knots app if prompted in the App Store
+                    </li>
+                    <li>Open the Bitcoin Knots app</li>
+                    <li>
+                      Go to settings &gt; Bitcoin Knots version &gt; Select
+                      BIP110
+                    </li>
+                    <li>Save settings</li>
+                  </ol>
+                </div>
+                <a
+                  href="https://github.com/getumbrel/umbrel-apps/pull/4720"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                >
+                  View on GitHub
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    ></path>
+                  </svg>
+                </a>
+                <p class="text-sm text-muted-foreground">
+                  Running DATUM on Umbrel too? The <a
+                    href="https://rentsomehash.com/guides/umbrel/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-primary hover:underline"
+                    >Rent Some Hash Umbrel guide</a
+                  > walks through the endpoint Braiins needs.
+                </p>
+              </CardContent>
+            </Card>
           </div>
 
           <div id="mynode">
-          <Card>
-            <CardHeader>
-              <CardTitle>myNode</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p class="text-muted-foreground">
-                Available in the Custom Bitcoin Versions settings.
-              </p>
-              <div class="bg-muted/50 rounded-lg p-4 space-y-3">
-                <p class="font-medium">Installation steps:</p>
-                <ol class="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-                  <li>Update your myNode to the latest version</li>
-                  <li>Go to Settings and find the Custom Bitcoin Versions list</li>
-                  <li>Select the BIP-110 option</li>
-                  <li>Save settings and restart</li>
-                </ol>
-              </div>
-              <a
-                href="https://github.com/mynodebtc/mynode/pull/992"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-              >
-                View on GitHub
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </a>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>myNode</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p class="text-muted-foreground">
+                  Available in the Custom Bitcoin Versions settings.
+                </p>
+                <div class="bg-muted/50 rounded-lg p-4 space-y-3">
+                  <p class="font-medium">Installation steps:</p>
+                  <ol
+                    class="list-decimal list-inside space-y-2 text-sm text-muted-foreground"
+                  >
+                    <li>Update your myNode to the latest version</li>
+                    <li>
+                      Go to Settings and find the Custom Bitcoin Versions list
+                    </li>
+                    <li>Select the BIP-110 option</li>
+                    <li>Save settings and restart</li>
+                  </ol>
+                </div>
+                <a
+                  href="https://github.com/mynodebtc/mynode/pull/992"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                >
+                  View on GitHub
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    ></path>
+                  </svg>
+                </a>
+              </CardContent>
+            </Card>
           </div>
 
           <div id="parmanode">
-          <Card>
-            <CardHeader>
-              <CardTitle>Parmanode</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p class="text-muted-foreground">
-                Simple one-click style install for Parmanode users.
-              </p>
-              <div class="bg-muted/50 rounded-lg p-4 space-y-3">
-                <p class="font-medium">Installation steps:</p>
-                <ol class="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-                  <li>Make sure you have the latest Parmanode version</li>
-                  <li>Install Bitcoin using Parmanode</li>
-                  <li>Select BIP-110 when the option appears during installation</li>
-                </ol>
-              </div>
-              <a
-                href="https://www.youtube.com/watch?v=JpvNDL9Opns"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-              >
-                Watch Tutorial
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </a>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Parmanode</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p class="text-muted-foreground">
+                  Simple one-click style install for Parmanode users.
+                </p>
+                <div class="bg-muted/50 rounded-lg p-4 space-y-3">
+                  <p class="font-medium">Installation steps:</p>
+                  <ol
+                    class="list-decimal list-inside space-y-2 text-sm text-muted-foreground"
+                  >
+                    <li>Make sure you have the latest Parmanode version</li>
+                    <li>Install Bitcoin using Parmanode</li>
+                    <li>
+                      Select BIP-110 when the option appears during installation
+                    </li>
+                  </ol>
+                </div>
+                <a
+                  href="https://www.youtube.com/watch?v=JpvNDL9Opns"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                >
+                  Watch Tutorial
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    ></path>
+                  </svg>
+                </a>
+              </CardContent>
+            </Card>
           </div>
 
           <div id="docker">
-          <Card>
-            <CardHeader>
-              <CardTitle>Docker</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p class="text-muted-foreground">
-                For advanced users running their own Docker infrastructure. Uses the same GUIX-built binaries as Umbrel.
-              </p>
-              <div class="bg-muted/50 rounded-lg p-4 space-y-3">
-                <p class="font-medium">Docker image:</p>
-                <code class="block bg-background rounded px-3 py-2 text-sm font-mono break-all">
-                  ghcr.io/retropex/bitcoin:29.3.knots20260210-bip110-v0.4.1
-                </code>
-              </div>
-              <a
-                href="https://github.com/retropex/docker-bitcoind-prebuilt/pkgs/container/bitcoin/727605306?tag=29.3.knots20260210-bip110-v0.4.1"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-              >
-                View on GHCR
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </a>
-              <p class="text-sm text-muted-foreground">
-                Building a fresh DATUM box? The <a href="https://rentsomehash.com/guides/vps/" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Rent Some Hash VPS guide</a> covers the practical node and endpoint flow for rented hashpower.
-              </p>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Docker</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p class="text-muted-foreground">
+                  For advanced users running their own Docker infrastructure.
+                  Uses the same GUIX-built binaries as Umbrel.
+                </p>
+                <div class="bg-muted/50 rounded-lg p-4 space-y-3">
+                  <p class="font-medium">Docker image:</p>
+                  <code
+                    class="block bg-background rounded px-3 py-2 text-sm font-mono break-all"
+                  >
+                    ghcr.io/retropex/bitcoin:29.3.knots20260210-bip110-v0.4.1
+                  </code>
+                </div>
+                <a
+                  href="https://github.com/retropex/docker-bitcoind-prebuilt/pkgs/container/bitcoin/727605306?tag=29.3.knots20260210-bip110-v0.4.1"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                >
+                  View on GHCR
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    ></path>
+                  </svg>
+                </a>
+                <p class="text-sm text-muted-foreground">
+                  Building a fresh DATUM box? The <a
+                    href="https://rentsomehash.com/guides/vps/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-primary hover:underline"
+                    >Rent Some Hash VPS guide</a
+                  > covers the practical node and endpoint flow for rented hashpower.
+                </p>
+              </CardContent>
+            </Card>
           </div>
         </div>
 
         <div class="mt-16 pt-8 border-t border-border">
           <h2 class="text-2xl font-bold mb-4">Need Help?</h2>
           <p class="text-muted-foreground mb-4">
-            If you encounter any issues or have questions about running BIP-110, you can:
+            If you encounter any issues or have questions about running BIP-110,
+            you can:
           </p>
           <ul class="list-disc list-inside space-y-2 text-muted-foreground">
-            <li>Open an issue on the <a href="https://github.com/dathonohm/bitcoin/issues" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">GitHub repository</a></li>
-            <li>Read the full <a href="https://github.com/bitcoin/bips/blob/master/bip-0110.mediawiki" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">BIP-110 specification</a></li>
+            <li>
+              Open an issue on the <a
+                href="https://github.com/dathonohm/bitcoin/issues"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-primary hover:underline">GitHub repository</a
+              >
+            </li>
+            <li>
+              Read the full <a
+                href="https://github.com/bitcoin/bips/blob/master/bip-0110.mediawiki"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-primary hover:underline">BIP-110 specification</a
+              >
+            </li>
           </ul>
         </div>
       </div>
