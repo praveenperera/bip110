@@ -256,7 +256,7 @@ const codeSections = [
     href: githubFileUrl("src/consensus/tx_verify.cpp", "#L164-L185"),
     title: "Output size checks",
     summary:
-      "BIP-110 adds one small transaction-output gate, then runs it from contextual input validation when the deployment is active.",
+      "BIP-110 checks that each transaction output stays small enough, but only after the rule has turned on.",
     references: [{ label: "Rule 1", href: "#rule-1" }],
     notes: [
       {
@@ -1035,12 +1035,13 @@ const heroFacts = [
                 id={section.id}
                 class="scroll-mt-24 rounded-xl border border-border/70 bg-card/60"
               >
-                <div class="grid gap-5 border-b border-border/60 p-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
+                <div class="border-b border-border/60 p-5">
                   <div>
                     <a
-                      href={githubFileUrl(section.file)}
+                      href={section.href}
                       target="_blank"
                       rel="noopener noreferrer"
+                      aria-label={`Open ${section.file} lines on GitHub`}
                       class="font-mono text-sm text-primary break-all underline-offset-4 hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/40"
                     >
                       {section.file}
@@ -1063,24 +1064,6 @@ const heroFacts = [
                         </a>
                       ))}
                     </div>
-                  </div>
-                  <div class="flex flex-col gap-3 lg:items-end">
-                    <a
-                      href={section.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="inline-flex h-10 items-center justify-center rounded-lg border border-border/70 bg-background px-4 text-sm font-semibold transition-colors hover:border-primary/40 hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/40"
-                    >
-                      GitHub lines
-                    </a>
-                    <a
-                      href={sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="text-sm text-muted-foreground underline-offset-4 hover:text-primary hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/40"
-                    >
-                      Original walkthrough
-                    </a>
                   </div>
                 </div>
                 <div>
@@ -1394,6 +1377,22 @@ const heroFacts = [
     <Footer />
   </main>
 </Layout>
+
+<script>
+  document.addEventListener("click", (event) => {
+    const target = event.target;
+
+    if (!(target instanceof Node)) return;
+
+    document
+      .querySelectorAll<HTMLDetailsElement>(".line-note[open]")
+      .forEach((note) => {
+        if (!note.contains(target)) {
+          note.open = false;
+        }
+      });
+  });
+</script>
 
 <style is:global>
   .code-scroll {
