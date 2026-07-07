@@ -11,6 +11,7 @@ const start9KnotsUrl = "https://github.com/Start9Labs/bitcoin-knots-startos";
 const start9LegacyGuideUrl =
   "https://community.start9.com/t/guide-switching-from-bitcoin-core-to-bitcoin-knots-on-startos-v0-3-5-1/";
 const umbrelKnotsUrl = "https://apps.umbrel.com/app/bitcoin-knots";
+const myNodeKnotsPrUrl = "https://github.com/mynodebtc/mynode/pull/1000";
 const dockerImage = "bitcoinknots/bitcoin:29.3.knots20260508";
 const dockerTagsUrl = "https://hub.docker.com/r/bitcoinknots/bitcoin/tags";
 ---
@@ -290,7 +291,8 @@ const dockerTagsUrl = "https://hub.docker.com/r/bitcoinknots/bitcoin/tags";
               </CardHeader>
               <CardContent className="space-y-4">
                 <p class="text-muted-foreground">
-                  Available in the Custom Bitcoin Versions settings.
+                  Available in myNode's Custom Bitcoin Version settings with a
+                  confirmation prompt for the RDTS-enabled Knots release.
                 </p>
                 <div class="bg-muted/50 rounded-lg p-4 space-y-3">
                   <p class="font-medium">Installation steps:</p>
@@ -299,14 +301,20 @@ const dockerTagsUrl = "https://hub.docker.com/r/bitcoinknots/bitcoin/tags";
                   >
                     <li>Update your myNode to the latest version</li>
                     <li>
-                      Go to Settings and find the Custom Bitcoin Versions list
+                      Go to Settings and find the Custom Bitcoin Version section
                     </li>
-                    <li>Select the BIP-110 option</li>
-                    <li>Save settings and restart</li>
+                    <li>
+                      Select Bitcoin Knots + BIP-110 (autoupdate), or the
+                      pinned Bitcoin Knots + BIP-110 v29.3.knots20260508 option
+                    </li>
+                    <li>
+                      Confirm the RDTS/BIP-110 prompt, then install and restart
+                      when prompted
+                    </li>
                   </ol>
                 </div>
                 <a
-                  href="https://github.com/mynodebtc/mynode/pull/992"
+                  href={myNodeKnotsPrUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"

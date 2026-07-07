@@ -239,7 +239,7 @@ export const installOptions = [
   },
   {
     platform: "myNode",
-    description: "One-click install for myNode servers",
+    description: "Custom Bitcoin Version option with RDTS confirmation",
     link: "/howto#mynode",
     status: "available",
     icon: "box",
