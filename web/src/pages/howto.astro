@@ -2,11 +2,22 @@
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+const knotsDownloadUrl = "https://bitcoinknots.org/";
+const knotsReleaseNotesUrl =
+  "https://github.com/bitcoinknots/bitcoin/releases/latest";
+const knotsIssuesUrl = "https://github.com/bitcoinknots/bitcoin/issues";
+const start9KnotsUrl = "https://github.com/Start9Labs/bitcoin-knots-startos";
+const start9LegacyGuideUrl =
+  "https://community.start9.com/t/guide-switching-from-bitcoin-core-to-bitcoin-knots-on-startos-v0-3-5-1/";
+const umbrelKnotsUrl = "https://apps.umbrel.com/app/bitcoin-knots";
+const dockerImage = "bitcoinknots/bitcoin:29.3.knots20260508";
+const dockerTagsUrl = "https://hub.docker.com/r/bitcoinknots/bitcoin/tags";
 ---
 
 <Layout
   title="How to Run BIP-110 — Step-by-Step Installation Guide"
-  description="Install and run a BIP-110 enabled Bitcoin node on Bitcoin Knots, Start9, Umbrel, myNode, Parmanode, or Docker. Choose your platform and start signaling."
+  description="Install and run BIP-110 with the latest Bitcoin Knots release, Start9, Umbrel, myNode, Parmanode, or Docker. Choose your platform and start signaling."
   ogImage="/images/bip110-og-howto-dark.png"
 >
   <main class="min-h-screen">
@@ -19,6 +30,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
           Support BIP-110 by running a node that signals for activation. Choose
           your preferred installation method below.
         </p>
+
+        <div class="mb-12 rounded-lg border border-primary/20 bg-primary/5 p-4">
+          <p class="text-sm text-muted-foreground">
+            Bitcoin Knots 29.3.knots20260508 and newer include BIP-110/RDTS
+            directly. Standard Knots installs no longer need the standalone
+            BIP-110 fork.
+          </p>
+        </div>
 
         <div class="mb-12 grid gap-4 md:grid-cols-2">
           <div class="rounded-lg border border-primary/20 bg-primary/5 p-4">
@@ -57,12 +76,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
         <div class="space-y-8">
           <Card>
             <CardHeader>
-              <CardTitle>Bitcoin Knots (Direct Download)</CardTitle>
+              <CardTitle>Bitcoin Knots (Latest Release)</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p class="text-muted-foreground">
-                Download the BIP-110 enabled Bitcoin Knots release directly from
-                GitHub.
+                Download the official Bitcoin Knots release with BIP-110/RDTS
+                support from bitcoinknots.org.
               </p>
               <div class="bg-muted/50 rounded-lg p-4 space-y-3">
                 <p class="font-medium">Installation steps:</p>
@@ -70,24 +89,27 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
                   class="list-decimal list-inside space-y-2 text-sm text-muted-foreground"
                 >
                   <li>
-                    Download the release for your platform from the GitHub
-                    releases page
+                    Download the latest release for your platform from
+                    bitcoinknots.org
                   </li>
-                  <li>Verify the download signatures (recommended)</li>
+                  <li>Verify the digital fingerprints and signatures</li>
                   <li>Replace your existing Bitcoin Core/Knots installation</li>
                   <li>
-                    Start your node - it will automatically begin signaling for
-                    BIP-110
+                    Confirm RDTS in the GUI prompt, or add <code
+                      class="bg-background rounded px-1"
+                      >consensusrules=rdts</code
+                    > to bitcoin.conf before starting bitcoind
                   </li>
+                  <li>Start your node to signal and enforce BIP-110/RDTS</li>
                 </ol>
               </div>
               <a
-                href="https://github.com/dathonohm/bitcoin/releases/tag/v29.3.knots20260210%2Bbip110-v0.4.1"
+                href={knotsDownloadUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
               >
-                Download from GitHub
+                Download Bitcoin Knots
                 <svg
                   class="w-4 h-4"
                   fill="none"
@@ -102,6 +124,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
                   ></path>
                 </svg>
               </a>
+              <p class="text-sm text-muted-foreground">
+                Release notes are available on the <a
+                  href={knotsReleaseNotesUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-primary hover:underline"
+                  >Bitcoin Knots latest release page</a
+                >.
+              </p>
             </CardContent>
           </Card>
 
@@ -112,50 +143,37 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
               </CardHeader>
               <CardContent className="space-y-4">
                 <p class="text-muted-foreground">
-                  Install from the BIP-110 registry or download the package
-                  directly for your StartOS version.
+                  Install or update Bitcoin Knots from the Start9 marketplace.
+                  Current StartOS packages include BIP-110/RDTS directly.
                 </p>
                 <div class="bg-muted/50 rounded-lg p-4 space-y-3">
-                  <p class="font-medium">
-                    Option A: Install from Registry (StartOS 0.3.5.1)
-                  </p>
+                  <p class="font-medium">Installation steps:</p>
                   <ol
                     class="list-decimal list-inside space-y-2 text-sm text-muted-foreground"
                   >
                     <li>
-                      Go to System and click 5 times on "Manage" to unlock dev
-                      tools
+                      Open the Start9 marketplace and install or update Bitcoin
+                      Knots
                     </li>
-                    <li>Go to Marketplace → Change → Add Custom Registry</li>
+                    <li>Start the service and open the Dashboard</li>
                     <li>
-                      Paste <code class="bg-background rounded px-1"
-                        >https://start9.bip110.dev</code
-                      > and click "Save and Connect"
+                      Resolve the Activate RDTS critical task to acknowledge the
+                      BIP-110/RDTS consensus rules
                     </li>
                     <li>
-                      Click on Bitcoin → "Bitcoin Knots (BIP-110 UASF)" →
-                      Reinstall
+                      If you do not want RDTS, install the Bitcoin Knots
+                      pre-RDTS flavor instead
                     </li>
-                  </ol>
-                </div>
-                <div class="bg-muted/50 rounded-lg p-4 space-y-3">
-                  <p class="font-medium">Option B: Sideload</p>
-                  <ol
-                    class="list-decimal list-inside space-y-2 text-sm text-muted-foreground"
-                  >
-                    <li>Download the .s9pk file for your StartOS version</li>
-                    <li>In your Start9 UI, go to System → Sideload</li>
-                    <li>Upload the .s9pk file</li>
                   </ol>
                 </div>
                 <div class="flex flex-col sm:flex-row sm:flex-wrap gap-3">
                   <a
-                    href="https://github.com/dathonohm/knots-startos/releases/tag/v29.3.knots20260210%2Bbip110-v0.4.1"
+                    href={start9KnotsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors w-full sm:w-auto"
                   >
-                    Download for StartOS 0.3.5.1
+                    View Start9 package
                     <svg
                       class="w-4 h-4"
                       fill="none"
@@ -171,12 +189,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
                     </svg>
                   </a>
                   <a
-                    href="https://github.com/dathonohm/knots-startos/releases/tag/v29.3.knots20260210%2Bbip110-v0.4.1-startos0.4.0"
+                    href={start9LegacyGuideUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors w-full sm:w-auto"
+                    class="inline-flex items-center justify-center gap-2 px-4 py-2 border border-input bg-background rounded-md hover:bg-accent hover:text-accent-foreground transition-colors w-full sm:w-auto"
                   >
-                    Download for StartOS 0.4
+                    StartOS 0.3.5.1 guide
                     <svg
                       class="w-4 h-4"
                       fill="none"
@@ -225,19 +243,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
                     </li>
                     <li>Open the Bitcoin Knots app</li>
                     <li>
-                      Go to settings &gt; Bitcoin Knots version &gt; Select
-                      BIP110
+                      Accept the BIP-110/RDTS upgrade in the Umbrel UI, or
+                      switch to another version if you are not ready to adopt it
                     </li>
-                    <li>Save settings</li>
+                    <li>Save settings and restart if prompted</li>
                   </ol>
                 </div>
                 <a
-                  href="https://github.com/getumbrel/umbrel-apps/pull/4720"
+                  href={umbrelKnotsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
                 >
-                  View on GitHub
+                  View in Umbrel App Store
                   <svg
                     class="w-4 h-4"
                     fill="none"
@@ -366,23 +384,29 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
               <CardContent className="space-y-4">
                 <p class="text-muted-foreground">
                   For advanced users running their own Docker infrastructure.
-                  Uses the same GUIX-built binaries as Umbrel.
+                  Use the current Bitcoin Knots image and enable RDTS in your
+                  configuration.
                 </p>
                 <div class="bg-muted/50 rounded-lg p-4 space-y-3">
                   <p class="font-medium">Docker image:</p>
                   <code
                     class="block bg-background rounded px-3 py-2 text-sm font-mono break-all"
                   >
-                    ghcr.io/retropex/bitcoin:29.3.knots20260210-bip110-v0.4.1
+                    {dockerImage}
                   </code>
+                  <p class="text-sm text-muted-foreground">
+                    Add <code class="bg-background rounded px-1"
+                      >consensusrules=rdts</code
+                    > to bitcoin.conf before starting bitcoind.
+                  </p>
                 </div>
                 <a
-                  href="https://github.com/retropex/docker-bitcoind-prebuilt/pkgs/container/bitcoin/727605306?tag=29.3.knots20260210-bip110-v0.4.1"
+                  href={dockerTagsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
                 >
-                  View on GHCR
+                  View Docker tags
                   <svg
                     class="w-4 h-4"
                     fill="none"
@@ -420,7 +444,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
           <ul class="list-disc list-inside space-y-2 text-muted-foreground">
             <li>
               Open an issue on the <a
-                href="https://github.com/dathonohm/bitcoin/issues"
+                href={knotsIssuesUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 class="text-primary hover:underline">GitHub repository</a

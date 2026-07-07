@@ -218,14 +218,14 @@ export const timeline = [
 export const installOptions = [
   {
     platform: "Bitcoin Knots",
-    description: "Direct download of the BIP-110 enabled Bitcoin Knots release",
-    link: "https://github.com/dathonohm/bitcoin/releases/tag/v29.3.knots20260210%2Bbip110-v0.4.1",
+    description: "Official Bitcoin Knots release with BIP-110/RDTS support",
+    link: "https://bitcoinknots.org/",
     status: "available",
     icon: "download",
   },
   {
     platform: "Start9",
-    description: "One-click install for Start9 v0.3 and v0.4",
+    description: "Official Start9 package with an RDTS activation task",
     link: "/howto#start9",
     status: "available",
     icon: "server",
