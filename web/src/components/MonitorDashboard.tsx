@@ -466,6 +466,10 @@ function clampPercent(value: number) {
   return Math.min(Math.max(value, 0), 100);
 }
 
+function lockedInSignalPct(data: MonitorData): number {
+  return (data.signalingCount / PERIOD_BLOCK_COUNT) * 100;
+}
+
 function blockDetailUnavailable(block: PeriodGridBlock) {
   return (
     block.hash === undefined ||
@@ -529,7 +533,7 @@ function currentPeriodFromMonitorData(data: MonitorData): Period {
     endBlock: data.periodEnd,
     signalingCount: data.signalingCount,
     totalBlocks: data.totalBlocks,
-    pct: data.pct,
+    pct: lockedInSignalPct(data),
   };
 }
 
@@ -836,8 +840,8 @@ export function MonitorHighlights() {
     return [
       {
         label: "Signal rate",
-        value: formatPercent(data.pct),
-        detail: `${formatNumber(data.signalingCount)} of ${formatNumber(data.totalBlocks)} blocks`,
+        value: formatPercent(lockedInSignalPct(data)),
+        detail: `${formatNumber(data.signalingCount)} of ${formatNumber(PERIOD_BLOCK_COUNT)} blocks`,
       },
       {
         label: "Blocks left",
@@ -1516,7 +1520,8 @@ export function MonitorDashboard() {
 
     const blocksLeft = Math.max(data.periodEnd - data.tip, 0);
     const periodProgress = (data.totalBlocks / PERIOD_BLOCK_COUNT) * 100;
-    const activationProgress = (data.pct / ACTIVATION_THRESHOLD) * 100;
+    const lockedInPct = lockedInSignalPct(data);
+    const activationProgress = (lockedInPct / ACTIVATION_THRESHOLD) * 100;
     const signalingDeficit = Math.max(
       REQUIRED_SIGNALING_BLOCKS - data.signalingCount,
       0,
@@ -1526,6 +1531,7 @@ export function MonitorDashboard() {
     return {
       blocksLeft,
       periodProgress,
+      lockedInPct,
       activationProgress,
       signalingDeficit,
       historyPeriods,
@@ -1679,7 +1685,7 @@ export function MonitorDashboard() {
         />
         <StatusCard
           label="Signal rate"
-          value={formatPercent(data.pct)}
+          value={formatPercent(stats.lockedInPct)}
           detail={`Current period target is ${ACTIVATION_THRESHOLD}%`}
           tone="primary"
         />
@@ -1744,9 +1750,9 @@ export function MonitorDashboard() {
 
             <div className="space-y-5">
               <ProgressRow
-                label="Signaling rate"
-                value={formatPercent(data.pct)}
-                detail={`${formatNumber(data.signalingCount)} signaling blocks, ${formatNumber(stats.signalingDeficit)} more needed for lock-in`}
+                label="Signaling progress"
+                value={formatPercent(stats.lockedInPct)}
+                detail={`${formatNumber(data.signalingCount)} of ${formatNumber(PERIOD_BLOCK_COUNT)} blocks, ${formatNumber(stats.signalingDeficit)} more needed for lock-in`}
                 percent={stats.activationProgress}
               />
               <ProgressRow

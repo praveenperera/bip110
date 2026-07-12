@@ -172,9 +172,11 @@ export function parseMonitorData(value: unknown): MonitorData {
     updatedAt: stringField(value, "updatedAt"),
   };
 
+  const lockedInPct = (data.signalingCount / PERIOD_SIZE) * 100;
   const normalizedData = {
     ...data,
-    periods: monitorPeriods(data),
+    pct: lockedInPct,
+    periods: monitorPeriods({ ...data, pct: lockedInPct }),
   };
 
   if (!isReasonableMonitorData(normalizedData)) {
