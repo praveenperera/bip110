@@ -108,8 +108,11 @@ type PeriodChartDatum = Period & {
   signalingLabel: string;
 };
 
+type PeriodChartMetric = "blocks" | "percentage";
+
 type PeriodChartTooltipProps = {
   active?: boolean;
+  metric: PeriodChartMetric;
   payload?: Array<{
     payload?: PeriodChartDatum;
   }>;
@@ -608,6 +611,19 @@ function chartMaxSignalingCount(periods: Period[]) {
   return Math.max(...periods.map((period) => period.signalingCount), 0) + 5;
 }
 
+function chartMaxSignalingPercent(periods: Period[]) {
+  const highestPercent = Math.max(...periods.map((period) => period.pct), 0);
+
+  return Math.min(
+    Math.max(Math.ceil(highestPercent * 1.1 * 100) / 100, 1),
+    100,
+  );
+}
+
+function formatChartPercent(value: number) {
+  return `${value.toLocaleString("en-US", { maximumFractionDigits: 2 })}%`;
+}
+
 function PeriodSignalingChart({
   currentPeriodNum,
   periods,
@@ -615,6 +631,7 @@ function PeriodSignalingChart({
   currentPeriodNum: number;
   periods: Period[];
 }) {
+  const [metric, setMetric] = useState<PeriodChartMetric>("blocks");
   const sortedPeriods = chartPeriods(periods);
 
   if (sortedPeriods.length === 0) {
@@ -625,9 +642,15 @@ function PeriodSignalingChart({
     );
   }
 
-  const maxValue = chartMaxSignalingCount(sortedPeriods);
-  const midValue = Math.round(maxValue / 2);
+  const showingPercentage = metric === "percentage";
+  const maxValue = showingPercentage
+    ? chartMaxSignalingPercent(sortedPeriods)
+    : chartMaxSignalingCount(sortedPeriods);
+  const midValue = showingPercentage
+    ? Math.round((maxValue / 2) * 100) / 100
+    : Math.round(maxValue / 2);
   const yTicks = Array.from(new Set([maxValue, midValue, 0]));
+  const metricLabel = showingPercentage ? "Signaling %" : "Signaling blocks";
   const chartData: PeriodChartDatum[] = sortedPeriods.map((period) => ({
     ...period,
     isCurrent: period.periodNum === currentPeriodNum,
@@ -641,19 +664,43 @@ function PeriodSignalingChart({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h3 className="text-base font-semibold tracking-tight">
-            Signaling blocks by period
+            {metricLabel} by period
           </h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            The line charts the signaling count from the period history table.
+            Compare the signaling count or rate from the period history table.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="inline-flex items-center gap-2">
             <span
               className="size-3 rounded-full border-2 border-primary bg-background"
               aria-hidden="true"
             />
-            Signaling blocks
+            <span className="text-xs text-muted-foreground">{metricLabel}</span>
+          </span>
+          <span
+            className="inline-flex rounded-lg bg-muted p-1"
+            role="group"
+            aria-label="Chart metric"
+          >
+            <Button
+              aria-pressed={metric === "blocks"}
+              onClick={() => setMetric("blocks")}
+              size="xs"
+              type="button"
+              variant={metric === "blocks" ? "default" : "ghost"}
+            >
+              Blocks
+            </Button>
+            <Button
+              aria-pressed={metric === "percentage"}
+              onClick={() => setMetric("percentage")}
+              size="xs"
+              type="button"
+              variant={metric === "percentage" ? "default" : "ghost"}
+            >
+              Signaling %
+            </Button>
           </span>
         </div>
       </div>
@@ -661,7 +708,7 @@ function PeriodSignalingChart({
       <div
         className="mt-5 overflow-x-auto"
         role="img"
-        aria-label={`Signaling block counts by difficulty adjustment period. Chart maximum is ${formatNumber(maxValue)} signaling blocks.`}
+        aria-label={`${metricLabel} by difficulty adjustment period. Chart maximum is ${showingPercentage ? formatChartPercent(maxValue) : formatSignalingBlockCount(maxValue)}.`}
       >
         <div className="min-w-160">
           <div className="h-72">
@@ -689,13 +736,15 @@ function PeriodSignalingChart({
                   axisLine={{ stroke: "currentColor", strokeOpacity: 0.28 }}
                   domain={[0, maxValue]}
                   tick={{ fill: "currentColor", fontSize: 11 }}
-                  tickFormatter={formatNumber}
+                  tickFormatter={
+                    showingPercentage ? formatChartPercent : formatNumber
+                  }
                   tickLine={false}
                   ticks={yTicks}
                   width={48}
                 />
                 <RechartsTooltip
-                  content={<PeriodChartTooltip />}
+                  content={<PeriodChartTooltip metric={metric} />}
                   cursor={{ stroke: "var(--primary)", strokeOpacity: 0.24 }}
                 />
                 <Line
@@ -705,7 +754,7 @@ function PeriodSignalingChart({
                     stroke: "var(--background)",
                     strokeWidth: 3,
                   }}
-                  dataKey="signalingCount"
+                  dataKey={showingPercentage ? "pct" : "signalingCount"}
                   dot={{
                     fill: "var(--primary)",
                     r: 4.5,
@@ -713,7 +762,8 @@ function PeriodSignalingChart({
                     strokeWidth: 3,
                   }}
                   isAnimationActive={false}
-                  name="Signaling blocks"
+                  key={metric}
+                  name={metricLabel}
                   stroke="var(--primary)"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -732,7 +782,11 @@ function PeriodSignalingChart({
   );
 }
 
-function PeriodChartTooltip({ active, payload }: PeriodChartTooltipProps) {
+function PeriodChartTooltip({
+  active,
+  metric,
+  payload,
+}: PeriodChartTooltipProps) {
   const datum = payload?.[0]?.payload;
 
   if (!active || !datum) {
@@ -744,8 +798,12 @@ function PeriodChartTooltip({ active, payload }: PeriodChartTooltipProps) {
       <p className="font-medium text-popover-foreground">
         Period {datum.periodNum}
       </p>
-      <p className="mt-1 font-mono text-primary">{datum.pctLabel}</p>
-      <p className="mt-1 text-muted-foreground">{datum.signalingLabel}</p>
+      <p className="mt-1 font-mono text-primary">
+        {metric === "percentage" ? datum.pctLabel : datum.signalingLabel}
+      </p>
+      <p className="mt-1 text-muted-foreground">
+        {metric === "percentage" ? datum.signalingLabel : datum.pctLabel}
+      </p>
     </div>
   );
 }
