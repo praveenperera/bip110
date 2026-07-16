@@ -263,13 +263,17 @@ function periodSignalingChartHtml(data: MonitorData): string {
   const margin = { bottom: 58, left: 64, right: 24, top: 28 };
   const plotHeight = chartHeight - margin.top - margin.bottom;
   const plotWidth = chartWidth - margin.left - margin.right;
-  const maxValue =
-    Math.max(...periods.map((period) => period.signalingCount), 0) + 5;
-  const yTicks = Array.from(new Set([maxValue, Math.round(maxValue / 2), 0]));
+  const highestPercent = Math.max(...periods.map((period) => period.pct), 0);
+  const maxValue = Math.min(
+    Math.max(Math.ceil(highestPercent * 1.1 * 100) / 100, 1),
+    100,
+  );
+  const midValue = Math.round((maxValue / 2) * 100) / 100;
+  const yTicks = Array.from(new Set([maxValue, midValue, 0]));
   const points = periods.map((period, index) => ({
     period,
     x: periodChartX(index, periods.length, margin.left, plotWidth),
-    y: periodChartY(period.signalingCount, maxValue, margin.top, plotHeight),
+    y: periodChartY(period.pct, maxValue, margin.top, plotHeight),
   }));
   const linePath = points
     .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
@@ -281,7 +285,7 @@ function periodSignalingChartHtml(data: MonitorData): string {
       return [
         "<g>",
         `<line x1="${margin.left}" x2="${chartWidth - margin.right}" y1="${y}" y2="${y}" stroke="currentColor" stroke-opacity="0.16" />`,
-        `<text x="${margin.left - 12}" y="${y + 4}" text-anchor="end" class="fill-current font-mono text-[11px]">${formatInteger(tick)}</text>`,
+        `<text x="${margin.left - 12}" y="${y + 4}" text-anchor="end" class="fill-current font-mono text-[11px]">${formatChartPercent(tick)}</text>`,
         "</g>",
       ].join("");
     })
@@ -297,12 +301,12 @@ function periodSignalingChartHtml(data: MonitorData): string {
         : "";
       const title = escapeHtml(
         [
-          `Period ${period.periodNum}: ${formatSignalingBlockCount(period.signalingCount)}`,
-          `(${formatPercent(period.pct)})`,
+          `Period ${period.periodNum}: ${formatPercent(period.pct)}`,
+          `(${formatSignalingBlockCount(period.signalingCount)})`,
         ].join(" "),
       );
       const ariaLabel = escapeHtml(
-        `Period ${period.periodNum}: ${formatSignalingBlockCount(period.signalingCount)}, ${formatPercent(period.pct)}`,
+        `Period ${period.periodNum}: ${formatPercent(period.pct)}, ${formatSignalingBlockCount(period.signalingCount)}`,
       );
 
       return [
@@ -313,7 +317,7 @@ function periodSignalingChartHtml(data: MonitorData): string {
         `<rect x="${x - 34}" y="${tooltipY}" width="68" height="24" rx="6" class="fill-popover stroke-border" />`,
         `<text x="${x}" y="${tooltipTextY}" text-anchor="middle" class="fill-popover-foreground font-mono text-[11px]">${formatPercent(period.pct)}</text>`,
         "</g>",
-        `<text x="${x}" y="${Math.max(y - 12, 14)}" text-anchor="middle" class="fill-current font-mono text-[11px]">${formatInteger(period.signalingCount)}</text>`,
+        `<text x="${x}" y="${Math.max(y - 12, 14)}" text-anchor="middle" class="fill-current font-mono text-[11px]">${formatPercent(period.pct)}</text>`,
         `<text x="${x}" y="${chartHeight - 31}" text-anchor="middle" class="fill-current font-mono text-[11px]">${period.periodNum}</text>`,
         currentLabel,
         "</g>",
@@ -324,14 +328,14 @@ function periodSignalingChartHtml(data: MonitorData): string {
   return [
     '<div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">',
     "<div>",
-    '<h3 class="text-base font-semibold tracking-tight">Signaling blocks by period</h3>',
-    '<p class="mt-1 text-sm text-muted-foreground">The line charts the signaling count from the period history table.</p>',
+    '<h3 class="text-base font-semibold tracking-tight">Signaling % by period</h3>',
+    '<p class="mt-1 text-sm text-muted-foreground">The line charts the signaling rate from the period history table.</p>',
     "</div>",
     '<div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">',
-    '<span class="inline-flex items-center gap-2"><span class="size-3 rounded-full border-2 border-primary bg-background" aria-hidden="true"></span>Signaling blocks</span>',
+    '<span class="inline-flex items-center gap-2"><span class="size-3 rounded-full border-2 border-primary bg-background" aria-hidden="true"></span>Signaling %</span>',
     "</div>",
     "</div>",
-    `<div class="mt-5 overflow-x-auto" role="img" aria-label="Signaling block counts by difficulty adjustment period. Chart maximum is ${formatInteger(maxValue)} signaling blocks.">`,
+    `<div class="mt-5 overflow-x-auto" role="img" aria-label="Signaling percentage by difficulty adjustment period. Chart maximum is ${formatChartPercent(maxValue)}.">`,
     '<div class="w-max">',
     `<svg class="max-w-none text-muted-foreground" width="${chartWidth}" height="${chartHeight}" viewBox="0 0 ${chartWidth} ${chartHeight}">`,
     yTickHtml,
@@ -418,6 +422,10 @@ function formatPeriodSignaling(
 
 function formatSignalingBlockCount(value: number): string {
   return `${formatInteger(value)} signaling ${value === 1 ? "block" : "blocks"}`;
+}
+
+function formatChartPercent(value: number): string {
+  return `${value.toLocaleString("en-US", { maximumFractionDigits: 2 })}%`;
 }
 
 function formatPeriodPercent(

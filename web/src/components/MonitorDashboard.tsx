@@ -631,7 +631,7 @@ function PeriodSignalingChart({
   currentPeriodNum: number;
   periods: Period[];
 }) {
-  const [metric, setMetric] = useState<PeriodChartMetric>("blocks");
+  const [metric, setMetric] = useState<PeriodChartMetric>("percentage");
   const sortedPeriods = chartPeriods(periods);
 
   if (sortedPeriods.length === 0) {
