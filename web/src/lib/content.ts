@@ -123,13 +123,13 @@ export const faqItems = [
   {
     question: "Does this break multisig?",
     answer:
-      "No. Vanilla multisig (BIP-48, BIP-174, BIP-129) is completely unaffected. Taproot multisig using MuSig/Schnorr signature aggregation is also unaffected. The only area with any potential impact is advanced Taproot Miniscript that uses OP_IF inside tapleaves — and the fix is straightforward: split OP_IF branches into separate tapleaves, which is already best practice for Taproot script design.",
+      "Legacy and P2WSH multisig (including BIP-48, BIP-174, and BIP-129) is unaffected, as is Taproot key-path multisig using MuSig/Schnorr signature aggregation. Taproot script-path multisig can be affected during the deployment if the selected Tapleaf executes OP_IF or OP_NOTIF, or if it is deeper than 7 levels in the Taptree, because its control block would exceed 257 bytes. Wallets creating new Taproot outputs should split conditional branches into separate Tapleaves and arrange every required script-path leaf at depth 7 or less. UTXOs confirmed before activation are exempt from these restrictions.",
     category: "safety",
   },
   {
     question: "Does the 256-byte limit restrict multisig to 7 keys?",
     answer:
-      "No. The 256-byte limit applies to script argument witness items like signatures and data pushes — not to witness scripts, tapleaf scripts, or control blocks. In P2WSH, the witnessScript containing all the public keys is not subject to the 256-byte cap. In P2TR, tapleaf scripts are also excluded from the 256-byte limit, and control blocks are separately capped at 257 bytes. Individual signatures (64–72 bytes) and public keys (33 bytes) are each well under 256 bytes, so standard multisig of any supported size continues to work exactly as before.",
+      "No. The 256-byte limit applies to script argument witness items like signatures and data pushes — not to witness scripts, Tapleaf scripts, or control blocks. In P2WSH, the witnessScript containing all the public keys is not subject to the 256-byte cap. In P2TR, Tapleaf scripts are also excluded from that cap. A separate 257-byte control-block limit restricts Taproot script-path spends to Tapleaves at depth 7 or less, regardless of how many keys the script contains. Individual signatures (64–72 bytes) and public keys (33 bytes) are each well under 256 bytes, so the rule does not impose a 7-key multisig limit.",
     category: "safety",
   },
   {
@@ -392,13 +392,13 @@ export const tradeoffs = {
     {
       title: "BitVM & Advanced Contracts",
       description:
-        "The 257-byte control block limit constrains large Taptrees. Advanced smart contracts like BitVM may need to wait until expiry or use testnet/sidechains.",
+        "The 257-byte control block limit makes Tapleaves deeper than 7 levels unspendable during the deployment. Larger or unbalanced Taptrees must keep every required script-path leaf within that depth. Advanced smart contracts like BitVM may need to wait until expiry or use testnet/sidechains.",
       severity: "medium",
     },
     {
       title: "Wallet Compatibility",
       description:
-        "Some wallets like Nunchuk allow arbitrary Miniscript and may create Tapleaves with OP_IF. These wallets would need to update before activation to stop creating Tapleaves with OP_IF. UTXOs created before activation are permanently exempt, so existing funds are unaffected regardless of wallet software. Wallet developers have until mandatory lock-in (~August 2026) plus a two-week grace period to update. Even after activation, only newly created UTXOs are subject to the new rules. Updating is straightforward: split OP_IF branches into separate tapleaves, which is already best practice for Taproot.",
+        "Some wallets like Nunchuk allow arbitrary Miniscript and may create Tapleaves with OP_IF or place required scripts deeper than 7 levels. These wallets would need to update before activation to avoid both patterns. UTXOs created before activation are permanently exempt, so existing funds are unaffected regardless of wallet software. Wallet developers have until mandatory lock-in (~August 2026) plus a two-week grace period to update. Even after activation, only newly created UTXOs are subject to the new rules. Wallets can split OP_IF branches into separate Tapleaves and keep every required script-path leaf at depth 7 or less.",
       severity: "low",
     },
     {

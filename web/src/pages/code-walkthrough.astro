@@ -109,7 +109,7 @@ const rules = [
     id: "rule-5",
     label: "Rule 5",
     title: "Cap Taproot control blocks",
-    text: "Taproot control blocks are limited to 257 bytes, enough for a tree with 128 script leaves.",
+    text: "Taproot control blocks are limited to 257 bytes, so only Tapleaves at depth 7 or less can be spent during the deployment. A balanced tree can keep up to 128 leaves within that depth.",
     code: "src/script/interpreter.cpp",
   },
   {
