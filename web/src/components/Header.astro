@@ -6,47 +6,49 @@ import { ThemeToggle } from "./ThemeToggle";
 <header
   class="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/10"
 >
-  <div class="flex items-center justify-between px-5 py-2.5 max-w-7xl mx-auto">
-    <div class="flex items-center gap-6">
-      <a
-        href="/"
-        class="flex items-center gap-2 group"
-        aria-label="BIP-110 Home"
-      >
-        <span class="text-[15px] font-semibold tracking-tight text-foreground">
-          BIP-110
-        </span>
-      </a>
-      <div class="hidden md:block w-px h-4 bg-border/40"></div>
-      <NavMenu client:load />
-      <noscript>
-        <nav
-          class="flex max-w-[60vw] items-center gap-3 overflow-x-auto md:hidden"
-          aria-label="Primary navigation"
+  <div class="px-6">
+    <div class="mx-auto flex max-w-7xl items-center justify-between py-2.5">
+      <div class="flex items-center gap-6">
+        <a
+          href="/"
+          class="flex items-center gap-2 group"
+          aria-label="BIP-110 Home"
         >
-          <a
-            href="/monitor"
-            class="whitespace-nowrap text-xs font-medium uppercase tracking-wide text-muted-foreground"
-            >Monitor</a
+          <span class="text-[15px] font-semibold tracking-tight text-foreground">
+            BIP-110
+          </span>
+        </a>
+        <div class="hidden md:block w-px h-4 bg-border/40"></div>
+        <NavMenu client:load />
+        <noscript>
+          <nav
+            class="flex max-w-[60vw] items-center gap-3 overflow-x-auto md:hidden"
+            aria-label="Primary navigation"
           >
-          <a
-            href="/howto"
-            class="whitespace-nowrap text-xs font-medium uppercase tracking-wide text-muted-foreground"
-            >How To</a
-          >
-          <a
-            href="/code-walkthrough"
-            class="whitespace-nowrap text-xs font-medium uppercase tracking-wide text-muted-foreground"
-            >Code</a
-          >
-          <a
-            href="/articles"
-            class="whitespace-nowrap text-xs font-medium uppercase tracking-wide text-muted-foreground"
-            >Articles</a
-          >
-        </nav>
-      </noscript>
+            <a
+              href="/monitor"
+              class="whitespace-nowrap text-xs font-medium uppercase tracking-wide text-muted-foreground"
+              >Monitor</a
+            >
+            <a
+              href="/howto"
+              class="whitespace-nowrap text-xs font-medium uppercase tracking-wide text-muted-foreground"
+              >How To</a
+            >
+            <a
+              href="/code-walkthrough"
+              class="whitespace-nowrap text-xs font-medium uppercase tracking-wide text-muted-foreground"
+              >Code</a
+            >
+            <a
+              href="/articles"
+              class="whitespace-nowrap text-xs font-medium uppercase tracking-wide text-muted-foreground"
+              >Articles</a
+            >
+          </nav>
+        </noscript>
+      </div>
+      <ThemeToggle client:load />
     </div>
-    <ThemeToggle client:load />
   </div>
 </header>
