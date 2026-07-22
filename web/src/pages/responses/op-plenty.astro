@@ -266,16 +266,18 @@ const toc = [
             <h2 class="mb-5 text-3xl font-bold">What a node stores on disk</h2>
             <div class="space-y-5 text-lg leading-8 text-muted-foreground">
               <p>
-                A full node stores the serialized transaction, Tapleaf script
-                included. With an ordinary inscription, the payload bytes sit
-                plain inside script pushes. Push framing can break up a long
-                file, but things like the PNG magic still show up in the block
-                data.
+                OP_RETURN is Bitcoin's defined, bounded outlet for arbitrary
+                data. Raise or remove its limit and that outlet can carry a large
+                image as its original payload bytes. The complete image can be
+                recovered byte-for-byte from recognizable data outputs, without
+                transforming the file through a separate encoding.
               </p>
               <p>
-                With OP_PLENTY, what hits the disk is the selected opcodes. The
-                PNG signature itself never appears. Getting the file back means
-                knowing OP_PLENTY's mapping and running its decoder on purpose.
+                With OP_PLENTY, the entire image is transformed. Every file byte
+                is replaced by two selected opcodes, so what hits the disk is the
+                encoded opcode stream rather than the image's original byte
+                stream. Recovering the complete image requires knowing
+                OP_PLENTY's mapping and running its decoder on purpose.
               </p>
             </div>
 
@@ -288,8 +290,9 @@ const toc = [
             </div>
 
             <p class="mt-5 text-sm leading-6 text-muted-foreground">
-              The second block is the payload body only, without the optional v2
-              framing.
+              The blocks show the first eight bytes. OP_PLENTY applies the same
+              transformation to every byte in the image. The second block omits
+              the optional v2 framing.
             </p>
 
             <div
