@@ -21,8 +21,8 @@ const tableRows = [
   {
     method: "OP_RETURN",
     role: "Supported metadata outlet",
-    disk: "Payload bytes sit there plain",
-    recovery: "Parse the output script",
+    disk: "Original payload bytes",
+    recovery: "Copy the bytes from the output script; no custom decoding",
     weight: "≈4 WU/byte",
     bip110: "Valid within an 83-byte script cap",
   },
@@ -37,9 +37,9 @@ const tableRows = [
   },
   {
     method: "OP_PLENTY",
-    role: "Hide data in which opcodes run",
-    disk: "Two opcode bytes stand in for each payload byte",
-    recovery: "Know the scheme and run its modulo-22 decoder",
+    role: "Encode data in which opcodes run",
+    disk: "Encoded opcodes, not the original payload bytes",
+    recovery: "Know OP_PLENTY and run its modulo-22 decoder",
     weight: "≈2 WU/byte",
     bip110: "Published construction looks valid",
   },
@@ -78,8 +78,9 @@ const toc = [
             {response.title}
           </h1>
           <p class="mt-6 max-w-3xl text-xl leading-8 text-muted-foreground">
-            Hiding data in executable script still costs you, and it still is
-            not the same thing as a supported data field.
+            OP_RETURN is Bitcoin's explicit data outlet and contains the
+            payload bytes directly. OP_PLENTY repurposes executable opcodes that
+            custom software must decode to recover the payload.
           </p>
           <div
             class="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground"
@@ -111,11 +112,12 @@ const toc = [
         </aside>
 
         <p class="mb-12 text-xl font-medium leading-8">
-          OP_PLENTY is clever. The conclusion drawn from it is not. Encoding
-          payload bits in which valid opcodes you pick is steganography, and
-          BIP-110 already assumes people can do that kind of thing. Showing a
-          covert path still exists does not prove the explicit data limits are
-          useless.
+          The difference is simple. OP_RETURN is a defined, recognizable place
+          for arbitrary data, so software can copy its payload bytes straight
+          from the output script. OP_PLENTY instead turns executable script into
+          a covert channel: every payload byte is replaced by two opcode bytes.
+          The original payload is not directly readable until separate software
+          recognizes the scheme and decodes those opcodes.
         </p>
 
         <section
@@ -141,9 +143,9 @@ const toc = [
               Where the argument slips
             </p>
             <p class="leading-7">
-              Treating a custom cipher buried in executable script like it is
-              the same product as Bitcoin's standardized field for arbitrary
-              data.
+              Treating executable script repurposed as a coded channel like it
+              is the same thing as Bitcoin's explicit data outlet. OP_PLENTY
+              only yields the payload after a protocol-specific decoding step.
             </p>
           </div>
         </section>
@@ -223,10 +225,12 @@ const toc = [
               <p>
                 OP_RETURN is the place Bitcoin already leaves for small amounts
                 of arbitrary metadata. BIP-110 keeps that outlet and caps the
-                whole output script at 83 bytes. The cap is about how much
-                <em>explicit</em> data Bitcoin supports. Nobody serious thinks
-                it plugs every covert channel; a programmable ledger cannot do
-                that.
+                whole output script at 83 bytes. Once an OP_RETURN output is
+                identified, its payload bytes can be read directly from the
+                script. No OP_PLENTY mapping or modulo-22 transformation is
+                needed. The cap is about how much <em>explicit</em> data Bitcoin
+                supports. Nobody serious thinks it plugs every covert channel;
+                a programmable ledger cannot do that.
               </p>
               <p>
                 Raise or remove the OP_RETURN limit and you expand a defined,

@@ -446,7 +446,7 @@ export const blockslopResponse = {
 /** Response to the OP_PLENTY Tapscript encoding demonstration */
 export const opPlentyResponse = {
   slug: "op-plenty",
-  title: "OP_PLENTY and BIP-110's data limits",
+  title: "Why OP_PLENTY is not OP_RETURN",
   date: "Jul 22, 2026",
   dateIso: "2026-07-22",
   author: "BIP110.org",
@@ -462,9 +462,9 @@ export const opPlentyResponse = {
     },
   },
   summary:
-    "OP_PLENTY is a 2:1 opcode cipher: two script bytes per payload byte, and you need its decoder to get the file back. Covert encoding still exists; that does not make OP_RETURN-style limits pointless.",
+    "OP_RETURN is Bitcoin's explicit data outlet and contains payload bytes directly. OP_PLENTY repurposes executable opcodes, which custom software must decode to recover the original bytes.",
   description:
-    "OP_PLENTY hides data in Tapscript opcodes at two script bytes per payload byte and needs a custom decoder to recover.",
+    "Unlike Bitcoin's explicit OP_RETURN data outlet, OP_PLENTY repurposes executable script and requires a custom decoder to recover its payload.",
 } as const satisfies ResponseEntry;
 
 /** Responses in display order */
