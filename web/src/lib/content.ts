@@ -403,7 +403,7 @@ export interface ResponseClaim {
 
 /** Metadata shared by response listings and article pages */
 export interface ResponseEntry {
-  slug: "op-plenty";
+  slug: "blockslop" | "op-plenty";
   title: string;
   date: string;
   dateIso: string;
@@ -419,10 +419,34 @@ export const responsesIntro = {
   subhead: "Technical responses to arguments against BIP-110.",
 } as const;
 
+/** Response to the BlockSlop late-upgrade chainstate claim */
+export const blockslopResponse = {
+  slug: "blockslop",
+  title: "On BlockSlop and late BIP-110 upgrades",
+  date: "Jul 22, 2026",
+  dateIso: "2026-07-22",
+  author: "BIP110.org",
+  claim: {
+    name: "BlockSlop",
+    statement:
+      "A late upgrade to BIP-110 can leave nodes on different chains even though both nodes report BIP-110 as enabled, so the activation client has a consensus bug.",
+    source: {
+      name: "BlockSlop",
+      author: "Dathon Pwn",
+      url: "https://x.com/DathonPwn/status/2078514978773192779",
+      published: "Jul 18, 2026",
+    },
+  },
+  summary:
+    "The RDTS checks work. The report describes reusing chainstate after mixing non-enforcing and enforcing software—a late-upgrade footgun, already handled both ways by Start9 packaging, with the same class of mess if you switch away from BIP-110.",
+  description:
+    "BlockSlop describes a late-upgrade datadir footgun. The BIP-110 checks still reject the violations when they run.",
+} as const satisfies ResponseEntry;
+
 /** Response to the OP_PLENTY Tapscript encoding demonstration */
 export const opPlentyResponse = {
   slug: "op-plenty",
-  title: "OP_PLENTY fails as a critique of BIP-110",
+  title: "OP_PLENTY and BIP-110's data limits",
   date: "Jul 22, 2026",
   dateIso: "2026-07-22",
   author: "BIP110.org",
@@ -438,13 +462,16 @@ export const opPlentyResponse = {
     },
   },
   summary:
-    "OP_PLENTY is a steganographic 2:1 opcode cipher. Its design reinforces BIP-110's distinction between bounded data fields and covert encodings.",
+    "OP_PLENTY is a 2:1 opcode cipher: two script bytes per payload byte, and you need its decoder to get the file back. Covert encoding still exists; that does not make OP_RETURN-style limits pointless.",
   description:
-    "OP_PLENTY hides arbitrary data in Tapscript opcodes, doubling its size and requiring a bespoke decoder.",
+    "OP_PLENTY hides data in Tapscript opcodes at two script bytes per payload byte and needs a custom decoder to recover.",
 } as const satisfies ResponseEntry;
 
 /** Responses in display order */
-export const responses: readonly ResponseEntry[] = [opPlentyResponse];
+export const responses: readonly ResponseEntry[] = [
+  blockslopResponse,
+  opPlentyResponse,
+];
 
 export const tradeoffs = {
   headline: "Important Considerations",

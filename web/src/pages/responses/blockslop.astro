@@ -1,0 +1,491 @@
+---
+import ComparisonTable from "@/components/responses/ComparisonTable.astro";
+import CodeBlock from "@/components/responses/CodeBlock.astro";
+import Footer from "@/components/Footer.astro";
+import Header from "@/components/Header.astro";
+import Layout from "@/layouts/Layout.astro";
+import { blockslopResponse as response } from "@/lib/content";
+
+const source = response.claim.source;
+
+const preconditions = [
+  { key: "step", label: "Condition" },
+  { key: "detail", label: "What has to happen" },
+  { key: "narrows", label: "Why that is a tall order" },
+] as const;
+
+const preconditionRows = [
+  {
+    step: "1. No enforcement yet",
+    detail:
+      "Your node accepts a block while running software that is not enforcing BIP-110.",
+    narrows: "If you already enforced BIP-110, you never get here.",
+  },
+  {
+    step: "2. Block would fail under BIP-110",
+    detail:
+      "Old rules accept the block; the BIP-110 phase in force at that height would reject it.",
+    narrows:
+      "Nobody has pointed at a mainnet block like this, and the rules only matter once mandatory signaling or active RDTS kicks in.",
+  },
+  {
+    step: "3. You follow it and save it",
+    detail:
+      "That block has enough work that the non-enforcing node makes it part of its tip history and writes chainstate.",
+    narrows:
+      "A bad branch that never becomes your tip does not stick you there.",
+  },
+  {
+    step: "4. You enable BIP-110 on the same datadir",
+    detail:
+      "Later you start an enforcing client against that datadir and skip a reconnect/rebuild.",
+    narrows:
+      "Restarting a node that was already enforcing is a different story.",
+  },
+] as const;
+
+const recoveryColumns = [
+  { key: "situation", label: "Situation" },
+  { key: "tool", label: "Tool" },
+  { key: "effect", label: "What you get" },
+] as const;
+
+const recoveryRows = [
+  {
+    situation: "You may have late-upgraded on an unpruned node",
+    tool: "-reindex-chainstate -assumevalid=0",
+    effect: "Reconnects history under the rules you run now",
+  },
+  {
+    situation: "You know a retained block is bad",
+    tool: "invalidateblock <hash>",
+    effect: "Marks it failed and gets you off that branch",
+  },
+  {
+    situation: "You left BIP-110 after a body-level RDTS reject",
+    tool: "reconsiderblock <hash>",
+    effect: "Clears failure flags so non-RDTS software can follow that branch",
+  },
+  {
+    situation: "Pruned node and the old blocks are gone",
+    tool: "full -reindex / redownload",
+    effect: "Only option when partial checks cannot prove the history",
+  },
+] as const;
+
+const toc = [
+  { id: "what-it-is", label: "What they found" },
+  { id: "label", label: "The “consensus bug” wording" },
+  { id: "symmetric", label: "Same mess the other way" },
+  { id: "narrow", label: "How much has to go wrong" },
+  { id: "recovery", label: "Tools you already have" },
+  { id: "nice-to-have", label: "What would still help" },
+] as const;
+---
+
+<Layout
+  title={`${response.title} | BIP-110`}
+  description={response.description}
+  ogImage="/images/bip110-og-blockslop-dark.png"
+  ogImageWidth="2400"
+  ogImageHeight="1260"
+  ogImageAlt="On BlockSlop: late BIP-110 upgrades and chainstate. The checks work; ordinary startup trusts saved history."
+>
+  <main class="min-h-screen">
+    <Header />
+
+    <article class="px-6 pb-24 pt-24">
+      <div class="mx-auto max-w-4xl">
+        <header class="mb-14 border-b border-border/60 pb-10">
+          <p
+            class="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-primary"
+          >
+            Response
+          </p>
+          <h1 class="max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl">
+            {response.title}
+          </h1>
+          <p class="mt-6 max-w-3xl text-xl leading-8 text-muted-foreground">
+            You can leave two nodes with different histories after a messy late
+            upgrade. That still does not mean BIP-110's rules are broken.
+          </p>
+          <div
+            class="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground"
+          >
+            <span>{response.author}</span>
+            <span aria-hidden="true">•</span>
+            <time datetime={response.dateIso}>{response.date}</time>
+            <span aria-hidden="true">•</span>
+            <a
+              href={source.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="transition-colors hover:text-foreground hover:underline"
+            >
+              Source: {source.name} by {source.author}
+            </a>
+          </div>
+        </header>
+
+        <aside
+          class="mb-8 rounded-xl border border-primary/30 bg-primary/5 p-6"
+        >
+          <p
+            class="mb-2 text-xs font-semibold uppercase tracking-wide text-primary"
+          >
+            The claim
+          </p>
+          <p class="text-lg leading-8">{response.claim.statement}</p>
+        </aside>
+
+        <p class="mb-12 text-xl font-medium leading-8">
+          The sequence they describe is real enough: run without BIP-110, accept
+          a block old rules allow, later flip on enforcement on the same
+          datadir, and default startup may keep trusting the tip you already
+          saved. Fresh BIP-110 validation still rejects those blocks. So does
+          rebuilding chainstate. What you have is a late-upgrade footgun and a
+          marketing label that overshoots.
+        </p>
+
+        <section
+          aria-label="Response summary"
+          class="mb-14 grid gap-4 md:grid-cols-2"
+        >
+          <div class="rounded-xl border border-border/60 bg-card/50 p-5">
+            <p
+              class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+            >
+              What holds up
+            </p>
+            <p class="leading-7">
+              The reported violations die in{" "}
+              <code class="font-mono text-sm text-foreground">ConnectBlock()</code
+              >. Fresh nodes reject them.{" "}
+              <code class="font-mono text-sm text-foreground"
+                >-reindex-chainstate</code
+              >{" "}
+              drops them. The soft fork checks themselves are fine.
+            </p>
+          </div>
+          <div class="rounded-xl border border-primary/30 bg-primary/5 p-5">
+            <p
+              class="mb-2 text-xs font-semibold uppercase tracking-wide text-primary"
+            >
+              Where the write-up goes too far
+            </p>
+            <p class="leading-7">
+              Two nodes only disagree because one of them never ran the new
+              rules on that block. That is a datadir / deployment problem. Calling
+              it a consensus bug makes people hear “the soft fork is broken.”
+            </p>
+          </div>
+        </section>
+
+        <nav
+          aria-labelledby="response-toc-heading"
+          class="mb-16 border-y border-border/60"
+        >
+          <h2
+            id="response-toc-heading"
+            class="border-b border-border/50 py-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground"
+          >
+            In this response
+          </h2>
+          <ol class="divide-y divide-border/60">
+            {
+              toc.map((item, index) => (
+                <li>
+                  <a
+                    href={`#${item.id}`}
+                    class="group flex items-center gap-4 rounded-md py-4 outline-none transition-colors hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/40"
+                  >
+                    <span class="font-mono text-xs text-muted-foreground">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <span class="font-semibold">{item.label}</span>
+                  </a>
+                </li>
+              ))
+            }
+          </ol>
+        </nav>
+
+        <div class="space-y-16">
+          <section id="what-it-is" class="scroll-mt-24">
+            <h2 class="mb-5 text-3xl font-bold">What they found</h2>
+            <div class="space-y-5 text-lg leading-8 text-muted-foreground">
+              <p>
+                Nodes do not re-check the whole chain every time you restart.
+                They keep a UTXO set and validity flags so restarts stay usable.
+                BIP-110's checks sit inside{" "}
+                <code class="font-mono text-sm text-foreground"
+                  >ConnectBlock()</code
+                >. When that path runs—mandatory signaling, output size, script
+                limits—the violations in the report get rejected.
+              </p>
+              <p>
+                Late upgrade is the awkward case. You connect a block under old
+                rules, shut down, then start an enforcing build on the same
+                files. Default verification only digs a little (check level 3,
+                last few blocks). It does not reconnect deep history. So the tip
+                you saved earlier can stick around, while a brand-new BIP-110
+                node looking at the same block for the first time would throw it
+                out.
+              </p>
+              <p class="font-medium text-foreground">
+                Your saved chainstate came from software that was not enforcing
+                BIP-110 yet. The new binary trusts a lot of that work on boot.
+              </p>
+            </div>
+
+            <div class="mt-8 grid gap-5">
+              <CodeBlock
+                label="When the checks actually run"
+                code={`ConnectBlock() rejects the tested BIP-110 violations.
+-reindex-chainstate reconnects history and drops them.
+A fresh enforcing node never accepts them.`}
+              />
+              <CodeBlock
+                label="Default boot does almost no reconnect"
+                code={`DEFAULT_CHECKBLOCKS = 6
+DEFAULT_CHECKLEVEL = 3
+# level 3 disconnects recent blocks
+# only level 4 reconnects via ConnectBlock()`}
+              />
+            </div>
+          </section>
+
+          <section id="label" class="scroll-mt-24">
+            <h2 class="mb-5 text-3xl font-bold">
+              The “consensus bug” wording
+            </h2>
+            <div class="space-y-5 text-lg leading-8 text-muted-foreground">
+              <p>
+                People hear “consensus bug” and think nodes that claim the same
+                rules still disagree after those rules run. Here one node never
+                applied BIP-110 to the contested block. The report even spells
+                out the limits:
+              </p>
+              <ul class="list-disc space-y-3 pl-6">
+                <li>No mainnet block is claimed to violate BIP-110.</li>
+                <li>
+                  A node already enforcing does not accept a new violating
+                  block.
+                </li>
+                <li>
+                  Nodes that enforced BIP-110 from the first relevant block are
+                  outside the scenario.
+                </li>
+                <li>
+                  Rebuilding chainstate rejects the test blocks the same way
+                  fresh validation does.
+                </li>
+              </ul>
+              <p>
+                So we are talking about upgrade packaging and how operators
+                share a datadir across rule sets. The tree even has a comment in{" "}
+                <code class="font-mono text-sm text-foreground"
+                  >ConnectBlock()</code
+                >{" "}
+                about late soft-fork upgrades being hard, and points at SegWit's
+                special guard as one way that particular deployment handled it.
+                Missing a second special guard is an engineering choice. It does
+                not mean the RDTS rules fail when they run.
+              </p>
+              <p>
+                Markers and fail-closed startup would still be useful. Say that
+                plainly. Do not sell a datadir footgun as proof the soft fork is
+                unsound.
+              </p>
+            </div>
+          </section>
+
+          <section id="symmetric" class="scroll-mt-24">
+            <h2 class="mb-5 text-3xl font-bold">Same mess the other way</h2>
+            <div class="space-y-5 text-lg leading-8 text-muted-foreground">
+              <p>
+                Run BIP-110, then late-switch to Core or pre-RDTS Knots on the
+                same datadir, and you can get the reverse headache. After
+                activation, an RDTS body reject leaves failure flags in the
+                block index. Non-RDTS software may need{" "}
+                <code class="font-mono text-sm text-foreground"
+                  >reconsiderblock</code
+                >{" "}
+                before it will follow that branch again. During mandatory
+                signaling, rejected headers often never made it into the index,
+                so switching clients and restarting is usually enough.
+              </p>
+              <p>
+                Node-in-a-box docs already walk people through that recovery. We
+                do not call Bitcoin Core consensus-buggy because it will not
+                magically clean every mixed-rules datadir for you. Apply the same
+                standard when someone upgrades <em>into</em> BIP-110.
+              </p>
+              <p>
+                Start9 already treated it that way. They{" "}
+                <a
+                  href="https://x.com/start9labs/status/2079595202785022055"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-primary hover:underline"
+                >
+                  shipped packaging recovery both ways
+                </a>
+                : Core or pre-RDTS Knots → BIP-110 Knots (
+                <a
+                  href="https://github.com/Start9Labs/bitcoin-knots-startos/pull/22"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-primary hover:underline"
+                >
+                  knots PR
+                </a>
+                ), and BIP-110 Knots → Core or pre-RDTS (
+                <a
+                  href="https://github.com/Start9Labs/bitcoin-core-startos/pull/232"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-primary hover:underline"
+                >
+                  core PR
+                </a>
+                ). Same recovery module across the Core and Knots packages,
+                pruned included. That is what a deployment fix looks like when
+                people take the footgun seriously without rewriting the whole
+                argument as a consensus failure.
+              </p>
+              <p class="font-medium text-foreground">
+                Hot-swapping clients with different rules on one chainstate is
+                on the operator. Both directions need care. Neither one is
+                special evidence against BIP-110.
+              </p>
+            </div>
+          </section>
+
+          <section id="narrow" class="scroll-mt-24">
+            <h2 class="mb-5 text-3xl font-bold">How much has to go wrong</h2>
+            <p class="mb-8 text-lg leading-8 text-muted-foreground">
+              You need all four of these. Drop one and the headline stops
+              matching the setup.
+            </p>
+
+            <ComparisonTable
+              caption="What has to line up for the late-upgrade gap"
+              columns={preconditions}
+              rows={preconditionRows}
+            />
+
+            <div class="mt-8 space-y-5 text-lg leading-8 text-muted-foreground">
+              <p>
+                Even then, you only sit on the retained bad ancestor if that
+                history is still the most-worked chain your node will follow. A
+                dead-end minority branch, or a cleaner branch with more work,
+                means you are not stuck the way the short summary suggests.
+              </p>
+              <p>
+                The “N + 1 chains” picture needs even more: several
+                sufficiently-worked BIP-110-invalid histories, different groups
+                upgrading only after different bad ancestors are already saved,
+                and those groups keeping build on those histories while claiming
+                they enforce. That is people hanging on to pre-enforcement
+                history, not a silent flaw in how BIP-110 defines validity.
+              </p>
+            </div>
+          </section>
+
+          <section id="recovery" class="scroll-mt-24">
+            <h2 class="mb-5 text-3xl font-bold">Tools you already have</h2>
+            <div class="space-y-5 text-lg leading-8 text-muted-foreground">
+              <p>
+                Bitcoin has always assumed you may need to fix local state after
+                a software change or a bad history. Default boot does not
+                re-prove the entire chain. The knobs for this already exist.
+              </p>
+            </div>
+
+            <div class="mt-8">
+              <ComparisonTable
+                caption="If you mixed rule sets or distrust the tip"
+                columns={recoveryColumns}
+                rows={recoveryRows}
+              />
+            </div>
+
+            <div class="mt-8 space-y-5 text-lg leading-8 text-muted-foreground">
+              <p>
+                The report itself says check level 4 and chainstate reindex catch
+                the retained ancestor on an unpruned node. That matches how
+                Bitcoin handles other integrity problems: you ask for the heavy
+                check. The node will not always reindex for you when something
+                looks off.
+              </p>
+              <p>
+                On Start9, the appliance layer is already wrapping those
+                transitions. Their recovery module covers switching into BIP-110
+                and switching out, including pruned installs, instead of leaving
+                every operator to invent the sequence by hand.
+              </p>
+              <p class="font-medium text-foreground">
+                Auto-detecting an unsafe late upgrade and refusing to start
+                would still be nicer upstream. Having to run a repair command, or
+                having your packager run it for you, does not turn this into a
+                consensus failure.
+              </p>
+            </div>
+          </section>
+
+          <section id="nice-to-have" class="scroll-mt-24">
+            <h2 class="mb-5 text-3xl font-bold">What would still help</h2>
+            <div class="space-y-5 text-lg leading-8 text-muted-foreground">
+              <p>
+                Packaging fixes like Start9's already make the operator path
+                safer. Upstream can still do more. SegWit shipped a marker and a
+                startup scan for a related upgrade hazard. A BIP-110 provenance
+                bit, a ruleset note on the chainstate tip, or a hard refuse
+                (“this datadir crossed an applicable height without enforcement;
+                rebuild”) would make late upgrades harder to botch on plain
+                bitcoind too. Ship that before any BIP-110 rule applies on
+                mainnet and enforcing nodes can mark history as they go, so later
+                transitions get caught early.
+              </p>
+              <p>
+                Treat it as release engineering and operator safety. Add
+                regression tests for non-enforcing → enforcing datadir reuse.
+                Keep the wording honest. Nice safeguard. Oversight worth fixing.
+                Still a long way from “BIP-110 consensus is broken.”
+              </p>
+            </div>
+
+            <div
+              class="mt-8 rounded-xl border border-primary/30 bg-primary/5 p-6 sm:p-8"
+            >
+              <p class="text-xl font-bold leading-8 text-foreground">
+                Bottom line
+              </p>
+              <p class="mt-3 text-lg leading-8 text-muted-foreground">
+                The checks work when they run. Fresh nodes enforce them.
+                Rebuilds enforce them. The path in the report is mixing
+                non-enforcing and enforcing software on one datadir, then
+                expecting a normal boot to rewrite history for you. Packagers are
+                already shipping recovery for both directions. Improve the
+                upgrade path more if you want. Do not dress that up as a
+                consensus bug.
+              </p>
+            </div>
+          </section>
+        </div>
+
+        <footer class="mt-16 flex justify-end border-t border-border/60 pt-8">
+          <a
+            href="/responses"
+            class="shrink-0 font-medium text-primary transition-colors hover:text-primary/80 hover:underline"
+          >
+            All responses →
+          </a>
+        </footer>
+      </div>
+    </article>
+
+    <Footer />
+  </main>
+</Layout>

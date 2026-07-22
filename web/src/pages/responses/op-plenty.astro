@@ -20,38 +20,38 @@ const tableColumns = [
 const tableRows = [
   {
     method: "OP_RETURN",
-    role: "Explicit, bounded metadata outlet",
-    disk: "Payload bytes are verbatim",
+    role: "Supported metadata outlet",
+    disk: "Payload bytes sit there plain",
     recovery: "Parse the output script",
     weight: "≈4 WU/byte",
     bip110: "Valid within an 83-byte script cap",
   },
   {
     method: "Inscription envelope",
-    role: "Spend-path data workaround",
-    disk: "Payload bytes are verbatim inside pushes; framing can interrupt chunks",
+    role: "Data stuffed into the spend path",
+    disk: "Payload bytes plain in pushes; framing can split chunks",
     recovery:
-      "Parse the envelope and pushes; file signatures remain recognizable",
+      "Parse the envelope and pushes; file signatures still readable",
     weight: "≈1 WU/byte",
-    bip110: "Large pushes are capped and Tapscript OP_IF/OP_NOTIF is rejected",
+    bip110: "Large pushes capped; Tapscript OP_IF/OP_NOTIF rejected",
   },
   {
     method: "OP_PLENTY",
-    role: "Executed-opcode steganography",
-    disk: "Two transformed opcode bytes replace each payload byte",
+    role: "Hide data in which opcodes run",
+    disk: "Two opcode bytes stand in for each payload byte",
     recovery: "Know the scheme and run its modulo-22 decoder",
     weight: "≈2 WU/byte",
-    bip110: "The published construction appears valid",
+    bip110: "Published construction looks valid",
   },
 ] as const;
 
 const toc = [
   { id: "construction", label: "How OP_PLENTY encodes data" },
-  { id: "op-return", label: "OP_RETURN defines supported data" },
-  { id: "inscriptions", label: "OP_PLENTY repeats the inscription trick" },
+  { id: "op-return", label: "What OP_RETURN is for" },
+  { id: "inscriptions", label: "Same idea as inscriptions" },
   { id: "on-disk", label: "What a node stores on disk" },
-  { id: "cost", label: "The cost and recovery comparison" },
-  { id: "standard", label: "An impossible standard" },
+  { id: "cost", label: "Cost and recovery" },
+  { id: "standard", label: "If the bar is “no encoding left”" },
 ] as const;
 ---
 
@@ -61,7 +61,7 @@ const toc = [
   ogImage="/images/bip110-og-op-plenty-dark.png"
   ogImageWidth="2400"
   ogImageHeight="1260"
-  ogImageAlt="OP_PLENTY fails as a critique of BIP-110. Two script bytes per payload byte, plus a protocol-specific decoder."
+  ogImageAlt="OP_PLENTY and BIP-110's data limits. Two script bytes per payload byte, plus a protocol-specific decoder."
 >
   <main class="min-h-screen">
     <Header />
@@ -78,8 +78,8 @@ const toc = [
             {response.title}
           </h1>
           <p class="mt-6 max-w-3xl text-xl leading-8 text-muted-foreground">
-            A close look at what hiding arbitrary data in executable script
-            actually costs.
+            Hiding data in executable script still costs you, and it still is
+            not the same thing as a supported data field.
           </p>
           <div
             class="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground"
@@ -105,17 +105,17 @@ const toc = [
           <p
             class="mb-2 text-xs font-semibold uppercase tracking-wide text-primary"
           >
-            The argument
+            The claim
           </p>
           <p class="text-lg leading-8">{response.claim.statement}</p>
         </aside>
 
         <p class="mb-12 text-xl font-medium leading-8">
-          OP_PLENTY is a genuinely clever construction attached to a weak
-          argument. It hides payload bits in the choice between valid opcodes,
-          which is exactly the kind of steganography BIP-110 already
-          anticipates. Showing that covert encoding is possible does nothing to
-          show that the limits are ineffective.
+          OP_PLENTY is clever. The conclusion drawn from it is not. Encoding
+          payload bits in which valid opcodes you pick is steganography, and
+          BIP-110 already assumes people can do that kind of thing. Showing a
+          covert path still exists does not prove the explicit data limits are
+          useless.
         </p>
 
         <section
@@ -126,24 +126,24 @@ const toc = [
             <p
               class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
             >
-              Technical finding
+              What holds up
             </p>
             <p class="leading-7">
               The published encoder looks consensus-valid under BIP-110, and the
-              decoder really does recover arbitrary payload bytes from the
-              opcode stream.
+              decoder does pull arbitrary payload bytes back out of the opcode
+              stream.
             </p>
           </div>
           <div class="rounded-xl border border-primary/30 bg-primary/5 p-5">
             <p
               class="mb-2 text-xs font-semibold uppercase tracking-wide text-primary"
             >
-              The category error
+              Where the argument slips
             </p>
             <p class="leading-7">
-              The critique treats a custom cipher buried in executable script as
-              if it were the same thing as Bitcoin's standardized field for
-              arbitrary data.
+              Treating a custom cipher buried in executable script like it is
+              the same product as Bitcoin's standardized field for arbitrary
+              data.
             </p>
           </div>
         </section>
@@ -188,13 +188,12 @@ const toc = [
                 scratch stack valid while those opcodes execute.
               </p>
               <p>
-                Every payload byte ends up costing two script bytes. The
-                optional v2 framing adds seven <code
-                  class="font-mono text-sm text-foreground">OP_5</code
-                >{" "}
-                opcodes as a searchable marker plus eight more for the encoded length.
-                Skip the framing and the receiver has to learn the script boundary
-                or raw-transaction offset some other way.
+                Every payload byte ends up costing two script bytes. Optional v2
+                framing adds seven{" "}
+                <code class="font-mono text-sm text-foreground">OP_5</code>{" "}
+                opcodes as a searchable marker plus eight more for the encoded
+                length. Skip the framing and the receiver has to learn the script
+                boundary or raw-transaction offset some other way.
               </p>
             </div>
 
@@ -213,57 +212,48 @@ const toc = [
             </div>
 
             <p class="mt-6 text-lg leading-8 text-muted-foreground">
-              Bitcoin validates the Tapscript and stops there. Getting the
-              payload back takes external software running the modulo-22
-              decoder.
+              Bitcoin validates the Tapscript and stops. Getting the payload
+              back means external software running the modulo-22 decoder.
             </p>
           </section>
 
           <section id="op-return" class="scroll-mt-24">
-            <h2 class="mb-5 text-3xl font-bold">
-              OP_RETURN defines supported data
-            </h2>
+            <h2 class="mb-5 text-3xl font-bold">What OP_RETURN is for</h2>
             <div class="space-y-5 text-lg leading-8 text-muted-foreground">
               <p>
-                OP_RETURN is where Bitcoin explicitly makes room for small
-                amounts of arbitrary metadata. BIP-110 keeps that outlet and
-                caps the whole output script at 83 bytes. The cap is a statement
-                about how much explicit data Bitcoin supports; nobody claims it
-                closes every covert channel, because in a programmable system
-                nothing can.
+                OP_RETURN is the place Bitcoin already leaves for small amounts
+                of arbitrary metadata. BIP-110 keeps that outlet and caps the
+                whole output script at 83 bytes. The cap is about how much
+                <em>explicit</em> data Bitcoin supports. Nobody serious thinks
+                it plugs every covert channel; a programmable ledger cannot do
+                that.
               </p>
               <p>
-                Raising or removing the OP_RETURN limit would expand a defined,
-                recognizable, relayable interface for arbitrary data, and
-                software accepting a larger standardized carrier would be
-                supporting more of that use. Whether someone can hide bits in
-                opcode choices has no bearing on where that explicit boundary
-                should sit.
+                Raise or remove the OP_RETURN limit and you expand a defined,
+                recognizable, relayable interface for arbitrary data. Software
+                that accepts a larger standardized carrier is supporting more of
+                that use. Whether someone can hide bits in opcode choices does
+                not tell you where that explicit boundary should sit.
               </p>
             </div>
           </section>
 
           <section id="inscriptions" class="scroll-mt-24">
-            <h2 class="mb-5 text-3xl font-bold">
-              OP_PLENTY repeats the inscription trick
-            </h2>
+            <h2 class="mb-5 text-3xl font-bold">Same idea as inscriptions</h2>
             <div class="space-y-5 text-lg leading-8 text-muted-foreground">
               <p>
-                Inscriptions repurpose a Tapscript envelope and its data pushes.
-                OP_PLENTY repurposes the choice of executed opcodes. Different
-                syntax, same move: both turn spend-path machinery into a carrier
-                for a payload that has nothing to do with the spending
-                condition.
+                Inscriptions take a Tapscript envelope and its data pushes and
+                use them as a file carrier. OP_PLENTY takes the choice of
+                executed opcodes and does the same job with different symbols.
+                Either way you are turning spend-path machinery into a payload
+                channel that has nothing to do with the spending condition.
               </p>
               <p>
-                Swapping data pushes for opcode choices is still steganography,
-                just with different symbols. Signatures, public keys, input
-                ordering, and scripts all have spare degrees of freedom that can
-                carry outside bits.
-              </p>
-              <p class="font-medium text-foreground">
-                Steganography will always be possible. Arguing from that fact to
-                an unlimited explicit data carrier is the category error.
+                Signatures, public keys, input ordering, and scripts all have
+                spare degrees of freedom that can carry outside bits. Steganography
+                is always going to be available. Jumping from “someone can still
+                hide data” to “so leave the explicit data carrier unlimited” is
+                the bad leap.
               </p>
             </div>
           </section>
@@ -274,15 +264,14 @@ const toc = [
               <p>
                 A full node stores the serialized transaction, Tapleaf script
                 included. With an ordinary inscription, the payload bytes sit
-                verbatim inside script pushes. Push framing can break up a long
-                file, but recognizable signatures such as the PNG magic still
-                show up in the block data.
+                plain inside script pushes. Push framing can break up a long
+                file, but things like the PNG magic still show up in the block
+                data.
               </p>
               <p>
                 With OP_PLENTY, what hits the disk is the selected opcodes. The
                 PNG signature itself never appears. Getting the file back means
-                knowing OP_PLENTY's mapping and deliberately running its
-                decoder.
+                knowing OP_PLENTY's mapping and running its decoder on purpose.
               </p>
             </div>
 
@@ -295,8 +284,8 @@ const toc = [
             </div>
 
             <p class="mt-5 text-sm leading-6 text-muted-foreground">
-              The second block shows the payload body only, without the
-              optional v2 framing.
+              The second block is the payload body only, without the optional v2
+              framing.
             </p>
 
             <div
@@ -304,26 +293,23 @@ const toc = [
             >
               <p class="font-semibold">Bitcoin stops at script validation</p>
               <p class="mt-2 leading-7 text-muted-foreground">
-                A BIP-110 node knows what each Tapscript opcode does, and that
-                is where its job ends. The payload only exists once an outside
-                protocol maps
-                {" "}<code class="font-mono text-xs text-foreground"
-                  >opcode % 22</code
-                >{" "}
-                to a nibble. If a byte string counts as everything some imaginable
-                decoder could derive from it, “stored on the node” stops meaning anything.
+                A BIP-110 node knows what each Tapscript opcode does. That is the
+                end of its job. The payload only shows up once an outside
+                protocol maps{" "}
+                <code class="font-mono text-xs text-foreground">opcode % 22</code>
+                {" "}
+                to a nibble. If “stored on the node” means anything some
+                imaginable decoder could derive, the phrase stops meaning
+                anything useful.
               </p>
             </div>
           </section>
 
           <section id="cost" class="scroll-mt-24">
-            <h2 class="mb-5 text-3xl font-bold">
-              The cost and recovery comparison
-            </h2>
+            <h2 class="mb-5 text-3xl font-bold">Cost and recovery</h2>
             <p class="mb-8 text-lg leading-8 text-muted-foreground">
-              All three mechanisms put bytes in transactions, but that is where
-              the similarity ends. The interface, visibility, and cost differ
-              a lot.
+              All three put bytes in transactions. After that, the interface,
+              how easy the file is to find, and the cost diverge hard.
             </p>
 
             <ComparisonTable
@@ -336,40 +322,40 @@ const toc = [
               Weight figures are payload-byte floors before transaction,
               framing, commitment, reveal, authorization, and other fixed
               overhead. OP_RETURN lives in non-witness transaction data;
-              inscription and OP_PLENTY script bytes receive witness weighting.
+              inscription and OP_PLENTY script bytes get witness weighting.
             </p>
 
             <p class="mt-6 text-lg leading-8 text-muted-foreground">
-              The optional OP_PLENTY v2 format shows the tradeoff nicely. The
-              seven-<code class="font-mono text-sm text-foreground"
-                >OP_5</code
-              >{" "}
-              marker makes the payload easy to find, and dropping it means the
-              recipient has to get the script's location some other way.
+              Optional OP_PLENTY v2 makes the tradeoff plain. The seven-
+              <code class="font-mono text-sm text-foreground">OP_5</code>{" "}
+              marker makes the payload easy to find; drop it and the recipient
+              has to learn where the script lives some other way.
             </p>
           </section>
 
           <section id="standard" class="scroll-mt-24">
-            <h2 class="mb-5 text-3xl font-bold">An impossible standard</h2>
+            <h2 class="mb-5 text-3xl font-bold">
+              If the bar is “no encoding left”
+            </h2>
             <div class="space-y-5 text-lg leading-8 text-muted-foreground">
               <p>
-                If the bar for BIP-110 is preventing every possible encoding,
-                then every limit fails by definition, because no
-                general-purpose programmable ledger can clear that bar. A test
-                everything fails tells you nothing about whether a limit
-                actually reduces the arbitrary data Bitcoin supports.
+                Demand that BIP-110 block every possible encoding and every
+                limit fails by construction. No general-purpose programmable
+                ledger clears that bar. A test everything fails does not tell
+                you whether a limit actually cuts the arbitrary data Bitcoin
+                supports.
               </p>
               <p>
-                BIP-110 keeps the explicit data outlet bounded, closes the
-                cheapest standardized bulk paths, and makes workarounds less
-                direct, less legible, and more expensive. The site's
-                {" "}<a
+                BIP-110 keeps the explicit data outlet bounded, shuts the
+                cheapest standardized bulk paths, and pushes workarounds toward
+                harder, less readable, more expensive encodings. The site's{" "}
+                <a
                   href="/#wont-spammers-just-spread-their-data-over-multiple-fields"
                   class="text-primary hover:underline"
                 >
                   steganography answer
                 </a>{" "}
-                already makes this point.
+                already says this.
               </p>
             </div>
 
@@ -377,13 +363,14 @@ const toc = [
               class="mt-8 rounded-xl border border-primary/30 bg-primary/5 p-6 sm:p-8"
             >
               <p class="text-xl font-bold leading-8 text-foreground">
-                OP_PLENTY is BIP-110 working as intended.
+                Bottom line
               </p>
               <p class="mt-3 text-lg leading-8 text-muted-foreground">
-                Where there used to be a straightforward carrier, there is now
-                a custom 2:1 cipher hidden in executed script. Every file byte
-                costs two script bytes, and anyone who wants the file back has
-                to run a protocol-specific decoder.
+                OP_PLENTY is what you get when the cheap carrier is gone: a
+                custom 2:1 cipher in executed script. Every file byte costs two
+                script bytes, and anyone who wants the file has to run a
+                protocol-specific decoder. That is the limit doing work, not
+                proof the limit failed.
               </p>
             </div>
           </section>
