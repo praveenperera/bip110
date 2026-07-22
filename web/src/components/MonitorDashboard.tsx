@@ -26,6 +26,8 @@ const CACHE_KEY = "bip110-monitor-data";
 const MONITOR_DATA_EVENT = "bip110-monitor-data";
 const CACHE_VERSION = 2;
 const CACHE_TTL_MS = 60_000;
+const MONITOR_DATA_REFRESH_MS = 15_000;
+const MONITOR_BLOCKS_REFRESH_MS = 10_000;
 const PERIOD_BLOCK_COUNT = 2016;
 const ACTIVATION_THRESHOLD = 55;
 const VOLUNTARY_DEADLINE_BLOCK = 961542;
@@ -278,6 +280,7 @@ function isLocalDevHost() {
 
 async function fetchMonitorData(signal?: AbortSignal) {
   const response = await fetch(API_URL, {
+    cache: "no-store",
     signal,
   });
 
@@ -300,8 +303,15 @@ async function fetchMonitorData(signal?: AbortSignal) {
   throw new Error(`Monitor API returned ${response.status}`);
 }
 
-async function fetchMonitorBlocks(signal?: AbortSignal) {
-  const response = await fetch(BLOCKS_API_URL, {
+async function fetchMonitorBlocks(
+  expectedTip: number | null,
+  signal?: AbortSignal,
+) {
+  const url = expectedTip
+    ? `${BLOCKS_API_URL}?tip=${expectedTip}`
+    : BLOCKS_API_URL;
+  const response = await fetch(url, {
+    cache: "no-store",
     signal,
   });
 
@@ -317,9 +327,13 @@ async function fetchMonitorBlocks(signal?: AbortSignal) {
   return payload;
 }
 
-function useMonitorBlocks(onBlocks: (payload: MonitorBlocksPayload) => void) {
+function useMonitorBlocks(
+  expectedTip: number | null,
+  onBlocks: (payload: MonitorBlocksPayload) => void,
+) {
   const [blockDataStatus, setBlockDataStatus] =
     useState<BlockDataStatus>("loading");
+  const [refreshIndex, setRefreshIndex] = useState(0);
   const onBlocksRef = useRef(onBlocks);
   const lastLoadedAtRef = useRef<number | null>(null);
 
@@ -339,7 +353,10 @@ function useMonitorBlocks(onBlocks: (payload: MonitorBlocksPayload) => void) {
       controller = new AbortController();
 
       try {
-        const payload = await fetchMonitorBlocks(controller.signal);
+        const payload = await fetchMonitorBlocks(
+          expectedTip,
+          controller.signal,
+        );
         if (!active) return;
 
         lastLoadedAtRef.current = Date.now();
@@ -370,18 +387,27 @@ function useMonitorBlocks(onBlocks: (payload: MonitorBlocksPayload) => void) {
     };
 
     void loadBlocks();
+    const refreshTimer = window.setInterval(
+      loadBlocks,
+      MONITOR_BLOCKS_REFRESH_MS,
+    );
     window.addEventListener("focus", loadBlocksIfStale);
     document.addEventListener("visibilitychange", loadBlocksIfStale);
 
     return () => {
       active = false;
       controller?.abort();
+      window.clearInterval(refreshTimer);
       window.removeEventListener("focus", loadBlocksIfStale);
       document.removeEventListener("visibilitychange", loadBlocksIfStale);
     };
+  }, [expectedTip, refreshIndex]);
+
+  const refreshBlocks = useCallback(() => {
+    setRefreshIndex((index) => index + 1);
   }, []);
 
-  return blockDataStatus;
+  return { blockDataStatus, refreshBlocks };
 }
 
 function formatNumber(value: number) {
@@ -523,6 +549,17 @@ function generatePeriodBlocks(data: MonitorData): PeriodGridBlock[] {
   return Array.from({ length: blockCount }, (_, index) => ({
     height: data.tip - index,
   }));
+}
+
+function mergePeriodBlocks(
+  data: MonitorData,
+  blocks: MonitorBlock[] | null,
+): PeriodGridBlock[] {
+  const periodBlocks = generatePeriodBlocks(data);
+  if (!blocks || blocks.length === 0) return periodBlocks;
+
+  const blocksByHeight = new Map(blocks.map((block) => [block.height, block]));
+  return periodBlocks.map((block) => blocksByHeight.get(block.height) ?? block);
 }
 
 function currentPeriodFromMonitorData(data: MonitorData): Period {
@@ -1157,13 +1194,10 @@ function PeriodBlockGrid({
     setShowAll(false);
   }, [data.periodNum, data.tip, mode]);
 
-  const gridBlocks = useMemo(() => {
-    if (blocks && blocks.length > 0) {
-      return blocks;
-    }
-
-    return generatePeriodBlocks(data);
-  }, [blocks, data]);
+  const gridBlocks = useMemo(
+    () => mergePeriodBlocks(data, blocks),
+    [blocks, data],
+  );
 
   const visibleBlocks = showAll
     ? gridBlocks
@@ -1311,7 +1345,10 @@ export function MonitorBlockGrid({
   const applyMonitorBlocks = useCallback((payload: MonitorBlocksPayload) => {
     setBlocks(payload.blocks);
   }, []);
-  const blockDataStatus = useMonitorBlocks(applyMonitorBlocks);
+  const { blockDataStatus } = useMonitorBlocks(
+    data?.tip ?? null,
+    applyMonitorBlocks,
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -1470,39 +1507,50 @@ export function MonitorDashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadData = useCallback(async (signal?: AbortSignal) => {
-    setRefreshing(true);
-    setError(null);
+  const loadData = useCallback(
+    async (signal?: AbortSignal, background = false) => {
+      if (!background) setRefreshing(true);
+      setError(null);
 
-    try {
-      const nextData = await fetchMonitorData(signal);
-      const cachedAt = Date.now();
-      setData(nextData);
-      setCacheInfo({ cachedAt, source: "network" });
-      writeCachedMonitorData(nextData, cachedAt);
-    } catch (nextError) {
-      if (
-        nextError instanceof DOMException &&
-        nextError.name === "AbortError"
-      ) {
-        return;
+      try {
+        const nextData = await fetchMonitorData(signal);
+        const cachedAt = Date.now();
+        setData(nextData);
+        setCacheInfo({ cachedAt, source: "network" });
+        writeCachedMonitorData(nextData, cachedAt);
+      } catch (nextError) {
+        if (
+          nextError instanceof DOMException &&
+          nextError.name === "AbortError"
+        ) {
+          return;
+        }
+
+        setError(
+          nextError instanceof Error
+            ? nextError.message
+            : "Monitor data could not be loaded",
+        );
+      } finally {
+        setLoading(false);
+        if (!background) setRefreshing(false);
       }
-
-      setError(
-        nextError instanceof Error
-          ? nextError.message
-          : "Monitor data could not be loaded",
-      );
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   const applyMonitorBlocks = useCallback((payload: MonitorBlocksPayload) => {
     setBlocks(payload.blocks);
   }, []);
-  const blockDataStatus = useMonitorBlocks(applyMonitorBlocks);
+  const { blockDataStatus, refreshBlocks } = useMonitorBlocks(
+    data?.tip ?? null,
+    applyMonitorBlocks,
+  );
+
+  const refreshMonitor = useCallback(() => {
+    refreshBlocks();
+    void loadData();
+  }, [loadData, refreshBlocks]);
 
   const scrollToMonitorSection = useCallback(() => {
     const sectionId = window.location.hash.slice(1);
@@ -1534,11 +1582,11 @@ export function MonitorDashboard() {
     const cached = readCachedMonitorData();
     let refreshInFlight = false;
 
-    const refreshData = (signal?: AbortSignal) => {
+    const refreshData = (signal?: AbortSignal, background = false) => {
       if (refreshInFlight) return;
 
       refreshInFlight = true;
-      void loadData(signal).finally(() => {
+      void loadData(signal, background).finally(() => {
         refreshInFlight = false;
       });
     };
@@ -1559,11 +1607,16 @@ export function MonitorDashboard() {
       }
     };
 
+    const refreshTimer = window.setInterval(() => {
+      if (isPageVisible()) refreshData(undefined, true);
+    }, MONITOR_DATA_REFRESH_MS);
+
     window.addEventListener("focus", loadDataIfStale);
     document.addEventListener("visibilitychange", loadDataIfStale);
 
     return () => {
       controller.abort();
+      window.clearInterval(refreshTimer);
       window.removeEventListener("focus", loadDataIfStale);
       document.removeEventListener("visibilitychange", loadDataIfStale);
     };
@@ -1698,7 +1751,7 @@ export function MonitorDashboard() {
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => void loadData()}
+            onClick={refreshMonitor}
             className="self-start bg-background md:self-auto"
             disabled={refreshing}
           >

@@ -9,6 +9,7 @@ const UPDATED_AT_PATTERN = /Updated:\s*([0-9-]+\s+[0-9:]+\s+UTC)/;
 
 export const MONITOR_BLOCKS_API_PATH = "/api/monitor-blocks";
 export const MONITOR_BLOCKS_CACHE_TTL_SECONDS = 60;
+const MONITOR_BLOCKS_CATCH_UP_CACHE_TTL_SECONDS = 5;
 
 type CacheStatus = "HIT" | "MISS" | "BYPASS";
 
@@ -36,6 +37,7 @@ export async function handleMonitorBlocksApiRequest(
     ctx,
   );
   const headers = new Headers(response.headers);
+  headers.set("cache-control", "no-store");
   headers.set("x-bip110-blocks-cache", cacheStatus);
 
   return new Response(request.method === "HEAD" ? null : response.body, {
@@ -48,8 +50,12 @@ export async function handleMonitorBlocksApiRequest(
 export async function readMonitorBlocks(
   request: Request,
   ctx: ExecutionContext,
+  expectedTip?: number,
 ): Promise<MonitorBlocksPayload> {
-  const { response } = await fetchCachedMonitorBlocksResponse(request, ctx);
+  const { response } = await fetchCachedMonitorBlocksResponse(
+    monitorBlocksRequest(request, expectedTip),
+    ctx,
+  );
 
   if (!response.ok) {
     throw new Error(`monitor block data unavailable: ${response.status}`);
@@ -64,6 +70,7 @@ async function fetchCachedMonitorBlocksResponse(
 ): Promise<CachedMonitorBlocksResponse> {
   const cache = defaultCache();
   const cacheKey = monitorBlocksCacheKey(request);
+  const expectedTip = monitorBlocksExpectedTip(request);
   const cached = await cache.match(cacheKey);
 
   if (cached) {
@@ -99,7 +106,7 @@ async function fetchCachedMonitorBlocksResponse(
   const response = jsonResponse(payload, {
     headers: {
       "access-control-allow-origin": "*",
-      "cache-control": `public, max-age=${MONITOR_BLOCKS_CACHE_TTL_SECONDS}`,
+      "cache-control": `public, max-age=${monitorBlocksCacheTtl(payload, expectedTip)}`,
     },
   });
 
@@ -111,9 +118,38 @@ async function fetchCachedMonitorBlocksResponse(
 function monitorBlocksCacheKey(request: Request): Request {
   const url = new URL(request.url);
   url.pathname = MONITOR_BLOCKS_API_PATH;
-  url.search = "";
+  const expectedTip = monitorBlocksExpectedTip(request);
+  url.search = expectedTip === null ? "" : `?tip=${expectedTip}`;
 
   return new Request(url.toString(), { method: "GET" });
+}
+
+function monitorBlocksRequest(request: Request, expectedTip?: number): Request {
+  if (!expectedTip) return request;
+
+  const url = new URL(request.url);
+  url.searchParams.set("tip", expectedTip.toString());
+
+  return new Request(url.toString(), { method: "GET" });
+}
+
+function monitorBlocksExpectedTip(request: Request): number | null {
+  const value = new URL(request.url).searchParams.get("tip");
+  if (!value || !/^\d+$/.test(value)) return null;
+
+  const tip = Number.parseInt(value, 10);
+  return Number.isSafeInteger(tip) && tip > 0 ? tip : null;
+}
+
+function monitorBlocksCacheTtl(
+  payload: MonitorBlocksPayload,
+  expectedTip: number | null,
+): number {
+  if (expectedTip === null || payload.blocks[0]?.height === expectedTip) {
+    return MONITOR_BLOCKS_CACHE_TTL_SECONDS;
+  }
+
+  return MONITOR_BLOCKS_CATCH_UP_CACHE_TTL_SECONDS;
 }
 
 function unavailableResponse(status: number): CachedMonitorBlocksResponse {

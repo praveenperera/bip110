@@ -40,7 +40,7 @@ export async function handleMonitorPageRequest(
 
   try {
     const data = await readMonitorData(request, ctx);
-    const blocks = await readMonitorPageBlocks(request, ctx);
+    const blocks = await readMonitorPageBlocks(request, ctx, data.tip);
     return rewriteMonitorPage(assetResponse, request, data, blocks);
   } catch {
     return staticMonitorPage(assetResponse);
@@ -152,9 +152,10 @@ function rewriteMonitorPage(
 async function readMonitorPageBlocks(
   request: Request,
   ctx: ExecutionContext,
+  expectedTip: number,
 ): Promise<MonitorBlock[]> {
   try {
-    const payload = await readMonitorBlocks(request, ctx);
+    const payload = await readMonitorBlocks(request, ctx, expectedTip);
     return payload.blocks;
   } catch {
     return [];

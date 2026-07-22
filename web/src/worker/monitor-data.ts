@@ -130,6 +130,7 @@ export async function handleMonitorApiRequest(
     ctx,
   );
   const headers = new Headers(response.headers);
+  headers.set("cache-control", "no-store");
   headers.set("x-bip110-cache", cacheStatus);
 
   return new Response(request.method === "HEAD" ? null : response.body, {

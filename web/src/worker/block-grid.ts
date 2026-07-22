@@ -34,9 +34,11 @@ function gridBlocksFor(
   data: MonitorData,
   blocks: MonitorBlock[],
 ): MonitorBlock[] {
-  return blocks.length > 0
-    ? blocks.slice(0, STATIC_GRID_BLOCK_COUNT)
-    : generatePeriodBlocks(data).slice(0, STATIC_GRID_BLOCK_COUNT);
+  const blocksByHeight = new Map(blocks.map((block) => [block.height, block]));
+
+  return generatePeriodBlocks(data)
+    .map((block) => blocksByHeight.get(block.height) ?? block)
+    .slice(0, STATIC_GRID_BLOCK_COUNT);
 }
 
 function generatePeriodBlocks(data: MonitorData): MonitorBlock[] {
