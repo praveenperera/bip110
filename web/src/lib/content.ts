@@ -386,6 +386,66 @@ export const articles = articleSections.flatMap((section) => section.articles);
 
 export type Article = (typeof articles)[number];
 
+/** Published source for a response */
+export interface ResponseSource {
+  name: string;
+  author: string;
+  url: string;
+  published: string;
+}
+
+/** Criticism addressed by a response */
+export interface ResponseClaim {
+  name: string;
+  statement: string;
+  source: ResponseSource;
+}
+
+/** Metadata shared by response listings and article pages */
+export interface ResponseEntry {
+  slug: "op-plenty";
+  title: string;
+  date: string;
+  dateIso: string;
+  author: string;
+  claim: ResponseClaim;
+  summary: string;
+  description: string;
+}
+
+/** Introductory copy for response listings */
+export const responsesIntro = {
+  headline: "Responses",
+  subhead: "Technical responses to arguments against BIP-110.",
+} as const;
+
+/** Response to the OP_PLENTY Tapscript encoding demonstration */
+export const opPlentyResponse = {
+  slug: "op-plenty",
+  title: "OP_PLENTY fails as a critique of BIP-110",
+  date: "Jul 22, 2026",
+  dateIso: "2026-07-22",
+  author: "BIP110.org",
+  claim: {
+    name: "OP_PLENTY",
+    statement:
+      "Because arbitrary payloads can still be encoded as valid Tapscript under BIP-110, limits on recognized data carriers are ineffective.",
+    source: {
+      name: "OP_PLENTY",
+      author: "stevenrabinow-hash",
+      url: "https://gist.github.com/stevenrabinow-hash/b71d7e085cb67a91b4553f750a1086dd",
+      published: "Jul 21, 2026",
+    },
+  },
+  summary:
+    "OP_PLENTY is a steganographic 2:1 opcode cipher. Its design reinforces BIP-110's distinction between bounded data fields and covert encodings.",
+  description:
+    "OP_PLENTY hides arbitrary data in Tapscript opcodes, doubling its size and requiring a bespoke decoder.",
+} as const satisfies ResponseEntry;
+
+/** Responses in display order */
+export const responses: readonly ResponseEntry[] = [opPlentyResponse];
+
 export const tradeoffs = {
   headline: "Important Considerations",
   items: [

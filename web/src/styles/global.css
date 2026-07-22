@@ -198,6 +198,10 @@
   opacity: 1;
 }
 
+.dark .syntax-token {
+  color: var(--shiki-dark) !important;
+}
+
 /* Accordion animation - Base UI pattern */
 [data-slot="accordion-panel"] {
   overflow: hidden;

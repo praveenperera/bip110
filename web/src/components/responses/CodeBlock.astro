@@ -1,0 +1,36 @@
+---
+import { highlightTokens, type HighlightLanguage } from "@/lib/highlight";
+
+/** Props for a labeled response code block */
+interface Props {
+  code: string;
+  language?: HighlightLanguage;
+  label?: string;
+  href?: string;
+}
+
+const { code, language = "text", label, href } = Astro.props;
+const lines = highlightTokens(code, language);
+---
+
+<figure class="overflow-hidden rounded-xl border border-border/60 bg-muted/40">
+  {
+    label && (
+      <figcaption class="flex items-center justify-between gap-4 border-b border-border/60 px-4 py-2 text-xs font-medium text-muted-foreground">
+        <span>{label}</span>
+        {href && (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-primary transition-colors hover:text-primary/80 hover:underline"
+          >
+            View source
+          </a>
+        )}
+      </figcaption>
+    )
+  }
+  <pre
+    class="overflow-x-auto p-4 font-mono text-[12px] leading-5"><code>{lines.map((line) => <span class="block min-h-5">{line.length === 0 ? " " : line.map((token) => <span class="syntax-token" style={token.style}>{token.content}</span>)}</span>)}</code></pre>
+</figure>

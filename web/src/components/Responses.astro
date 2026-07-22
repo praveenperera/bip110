@@ -1,0 +1,53 @@
+---
+import { responses, responsesIntro } from "@/lib/content";
+---
+
+<section id="responses" class="scroll-mt-24 bg-muted/30 px-6 py-24">
+  <div class="mx-auto max-w-4xl">
+    <h2 class="mb-4 text-center text-3xl font-bold">
+      {responsesIntro.headline}
+    </h2>
+    <p class="mx-auto mb-12 max-w-2xl text-center text-muted-foreground">
+      {responsesIntro.subhead}
+    </p>
+
+    <div class="grid gap-6">
+      {
+        responses.map((response) => (
+          <article class="rounded-xl border border-border/60 bg-card/70 p-6">
+            <div class="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+              <div class="max-w-2xl">
+                <p class="mb-3 text-xs font-semibold uppercase tracking-wide text-primary">
+                  Response to {response.claim.name}
+                </p>
+                <h3 class="mb-3 text-xl font-bold">{response.title}</h3>
+                <p class="mb-4 border-l-2 border-border pl-4 text-sm leading-6 text-muted-foreground">
+                  {response.claim.statement}
+                </p>
+                <p class="leading-7 text-muted-foreground">
+                  {response.summary}
+                </p>
+              </div>
+              <a
+                href={`/responses/${response.slug}`}
+                class="inline-flex shrink-0 items-center gap-2 font-medium text-primary transition-colors hover:text-primary/80 hover:underline"
+              >
+                Read the response
+                <span aria-hidden="true">→</span>
+              </a>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+
+    <div class="mt-10 text-center">
+      <a
+        href="/responses"
+        class="inline-flex items-center gap-2 font-medium text-primary transition-colors hover:text-primary/80 hover:underline"
+      >
+        All responses <span aria-hidden="true">→</span>
+      </a>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,64 @@
+---
+/** Column in a response comparison table */
+interface ComparisonColumn {
+  key: string;
+  label: string;
+  mono?: boolean;
+}
+
+/** Props for an accessible response comparison table */
+interface Props {
+  caption: string;
+  columns: readonly ComparisonColumn[];
+  rows: readonly Readonly<Record<string, string>>[];
+}
+
+const { caption, columns, rows } = Astro.props;
+---
+
+<div class="overflow-x-auto rounded-xl border border-border/60">
+  <table class="w-full min-w-[48rem] border-collapse text-left text-sm">
+    <caption
+      class="border-b border-border/60 bg-muted/30 px-4 py-3 text-left font-semibold"
+    >
+      {caption}
+    </caption>
+    <thead
+      class="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground"
+    >
+      <tr>
+        {
+          columns.map((column) => (
+            <th scope="col" class="px-4 py-3 font-semibold">
+              {column.label}
+            </th>
+          ))
+        }
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-border/60 bg-card/40 align-top">
+      {
+        rows.map((row) => (
+          <tr>
+            {columns.map((column, columnIndex) => {
+              const Tag = columnIndex === 0 ? "th" : "td";
+
+              return (
+                <Tag
+                  scope={columnIndex === 0 ? "row" : undefined}
+                  class:list={[
+                    "px-4 py-3 leading-6",
+                    columnIndex === 0 && "font-semibold",
+                    column.mono && "font-mono text-xs",
+                  ]}
+                >
+                  {row[column.key]}
+                </Tag>
+              );
+            })}
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+</div>

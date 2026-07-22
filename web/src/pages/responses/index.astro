@@ -1,0 +1,74 @@
+---
+import Footer from "@/components/Footer.astro";
+import Header from "@/components/Header.astro";
+import Layout from "@/layouts/Layout.astro";
+import { responses, responsesIntro } from "@/lib/content";
+---
+
+<Layout
+  title="Responses to BIP-110 Criticisms"
+  description="Technical responses to arguments against BIP-110."
+  ogImage="/og.jpg"
+>
+  <main class="min-h-screen">
+    <Header />
+
+    <section class="px-6 pb-24 pt-24">
+      <div class="mx-auto max-w-4xl">
+        <h1 class="mb-4 text-4xl font-bold">{responsesIntro.headline}</h1>
+        <p class="mb-16 max-w-3xl text-xl text-muted-foreground">
+          {responsesIntro.subhead}
+        </p>
+
+        <div class="space-y-6">
+          {
+            responses.map((response) => (
+              <article class="rounded-xl border border-border/60 bg-card/50 p-6">
+                <div class="mb-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
+                  <time datetime={response.dateIso}>{response.date}</time>
+                  <span aria-hidden="true">•</span>
+                  <span>{response.author}</span>
+                </div>
+
+                <p class="mb-3 text-xs font-semibold uppercase tracking-wide text-primary">
+                  Response to {response.claim.name}
+                </p>
+                <h2 class="mb-3 text-2xl font-bold">
+                  <a
+                    href={`/responses/${response.slug}`}
+                    class="transition-colors hover:text-primary hover:underline"
+                  >
+                    {response.title}
+                  </a>
+                </h2>
+                <p class="mb-5 leading-7 text-muted-foreground">
+                  {response.summary}
+                </p>
+
+                <div class="flex flex-col gap-4 border-t border-border/60 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                  <a
+                    href={response.claim.source.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-sm text-muted-foreground transition-colors hover:text-foreground hover:underline"
+                  >
+                    Source: {response.claim.source.name} by{" "}
+                    {response.claim.source.author}
+                  </a>
+                  <a
+                    href={`/responses/${response.slug}`}
+                    class="inline-flex items-center gap-2 font-medium text-primary transition-colors hover:text-primary/80 hover:underline"
+                  >
+                    Read the response <span aria-hidden="true">→</span>
+                  </a>
+                </div>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <Footer />
+  </main>
+</Layout>
