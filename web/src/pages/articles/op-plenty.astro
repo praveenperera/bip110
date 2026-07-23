@@ -1,6 +1,7 @@
 ---
 import ComparisonTable from "@/components/responses/ComparisonTable.astro";
 import CodeBlock from "@/components/responses/CodeBlock.astro";
+import ArticleCover from "@/components/responses/ArticleCover.astro";
 import Footer from "@/components/Footer.astro";
 import Header from "@/components/Header.astro";
 import Layout from "@/layouts/Layout.astro";
@@ -99,6 +100,8 @@ const toc = [
             </a>
           </div>
         </header>
+
+        <ArticleCover image={response.cardImage} />
 
         <aside
           class="mb-8 rounded-xl border border-primary/30 bg-primary/5 p-6"

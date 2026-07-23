@@ -413,6 +413,7 @@ export interface ResponseEntry {
   description: string;
   cardImage: {
     src: string;
+    alt: string;
     width: number;
     height: number;
   };
@@ -450,6 +451,7 @@ export const blockslopResponse = {
     "BlockSlop describes a late-upgrade datadir footgun. The BIP-110 checks still reject the violations when they run.",
   cardImage: {
     src: "/images/bip110-card-blockslop-imagegen-v3.webp",
+    alt: "BIP-110 checkpoint illustration summarizing that fresh nodes reject invalid blocks, default startup trusts saved chainstate, and reindexing reconnects history.",
     width: 1726,
     height: 911,
   },
@@ -482,6 +484,7 @@ export const opPlentyResponse = {
     "Unlike Bitcoin's explicit OP_RETURN data outlet, OP_PLENTY repurposes executable script and requires a custom decoder to recover its payload.",
   cardImage: {
     src: "/images/bip110-card-op-plenty-imagegen-v4.webp",
+    alt: "OP_PLENTY encoder illustration summarizing its two-to-one encoding, required custom decoder, and use of encoded opcodes rather than raw payload bytes.",
     width: 1727,
     height: 911,
   },

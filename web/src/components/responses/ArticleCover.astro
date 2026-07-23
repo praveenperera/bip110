@@ -1,0 +1,24 @@
+---
+import type { ResponseEntry } from "@/lib/content";
+
+interface Props {
+  image: ResponseEntry["cardImage"];
+}
+
+const { image } = Astro.props;
+---
+
+<figure
+  class="mb-10 overflow-hidden rounded-2xl border border-border/60 bg-muted shadow-sm"
+>
+  <img
+    src={image.src}
+    alt={image.alt}
+    width={image.width}
+    height={image.height}
+    loading="eager"
+    decoding="async"
+    fetchpriority="high"
+    class="aspect-[40/21] w-full object-cover"
+  />
+</figure>
