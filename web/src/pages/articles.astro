@@ -153,10 +153,10 @@ const sectionLinks = [
                       class="group block aspect-[40/21] overflow-hidden bg-muted"
                     >
                       <img
-                        src={response.ogImage}
+                        src={response.cardImage.src}
                         alt=""
-                        width="2400"
-                        height="1260"
+                        width={response.cardImage.width}
+                        height={response.cardImage.height}
                         loading="lazy"
                         class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
