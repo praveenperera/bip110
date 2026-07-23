@@ -58,10 +58,10 @@ const toc = [
 <Layout
   title={`${response.title} | BIP-110`}
   description={response.description}
-  ogImage="/images/bip110-og-op-plenty-dark.png"
+  ogImage={response.ogImage}
   ogImageWidth="2400"
   ogImageHeight="1260"
-  ogImageAlt="OP_PLENTY and BIP-110's data limits. Two script bytes per payload byte, plus a protocol-specific decoder."
+  ogImageAlt={response.ogImageAlt}
 >
   <main class="min-h-screen">
     <Header />
@@ -385,7 +385,7 @@ const toc = [
 
         <footer class="mt-16 flex justify-end border-t border-border/60 pt-8">
           <a
-            href="/responses"
+            href="/articles#responses"
             class="shrink-0 font-medium text-primary transition-colors hover:text-primary/80 hover:underline"
           >
             All responses →

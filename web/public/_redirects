@@ -1,0 +1,3 @@
+/responses /articles#responses 301
+/responses/ /articles#responses 301
+/responses/* /articles/:splat 301

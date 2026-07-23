@@ -3,9 +3,9 @@ import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import ArticleCard from "@/components/ArticleCard.astro";
-import { articleSections } from "@/lib/content";
+import { articleSections, responses, responsesIntro } from "@/lib/content";
 
-const articleSectionLinks = articleSections.map((section) => ({
+const articleSectionsWithIds = articleSections.map((section) => ({
   ...section,
   id: section.title
     .toLowerCase()
@@ -18,11 +18,24 @@ const articleCountLabel = (count: number) =>
 
 const articleGridClass = (count: number) =>
   count === 1 ? "grid gap-6 md:max-w-xl" : "grid gap-6 md:grid-cols-2";
+
+const sectionLinks = [
+  ...articleSectionsWithIds.map((section) => ({
+    id: section.id,
+    title: section.title,
+    count: section.articles.length,
+  })),
+  {
+    id: "responses",
+    title: responsesIntro.headline,
+    count: responses.length,
+  },
+];
 ---
 
 <Layout
   title="Articles on BIP-110: In-Depth Reading on Bitcoin's Future"
-  description="Start with the context behind Bitcoin's arbitrary data problem, then read the game theory, legal analysis, and technical audits of BIP-110."
+  description="Start with the context behind Bitcoin's arbitrary data problem, then read the game theory, legal analysis, technical audits, and responses to criticism of BIP-110."
   ogImage="/images/bip110-og-articles-dark.png"
 >
   <main class="min-h-screen">
@@ -34,7 +47,7 @@ const articleGridClass = (count: number) =>
         <p class="text-xl text-muted-foreground mb-16 max-w-3xl">
           Start with the context behind Bitcoin's arbitrary data problem, then
           move into the <span class="whitespace-nowrap">BIP-110</span> proposal and
-          its tradeoffs.
+          technical responses to its critics.
         </p>
 
         <nav
@@ -49,7 +62,7 @@ const articleGridClass = (count: number) =>
           </h2>
           <ul class="divide-y divide-border/60">
             {
-              articleSectionLinks.map((section) => (
+              sectionLinks.map((section) => (
                 <li>
                   <a
                     href={`#${section.id}`}
@@ -65,7 +78,7 @@ const articleGridClass = (count: number) =>
                       </span>
                     </span>
                     <span class="shrink-0 text-sm text-muted-foreground transition-colors group-hover:text-foreground group-focus-visible:text-foreground">
-                      {articleCountLabel(section.articles.length)}
+                      {articleCountLabel(section.count)}
                     </span>
                     <span
                       aria-hidden="true"
@@ -80,7 +93,7 @@ const articleGridClass = (count: number) =>
 
         <div class="space-y-16">
           {
-            articleSectionLinks.map((section) => (
+            articleSectionsWithIds.map((section) => (
               <section
                 id={section.id}
                 aria-labelledby={`${section.id}-heading`}
@@ -109,6 +122,91 @@ const articleGridClass = (count: number) =>
               </section>
             ))
           }
+
+          <section
+            id="responses"
+            aria-labelledby="responses-heading"
+            class="scroll-mt-24 border-t border-border/60 pt-12"
+          >
+            <div class="mb-8 max-w-2xl">
+              <div aria-hidden="true" class="mb-5 h-px w-10 bg-primary"></div>
+              <h2 class="group mb-2 flex items-center gap-2 text-2xl font-bold">
+                <span id="responses-heading">{responsesIntro.headline}</span>
+                <a
+                  href="#responses"
+                  aria-label="Link to Responses section"
+                  class="text-muted-foreground opacity-0 outline-none transition-opacity hover:text-foreground group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-[3px] focus-visible:ring-ring/40"
+                >
+                  #
+                </a>
+              </h2>
+              <p class="text-muted-foreground">{responsesIntro.subhead}</p>
+            </div>
+
+            <div class={articleGridClass(responses.length)}>
+              {
+                responses.map((response) => (
+                  <article class="flex h-full flex-col overflow-hidden rounded-xl border border-border/60 bg-card/50">
+                    <a
+                      href={`/articles/${response.slug}`}
+                      aria-label={`Read ${response.title}`}
+                      class="group block aspect-[40/21] overflow-hidden bg-muted"
+                    >
+                      <img
+                        src={response.ogImage}
+                        alt=""
+                        width="2400"
+                        height="1260"
+                        loading="lazy"
+                        class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    </a>
+
+                    <div class="flex flex-1 flex-col p-6">
+                      <div class="mb-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
+                        <time datetime={response.dateIso}>{response.date}</time>
+                        <span aria-hidden="true">•</span>
+                        <span>{response.author}</span>
+                      </div>
+
+                      <p class="mb-3 text-xs font-semibold uppercase tracking-wide text-primary">
+                        Response to {response.claim.name}
+                      </p>
+                      <h3 class="mb-3 text-2xl font-bold">
+                        <a
+                          href={`/articles/${response.slug}`}
+                          class="transition-colors hover:text-primary hover:underline"
+                        >
+                          {response.title}
+                        </a>
+                      </h3>
+                      <p class="mb-5 flex-1 leading-7 text-muted-foreground">
+                        {response.summary}
+                      </p>
+
+                      <div class="flex flex-col items-start gap-4 border-t border-border/60 pt-5">
+                        <a
+                          href={response.claim.source.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="text-sm text-muted-foreground transition-colors hover:text-foreground hover:underline"
+                        >
+                          Source: {response.claim.source.name} by{" "}
+                          {response.claim.source.author}
+                        </a>
+                        <a
+                          href={`/articles/${response.slug}`}
+                          class="inline-flex items-center gap-2 font-medium text-primary transition-colors hover:text-primary/80 hover:underline"
+                        >
+                          Read the response <span aria-hidden="true">→</span>
+                        </a>
+                      </div>
+                    </div>
+                  </article>
+                ))
+              }
+            </div>
+          </section>
         </div>
       </div>
     </section>

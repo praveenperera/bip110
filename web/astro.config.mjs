@@ -118,6 +118,11 @@ function monitorBlocksDevApiPlugin() {
 export default defineConfig({
   site: "https://bip110.org",
   trailingSlash: "ignore",
+  redirects: {
+    "/responses": "/articles#responses",
+    "/responses/blockslop": "/articles/blockslop",
+    "/responses/op-plenty": "/articles/op-plenty",
+  },
   integrations: [react()],
 
   vite: {

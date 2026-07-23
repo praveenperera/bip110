@@ -411,6 +411,8 @@ export interface ResponseEntry {
   claim: ResponseClaim;
   summary: string;
   description: string;
+  ogImage: string;
+  ogImageAlt: string;
 }
 
 /** Introductory copy for response listings */
@@ -441,6 +443,9 @@ export const blockslopResponse = {
     "The RDTS checks work. The report describes reusing chainstate after mixing non-enforcing and enforcing software—a late-upgrade footgun, already handled both ways by Start9 packaging, with the same class of mess if you switch away from BIP-110.",
   description:
     "BlockSlop describes a late-upgrade datadir footgun. The BIP-110 checks still reject the violations when they run.",
+  ogImage: "/images/bip110-og-blockslop-dark.png",
+  ogImageAlt:
+    "On BlockSlop: late BIP-110 upgrades and chainstate. The checks work; ordinary startup trusts saved history.",
 } as const satisfies ResponseEntry;
 
 /** Response to the OP_PLENTY Tapscript encoding demonstration */
@@ -465,6 +470,9 @@ export const opPlentyResponse = {
     "OP_RETURN is Bitcoin's explicit data outlet and contains payload bytes directly. OP_PLENTY repurposes executable opcodes, which custom software must decode to recover the original bytes.",
   description:
     "Unlike Bitcoin's explicit OP_RETURN data outlet, OP_PLENTY repurposes executable script and requires a custom decoder to recover its payload.",
+  ogImage: "/images/bip110-og-op-plenty-dark.png",
+  ogImageAlt:
+    "OP_PLENTY and BIP-110's data limits. Two script bytes per payload byte, plus a protocol-specific decoder.",
 } as const satisfies ResponseEntry;
 
 /** Responses in display order */

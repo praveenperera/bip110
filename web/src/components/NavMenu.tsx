@@ -8,7 +8,6 @@ const sections = [
   { label: "How It Works", href: "/#how" },
   { label: "FAQ", href: "/#faq" },
   { label: "Articles", href: "/#articles" },
-  { label: "Responses", href: "/#responses" },
   { label: "Tradeoffs", href: "/#tradeoffs" },
   { label: "Timeline", href: "/#timeline" },
 ];
@@ -19,7 +18,6 @@ const pages = [
   { label: "How To", href: "/howto" },
   { label: "Code Walkthrough", href: "/code-walkthrough" },
   { label: "Articles", href: "/articles" },
-  { label: "Responses", href: "/responses" },
 ];
 
 const mobileLinkClass =
@@ -147,9 +145,6 @@ function DesktopNav() {
       </NavLink>
       <NavLink href="/articles" active={currentPath.startsWith("/articles")}>
         Articles
-      </NavLink>
-      <NavLink href="/responses" active={currentPath.startsWith("/responses")}>
-        Responses
       </NavLink>
     </nav>
   );
