@@ -1199,7 +1199,10 @@ function readRecentWindow(): RecentWindow {
   );
 }
 
-/** Keeps the selected window in `?window=` so the view can be linked and shared */
+/**
+ * Keeps the selected window in `?window=` and anchors the URL to the card, so
+ * a shared link opens on the same view and scrolls to it.
+ */
 function useRecentWindow(): [RecentWindow, (next: RecentWindow) => void] {
   const [windowSize, setWindowSize] = useState<RecentWindow>(
     DEFAULT_RECENT_WINDOW,
@@ -1217,11 +1220,13 @@ function useRecentWindow(): [RecentWindow, (next: RecentWindow) => void] {
 
   const selectWindow = useCallback((next: RecentWindow) => {
     setWindowSize(next);
-    // replace rather than push so the back button still leaves the page
+    const search = recentWindowSearch(window.location.search, next);
+    // replace rather than push so the back button still leaves the page, and
+    // so setting the hash does not scroll the card out from under the click
     window.history.replaceState(
       window.history.state,
       "",
-      `${window.location.pathname}${recentWindowSearch(window.location.search, next)}${window.location.hash}`,
+      `${window.location.pathname}${search}#${RECENT_SIGNALING_SECTION_ID}`,
     );
   }, []);
 
