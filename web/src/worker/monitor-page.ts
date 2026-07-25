@@ -10,6 +10,15 @@ import {
   readMonitorData,
 } from "./monitor-data";
 import { readMonitorBlocks } from "./monitor-blocks";
+import {
+  parseRecentWindow,
+  RECENT_WINDOW_PARAM,
+  recentSignaling,
+  recentSignalingCounts,
+  recentSignalingDetail,
+  recentWindowHeading,
+  type RecentWindow,
+} from "../lib/recent-signaling";
 import { MONITOR_OG_IMAGE_PATH } from "./monitor-og-image";
 import type { MonitorBlock, MonitorData, MonitorMetadata } from "./types";
 
@@ -63,7 +72,10 @@ function rewriteMonitorPage(
 ): Response {
   const metadata = monitorMetadata(request, data);
   const syncStatus = monitorSyncStatus(data);
-  const fields = monitorPageFields(data, syncStatus);
+  const recentWindow = parseRecentWindow(
+    new URL(request.url).searchParams.get(RECENT_WINDOW_PARAM),
+  );
+  const fields = monitorPageFields(data, syncStatus, blocks, recentWindow);
   let rewriter = new HTMLRewriter()
     .on(
       'meta[name="description"]',
@@ -165,7 +177,10 @@ async function readMonitorPageBlocks(
 function monitorPageFields(
   data: MonitorData,
   syncStatus: string,
+  blocks: MonitorBlock[],
+  recentWindow: RecentWindow,
 ): Record<string, string> {
+  const recent = recentSignaling(blocks, recentWindow);
   const blocksLeft = Math.max(data.periodEnd - data.tip, 0);
   const requiredSignalBlocks = Math.ceil(
     PERIOD_SIZE * (ACTIVATION_THRESHOLD / 100),
@@ -214,6 +229,15 @@ function monitorPageFields(
     "period-num": formatInteger(data.periodNum),
     "period-progress": `${formatInteger(data.totalBlocks)} / ${formatInteger(PERIOD_SIZE)}`,
     "period-start": formatInteger(data.periodStart),
+    "recent-signaling-counts": recentSignalingCounts(recent),
+    "recent-signaling-detail": recentSignalingDetail(
+      recent,
+      data.pct,
+      data.periodNum,
+    ),
+    "recent-signaling-heading": recentWindowHeading(recent.window),
+    "recent-signaling-pct":
+      recent.sampled === 0 ? "N/A" : formatPercent(recent.pct),
     "signal-rate": formatPercent(data.pct),
     "signaling-detail": [
       `${formatInteger(data.signalingCount)} signaling blocks`,

@@ -412,6 +412,42 @@ const historyRows = [
           </section>
 
           <section
+            id="recent-signaling"
+            class="rounded-lg border border-border/50 bg-card/50 p-6"
+            aria-labelledby="static-recent-signaling-title"
+          >
+            <p
+              class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+            >
+              Recent signaling
+            </p>
+            <h2
+              id="static-recent-signaling-title"
+              class="mt-1 text-xl font-semibold tracking-tight"
+            >
+              <a
+                href="#recent-signaling"
+                class="inline-flex rounded-sm text-current transition-colors hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              >
+                <span data-monitor-field="recent-signaling-heading"
+                  >Last 48 blocks</span
+                >
+              </a>
+            </h2>
+            <p
+              class="mt-5 font-mono text-4xl font-bold tracking-tight sm:text-5xl"
+            >
+              <span data-monitor-field="recent-signaling-pct">N/A</span>
+            </p>
+            <p class="mt-3 max-w-2xl text-sm text-foreground/80">
+              <span data-monitor-field="recent-signaling-counts">Loading</span>
+            </p>
+            <p class="mt-1 max-w-2xl text-sm text-muted-foreground">
+              <span data-monitor-field="recent-signaling-detail">Loading</span>
+            </p>
+          </section>
+
+          <section
             id="block-grid"
             class="rounded-lg border border-border/50 bg-card/50 p-6"
             aria-labelledby="static-block-grid-title"

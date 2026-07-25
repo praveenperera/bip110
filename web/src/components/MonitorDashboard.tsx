@@ -14,6 +14,18 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DEFAULT_RECENT_WINDOW,
+  parseRecentWindow,
+  RECENT_WINDOW_PARAM,
+  RECENT_WINDOWS,
+  recentSignaling,
+  recentSignalingCounts,
+  recentSignalingDetail,
+  recentWindowHeading,
+  recentWindowSearch,
+  type RecentWindow,
+} from "@/lib/recent-signaling";
 import { cn } from "@/lib/utils";
 
 const API_URL = "/api/monitor";
@@ -36,11 +48,13 @@ const SIGNAL_BIT = 4;
 const CURRENT_PERIOD_SECTION_ID = "current-period";
 const RULES_SECTION_ID = "rules";
 const HISTORY_SECTION_ID = "difficulty-adjustment-period-history";
+const RECENT_SIGNALING_SECTION_ID = "recent-signaling";
 const BLOCK_GRID_SECTION_ID = "block-grid";
 const MONITOR_SECTION_IDS = [
   CURRENT_PERIOD_SECTION_ID,
   RULES_SECTION_ID,
   HISTORY_SECTION_ID,
+  RECENT_SIGNALING_SECTION_ID,
   BLOCK_GRID_SECTION_ID,
 ] as const;
 const REQUIRED_SIGNALING_BLOCKS = Math.ceil(
@@ -1177,6 +1191,137 @@ function BlockTile({
   );
 }
 
+function readRecentWindow(): RecentWindow {
+  if (typeof window === "undefined") return DEFAULT_RECENT_WINDOW;
+
+  return parseRecentWindow(
+    new URLSearchParams(window.location.search).get(RECENT_WINDOW_PARAM),
+  );
+}
+
+/** Keeps the selected window in `?window=` so the view can be linked and shared */
+function useRecentWindow(): [RecentWindow, (next: RecentWindow) => void] {
+  const [windowSize, setWindowSize] = useState<RecentWindow>(
+    DEFAULT_RECENT_WINDOW,
+  );
+
+  // the URL is only readable after hydration
+  useEffect(() => {
+    setWindowSize(readRecentWindow());
+
+    const onPopState = () => setWindowSize(readRecentWindow());
+    window.addEventListener("popstate", onPopState);
+
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  const selectWindow = useCallback((next: RecentWindow) => {
+    setWindowSize(next);
+    // replace rather than push so the back button still leaves the page
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${window.location.pathname}${recentWindowSearch(window.location.search, next)}${window.location.hash}`,
+    );
+  }, []);
+
+  return [windowSize, selectWindow];
+}
+
+function RecentSignalingCard({
+  blockDataStatus,
+  blocks,
+  cacheInfo,
+  data,
+}: {
+  blockDataStatus: BlockDataStatus;
+  blocks: MonitorBlock[] | null;
+  cacheInfo: CacheInfo | null;
+  data: MonitorData;
+}) {
+  const [windowSize, selectWindow] = useRecentWindow();
+
+  const recent = useMemo(
+    () => recentSignaling(blocks ?? [], windowSize),
+    [blocks, windowSize],
+  );
+
+  const unavailable = recent.sampled === 0;
+
+  return (
+    <Card
+      id={RECENT_SIGNALING_SECTION_ID}
+      className="scroll-mt-24 border-border/50 bg-card/50 backdrop-blur"
+    >
+      <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Recent signaling
+          </p>
+          <CardTitle className="mt-1 text-xl font-semibold tracking-tight">
+            <SectionTitleLink id={RECENT_SIGNALING_SECTION_ID}>
+              {recentWindowHeading(windowSize)}
+            </SectionTitleLink>
+          </CardTitle>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          {blockDataStatus === "live" && (
+            <Badge
+              variant="outline"
+              className="gap-1.5 border-primary/30 bg-primary/10 text-primary"
+            >
+              <span
+                className="size-1.5 rounded-full bg-current animate-pulse"
+                aria-hidden="true"
+              />
+              Live
+            </Badge>
+          )}
+          {cacheInfo && (
+            <span className="text-xs text-muted-foreground">
+              Updated {formatCacheAge(cacheInfo.cachedAt)}
+            </span>
+          )}
+          <span
+            className="inline-flex rounded-lg bg-muted p-1"
+            role="group"
+            aria-label="Recent signaling window"
+          >
+            {RECENT_WINDOWS.map((size) => (
+              <Button
+                key={size}
+                aria-label={recentWindowHeading(size)}
+                aria-pressed={windowSize === size}
+                onClick={() => selectWindow(size)}
+                size="xs"
+                type="button"
+                variant={windowSize === size ? "default" : "ghost"}
+              >
+                {size}
+              </Button>
+            ))}
+          </span>
+        </div>
+      </CardHeader>
+
+      <CardContent>
+        <p className="font-mono text-4xl font-bold tracking-tight sm:text-5xl">
+          {unavailable ? "N/A" : formatPercent(recent.pct)}
+        </p>
+        <p className="mt-3 max-w-2xl text-sm text-foreground/80">
+          {recentSignalingCounts(recent)}
+        </p>
+        {!unavailable && (
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+            {recentSignalingDetail(recent, data.pct, data.periodNum)}
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function PeriodBlockGrid({
   blockDataStatus,
   blocks,
@@ -1990,6 +2135,13 @@ export function MonitorDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      <RecentSignalingCard
+        blockDataStatus={blockDataStatus}
+        blocks={blocks}
+        cacheInfo={cacheInfo}
+        data={data}
+      />
 
       <PeriodBlockGrid
         blockDataStatus={blockDataStatus}
