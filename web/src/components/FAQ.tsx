@@ -1,4 +1,4 @@
-import * as React from "react";
+import { Fragment, useEffect, useState } from "react";
 
 import {
   Accordion,
@@ -64,9 +64,9 @@ function resolveFaqItem(hash: string) {
 }
 
 export function FAQ() {
-  const [openItems, setOpenItems] = React.useState<string[]>([]);
+  const [openItems, setOpenItems] = useState<string[]>([]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const syncHash = () => {
       const item = resolveFaqItem(window.location.hash);
 
@@ -118,7 +118,7 @@ export function FAQ() {
         >
           {faqItemsWithAnchors.map((item) => {
             return (
-              <React.Fragment key={item.legacyId}>
+              <Fragment key={item.legacyId}>
                 <div
                   id={item.legacyId}
                   className="block scroll-mt-24"
@@ -139,7 +139,7 @@ export function FAQ() {
                     {item.answer}
                   </AccordionContent>
                 </AccordionItem>
-              </React.Fragment>
+              </Fragment>
             );
           })}
         </Accordion>

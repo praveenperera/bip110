@@ -1,9 +1,13 @@
+/** Supported recent-block window sizes */
 export const RECENT_WINDOWS = [48, 72, 144] as const;
 
+/** Supported number of recent blocks to summarize */
 export type RecentWindow = (typeof RECENT_WINDOWS)[number];
 
+/** Recent-block window used when the URL does not select one */
 export const DEFAULT_RECENT_WINDOW: RecentWindow = 48;
 
+/** Query parameter that selects the recent-block window */
 export const RECENT_WINDOW_PARAM = "window";
 
 const BLOCK_DATA_UNAVAILABLE = "Block data unavailable.";
@@ -13,10 +17,11 @@ interface SignalingBlock {
   signaling: boolean;
 }
 
+/** Signaling summary for a recent block window */
 export interface RecentSignaling {
-  /** requested window size */
+  /** Requested window size */
   window: RecentWindow;
-  /** blocks actually available, never more than the window */
+  /** Blocks actually available, never more than the window */
   sampled: number;
   signaling: number;
   pct: number;
@@ -25,7 +30,7 @@ export interface RecentSignaling {
 
 /**
  * Share of the most recent blocks that signaled, as a rolling window over the
- * newest `window` blocks.
+ * newest `window` blocks
  */
 export function recentSignaling(
   blocks: readonly SignalingBlock[],
@@ -57,7 +62,7 @@ export function parseRecentWindow(value: string | null): RecentWindow {
 
 /**
  * Search params carrying the selected window, omitting it at the default so
- * the shared URL stays clean.
+ * the shared URL stays clean
  */
 export function recentWindowSearch(
   search: string,
@@ -76,6 +81,7 @@ export function recentWindowSearch(
   return next ? `?${next}` : "";
 }
 
+/** Formats a heading for a recent-block window */
 export function recentWindowHeading(window: RecentWindow): string {
   return `Last ${window} blocks`;
 }
@@ -87,16 +93,19 @@ const RECENT_WINDOW_DURATIONS: Record<RecentWindow, string> = {
   144: "roughly a day",
 };
 
+/** Describes the target elapsed time for a recent-block window */
 export function recentWindowDuration(window: RecentWindow): string {
   return RECENT_WINDOW_DURATIONS[window];
 }
 
+/** Formats the signaling count for a recent-block summary */
 export function recentSignalingCounts(recent: RecentSignaling): string {
   if (recent.sampled === 0) return BLOCK_DATA_UNAVAILABLE;
 
   return `${recent.signaling} of ${recent.sampled} recent blocks signaled for BIP-110`;
 }
 
+/** Formats supporting detail for a recent-block summary */
 export function recentSignalingDetail(
   recent: RecentSignaling,
   periodPct: number,

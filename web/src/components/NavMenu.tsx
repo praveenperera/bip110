@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 const sections = [
@@ -34,7 +34,7 @@ function NavLink({
   href: string;
   active: boolean;
   hasDropdown?: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <a
