@@ -205,7 +205,7 @@ export async function encodePng(raster: Raster): Promise<Uint8Array> {
 }
 
 async function deflate(data: Uint8Array): Promise<Uint8Array> {
-  const compressed = new Blob([data])
+  const compressed = new Blob([new Uint8Array(data)])
     .stream()
     .pipeThrough(new CompressionStream("deflate"));
   const buffer = await new Response(compressed).arrayBuffer();
