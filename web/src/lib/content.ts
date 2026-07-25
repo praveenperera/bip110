@@ -260,7 +260,24 @@ export const installOptions = [
   },
 ];
 
-export const articleSections = [
+/** Article metadata used by article listings */
+export interface Article {
+  title: string;
+  description: string;
+  author: string;
+  date: string;
+  link: string;
+  image: string | null;
+}
+
+/** Named group of related articles */
+export interface ArticleSection {
+  title: string;
+  description: string;
+  articles: readonly Article[];
+}
+
+export const articleSections: readonly ArticleSection[] = [
   {
     title: "Context",
     description:
@@ -380,11 +397,9 @@ export const articleSections = [
       },
     ],
   },
-] as const;
+] satisfies readonly ArticleSection[];
 
 export const articles = articleSections.flatMap((section) => section.articles);
-
-export type Article = (typeof articles)[number];
 
 /** Published source for a response */
 export interface ResponseSource {
