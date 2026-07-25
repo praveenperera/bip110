@@ -1,4 +1,4 @@
-export const RECENT_WINDOWS = [48, 144] as const;
+export const RECENT_WINDOWS = [48, 72, 144] as const;
 
 export type RecentWindow = (typeof RECENT_WINDOWS)[number];
 
@@ -80,8 +80,15 @@ export function recentWindowHeading(window: RecentWindow): string {
   return `Last ${window} blocks`;
 }
 
+// blocks target ten minutes apart
+const RECENT_WINDOW_DURATIONS: Record<RecentWindow, string> = {
+  48: "roughly 8 hours",
+  72: "roughly 12 hours",
+  144: "roughly a day",
+};
+
 export function recentWindowDuration(window: RecentWindow): string {
-  return window === 48 ? "roughly 8 hours" : "roughly a day";
+  return RECENT_WINDOW_DURATIONS[window];
 }
 
 export function recentSignalingCounts(recent: RecentSignaling): string {
