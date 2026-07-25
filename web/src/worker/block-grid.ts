@@ -1,5 +1,10 @@
-import { formatInteger, PERIOD_SIZE } from "./monitor-data";
-import type { MonitorBlock, MonitorData } from "./types";
+import {
+  currentPeriodGrid,
+  type MonitorBlock,
+  type MonitorData,
+  type MonitorGridBlock,
+} from "../lib/monitor";
+import { formatInteger } from "./monitor-data";
 
 const MEMPOOL_BLOCK_URL = "https://mempool.guide/block";
 const STATIC_GRID_BLOCK_COUNT = 144;
@@ -33,38 +38,17 @@ export function ursfBlockGridHtml(
 function gridBlocksFor(
   data: MonitorData,
   blocks: MonitorBlock[],
-): MonitorBlock[] {
-  const blocksByHeight = new Map(blocks.map((block) => [block.height, block]));
-
-  return generatePeriodBlocks(data)
-    .map((block) => blocksByHeight.get(block.height) ?? block)
-    .slice(0, STATIC_GRID_BLOCK_COUNT);
+): MonitorGridBlock[] {
+  return currentPeriodGrid(data, blocks).slice(0, STATIC_GRID_BLOCK_COUNT);
 }
 
-function generatePeriodBlocks(data: MonitorData): MonitorBlock[] {
-  const firstHeight = Math.max(
-    data.periodStart,
-    data.tip - data.totalBlocks + 1,
-  );
-  const blockCount = Math.max(data.tip - firstHeight + 1, 0);
-
-  return Array.from({ length: blockCount }, (_, index) => ({
-    hash: "",
-    height: data.tip - index,
-    nTx: 0,
-    signaling: false,
-    time: 0,
-    version: 0,
-  }));
-}
-
-function bip110BlockLinkHtml(block: MonitorBlock): string {
+function bip110BlockLinkHtml(block: MonitorGridBlock): string {
   const className = [
     "relative flex h-12 items-center justify-center overflow-hidden rounded-md border px-2 font-mono text-sm font-semibold tracking-normal transition-colors",
-    block.signaling
+    block.kind === "known" && block.signaling
       ? "border-primary/50 bg-primary/10 text-primary shadow-[inset_0_-3px_0_var(--primary)]"
       : "border-border/60 bg-background/80 text-muted-foreground",
-    block.hash ? "" : "border-dashed",
+    block.kind === "known" ? "" : "border-dashed",
   ]
     .filter(Boolean)
     .join(" ");
@@ -72,14 +56,17 @@ function bip110BlockLinkHtml(block: MonitorBlock): string {
   return blockLinkHtml({
     block,
     className,
-    status: block.signaling ? "SIGNALING BIP-110" : "not signaling",
+    status:
+      block.kind === "known" && block.signaling
+        ? "SIGNALING BIP-110"
+        : "not signaling",
   });
 }
 
-function ursfBlockLinkHtml(block: MonitorBlock): string {
+function ursfBlockLinkHtml(block: MonitorGridBlock): string {
   const className = [
     "ursf-block-cell relative flex h-12 items-center justify-center overflow-hidden rounded-md border border-[var(--ursf-border)] bg-[var(--ursf-block)] px-2 font-mono text-sm font-semibold tracking-normal text-[var(--ursf-block-text)] transition-colors",
-    block.hash ? "" : "border-dashed",
+    block.kind === "known" ? "" : "border-dashed",
   ]
     .filter(Boolean)
     .join(" ");
@@ -92,20 +79,21 @@ function blockLinkHtml({
   className,
   status,
 }: {
-  block: MonitorBlock;
+  block: MonitorGridBlock;
   className: string;
   status: string;
 }): string {
-  const title = block.hash
-    ? [
-        `Height ${formatInteger(block.height)}`,
-        `Hash ${block.hash}`,
-        `Version ${formatBlockVersion(block.version)}`,
-        `Time ${formatBlockTime(block.time)}`,
-        `Txs ${formatInteger(block.nTx)}`,
-        status,
-      ].join("\n")
-    : `Height ${formatInteger(block.height)}`;
+  const title =
+    block.kind === "known"
+      ? [
+          `Height ${formatInteger(block.height)}`,
+          `Hash ${block.hash}`,
+          `Version ${formatBlockVersion(block.version)}`,
+          `Time ${formatBlockTime(block.time)}`,
+          `Txs ${formatInteger(block.nTx)}`,
+          status,
+        ].join("\n")
+      : `Height ${formatInteger(block.height)}`;
 
   return `<a href="${MEMPOOL_BLOCK_URL}/${block.height}" target="_blank" rel="noopener noreferrer" class="${className}" title="${escapeAttribute(title)}">${formatInteger(block.height)}</a>`;
 }

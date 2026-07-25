@@ -1,11 +1,14 @@
 import {
+  isReasonableMonitorData,
+  PERIOD_SIZE,
+  type MonitorData,
+} from "../lib/monitor";
+import {
   ACTIVATION_THRESHOLD,
   CACHE_TTL_SECONDS,
-  PERIOD_SIZE,
   defaultCache,
   formatInteger,
   formatPercent,
-  isReasonableMonitorData,
   jsonResponse,
   readMonitorData,
 } from "./monitor-data";
@@ -18,7 +21,6 @@ import {
   fillRect,
   strokeRect,
 } from "./png";
-import type { MonitorData } from "./types";
 
 export const MONITOR_OG_IMAGE_PATH = "/og/monitor.png";
 

@@ -1,12 +1,16 @@
 import { bip110BlockGridHtml } from "./block-grid";
 import {
+  PERIOD_SIZE,
+  type MonitorBlock,
+  type MonitorData,
+} from "../lib/monitor";
+import {
   ACTIVATION_THRESHOLD,
   CACHE_TTL_SECONDS,
   formatInteger,
   formatPercent,
   jsonResponse,
   monitorDescription,
-  PERIOD_SIZE,
   readMonitorData,
 } from "./monitor-data";
 import { readMonitorBlocks } from "./monitor-blocks";
@@ -20,11 +24,18 @@ import {
   type RecentWindow,
 } from "../lib/recent-signaling";
 import { MONITOR_OG_IMAGE_PATH } from "./monitor-og-image";
-import type { MonitorBlock, MonitorData, MonitorMetadata } from "./types";
 
 export const MONITOR_PAGE_PATHS = new Set(["/monitor", "/monitor/"]);
 
 const MONITOR_PAGE_ASSET_PATH = "/monitor/";
+
+interface MonitorMetadata {
+  title: string;
+  description: string;
+  imageAlt: string;
+  imageUrl: string;
+  canonicalUrl: string;
+}
 
 export async function handleMonitorPageRequest(
   request: Request,

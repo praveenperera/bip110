@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Tooltip } from "@base-ui/react/tooltip";
 import { AlertCircle, ExternalLink, RefreshCw } from "lucide-react";
 import {
@@ -14,6 +21,16 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  currentPeriodGrid,
+  parseMonitorBlocksPayload,
+  parseMonitorData,
+  type MonitorBlock,
+  type MonitorBlocksPayload,
+  type MonitorData,
+  type MonitorGridBlock,
+  type MonitorPeriod,
+} from "@/lib/monitor";
 import {
   DEFAULT_RECENT_WINDOW,
   parseRecentWindow,
@@ -62,48 +79,6 @@ const REQUIRED_SIGNALING_BLOCKS = Math.ceil(
 );
 const GRID_VISIBLE_BLOCKS = 144;
 
-type Period = {
-  periodNum: number;
-  startBlock: number;
-  endBlock: number;
-  signalingCount: number;
-  totalBlocks: number;
-  pct: number;
-};
-
-type MonitorData = {
-  bip: string;
-  tip: number;
-  chainTip: number;
-  periodNum: number;
-  periodStart: number;
-  periodEnd: number;
-  totalBlocks: number;
-  signalingCount: number;
-  pct: number;
-  synced: boolean;
-  updatedAt: string;
-  periods: Period[];
-};
-
-type MonitorBlock = {
-  hash: string;
-  height: number;
-  version: number;
-  time: number;
-  nTx: number;
-  signaling: boolean;
-};
-
-type PeriodGridBlock = {
-  hash?: string;
-  height: number;
-  nTx?: number;
-  signaling?: boolean;
-  time?: number;
-  version?: number;
-};
-
 type StatusCardProps = {
   label: string;
   value: string;
@@ -117,7 +92,7 @@ type MonitorHighlightStat = {
   detail: string;
 };
 
-type PeriodChartDatum = Period & {
+type PeriodChartDatum = MonitorPeriod & {
   isCurrent: boolean;
   label: string;
   pctLabel: string;
@@ -150,77 +125,12 @@ type MonitorDataEventDetail = {
   data: MonitorData;
 };
 
-type MonitorBlocksPayload = {
-  blocks: MonitorBlock[];
-  updatedAt: string;
-};
-
 type BlockDataStatus = "loading" | "live" | "unavailable";
 
 type MonitorBlockGridMode = "bip110" | "ursf";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
-}
-
-function isFiniteNumber(value: unknown): value is number {
-  return typeof value === "number" && Number.isFinite(value);
-}
-
-function isPeriod(value: unknown): value is Period {
-  if (!isRecord(value)) return false;
-
-  return (
-    isFiniteNumber(value.periodNum) &&
-    isFiniteNumber(value.startBlock) &&
-    isFiniteNumber(value.endBlock) &&
-    isFiniteNumber(value.signalingCount) &&
-    isFiniteNumber(value.totalBlocks) &&
-    isFiniteNumber(value.pct)
-  );
-}
-
-function isMonitorBlock(value: unknown): value is MonitorBlock {
-  if (!isRecord(value)) return false;
-
-  return (
-    typeof value.hash === "string" &&
-    isFiniteNumber(value.height) &&
-    isFiniteNumber(value.version) &&
-    isFiniteNumber(value.time) &&
-    isFiniteNumber(value.nTx) &&
-    typeof value.signaling === "boolean"
-  );
-}
-
-function isMonitorData(value: unknown): value is MonitorData {
-  if (!isRecord(value)) return false;
-
-  return (
-    typeof value.bip === "string" &&
-    isFiniteNumber(value.tip) &&
-    isFiniteNumber(value.chainTip) &&
-    isFiniteNumber(value.periodNum) &&
-    isFiniteNumber(value.periodStart) &&
-    isFiniteNumber(value.periodEnd) &&
-    isFiniteNumber(value.totalBlocks) &&
-    isFiniteNumber(value.signalingCount) &&
-    isFiniteNumber(value.pct) &&
-    typeof value.synced === "boolean" &&
-    typeof value.updatedAt === "string" &&
-    Array.isArray(value.periods) &&
-    value.periods.every(isPeriod)
-  );
-}
-
-function isMonitorBlocksPayload(value: unknown): value is MonitorBlocksPayload {
-  if (!isRecord(value)) return false;
-
-  return (
-    Array.isArray(value.blocks) &&
-    value.blocks.every(isMonitorBlock) &&
-    typeof value.updatedAt === "string"
-  );
 }
 
 function readCachedMonitorData(): CachedMonitorData | null {
@@ -233,15 +143,14 @@ function readCachedMonitorData(): CachedMonitorData | null {
 
     if (
       parsed.version !== CACHE_VERSION ||
-      typeof parsed.cachedAt !== "number" ||
-      !isMonitorData(parsed.data)
+      typeof parsed.cachedAt !== "number"
     ) {
       return null;
     }
 
     return {
       cachedAt: parsed.cachedAt,
-      data: parsed.data,
+      data: parseMonitorData(parsed.data),
       version: CACHE_VERSION,
     };
   } catch {
@@ -277,15 +186,23 @@ function shouldRefreshCachedMonitorData() {
   return !cached || isCacheStale(cached.cachedAt);
 }
 
-function isMonitorDataEvent(
-  event: Event,
-): event is CustomEvent<MonitorDataEventDetail> {
-  return (
-    event instanceof CustomEvent &&
-    isRecord(event.detail) &&
-    typeof event.detail.cachedAt === "number" &&
-    isMonitorData(event.detail.data)
-  );
+function monitorDataEventDetail(event: Event): MonitorDataEventDetail | null {
+  if (
+    !(event instanceof CustomEvent) ||
+    !isRecord(event.detail) ||
+    typeof event.detail.cachedAt !== "number"
+  ) {
+    return null;
+  }
+
+  try {
+    return {
+      cachedAt: event.detail.cachedAt,
+      data: parseMonitorData(event.detail.data),
+    };
+  } catch {
+    return null;
+  }
 }
 
 function isLocalDevHost() {
@@ -299,7 +216,7 @@ async function fetchMonitorData(signal?: AbortSignal) {
   });
 
   if (response.ok) {
-    return (await response.json()) as MonitorData;
+    return parseMonitorData(await response.json());
   }
 
   if (response.status === 404 && isLocalDevHost()) {
@@ -308,7 +225,7 @@ async function fetchMonitorData(signal?: AbortSignal) {
     });
 
     if (fallbackResponse.ok) {
-      return (await fallbackResponse.json()) as MonitorData;
+      return parseMonitorData(await fallbackResponse.json());
     }
 
     throw new Error(`Monitor API returned ${fallbackResponse.status}`);
@@ -333,12 +250,7 @@ async function fetchMonitorBlocks(
     throw new Error(`Monitor block API returned ${response.status}`);
   }
 
-  const payload = (await response.json()) as unknown;
-  if (!isMonitorBlocksPayload(payload)) {
-    throw new Error("Monitor block API returned invalid data");
-  }
-
-  return payload;
+  return parseMonitorBlocksPayload(await response.json());
 }
 
 function useMonitorBlocks(
@@ -509,13 +421,8 @@ function clampPercent(value: number) {
   return Math.min(Math.max(value, 0), 100);
 }
 
-function blockDetailUnavailable(block: PeriodGridBlock) {
-  return (
-    block.hash === undefined ||
-    block.version === undefined ||
-    block.time === undefined ||
-    block.nTx === undefined
-  );
+function blockDetailUnavailable(block: MonitorGridBlock) {
+  return block.kind === "placeholder";
 }
 
 function formatBlockVersion(value: number | undefined) {
@@ -537,46 +444,33 @@ function formatBlockTransactions(value: number | undefined) {
   return value === undefined ? "Unavailable" : formatNumber(value);
 }
 
-function formatBlockStatus(block: PeriodGridBlock, mode: MonitorBlockGridMode) {
+function formatBlockStatus(
+  block: MonitorGridBlock,
+  mode: MonitorBlockGridMode,
+) {
   if (mode === "ursf") {
     return "not signaling";
   }
 
-  if (block.signaling === true) {
+  if (block.kind === "known" && block.signaling) {
     return "SIGNALING BIP-110";
   }
 
-  if (block.signaling === false) {
+  if (block.kind === "known") {
     return "not signaling";
   }
 
   return "signal status unavailable";
 }
 
-function generatePeriodBlocks(data: MonitorData): PeriodGridBlock[] {
-  const firstHeight = Math.max(
-    data.periodStart,
-    data.tip - data.totalBlocks + 1,
-  );
-  const blockCount = Math.max(data.tip - firstHeight + 1, 0);
-
-  return Array.from({ length: blockCount }, (_, index) => ({
-    height: data.tip - index,
-  }));
-}
-
 function mergePeriodBlocks(
   data: MonitorData,
   blocks: MonitorBlock[] | null,
-): PeriodGridBlock[] {
-  const periodBlocks = generatePeriodBlocks(data);
-  if (!blocks || blocks.length === 0) return periodBlocks;
-
-  const blocksByHeight = new Map(blocks.map((block) => [block.height, block]));
-  return periodBlocks.map((block) => blocksByHeight.get(block.height) ?? block);
+): MonitorGridBlock[] {
+  return currentPeriodGrid(data, blocks);
 }
 
-function currentPeriodFromMonitorData(data: MonitorData): Period {
+function currentPeriodFromMonitorData(data: MonitorData): MonitorPeriod {
   return {
     periodNum: data.periodNum,
     startBlock: data.periodStart,
@@ -587,7 +481,7 @@ function currentPeriodFromMonitorData(data: MonitorData): Period {
   };
 }
 
-function monitorHistoryPeriods(data: MonitorData): Period[] {
+function monitorHistoryPeriods(data: MonitorData): MonitorPeriod[] {
   const previousPeriods = data.periods
     .filter((period) => period.periodNum !== data.periodNum)
     .sort((a, b) => b.periodNum - a.periodNum);
@@ -654,15 +548,15 @@ function ProgressRow({
   );
 }
 
-function chartPeriods(periods: Period[]) {
+function chartPeriods(periods: MonitorPeriod[]) {
   return [...periods].sort((a, b) => a.periodNum - b.periodNum);
 }
 
-function chartMaxSignalingCount(periods: Period[]) {
+function chartMaxSignalingCount(periods: MonitorPeriod[]) {
   return Math.max(...periods.map((period) => period.signalingCount), 0) + 5;
 }
 
-function chartMaxSignalingPercent(periods: Period[]) {
+function chartMaxSignalingPercent(periods: MonitorPeriod[]) {
   const highestPercent = Math.max(...periods.map((period) => period.pct), 0);
 
   return Math.min(
@@ -680,7 +574,7 @@ function PeriodSignalingChart({
   periods,
 }: {
   currentPeriodNum: number;
-  periods: Period[];
+  periods: MonitorPeriod[];
 }) {
   const [metric, setMetric] = useState<PeriodChartMetric>("percentage");
   const sortedPeriods = chartPeriods(periods);
@@ -1049,7 +943,7 @@ function PeriodBlockLink({
   children,
 }: {
   block: number;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <a
@@ -1069,7 +963,7 @@ function SectionTitleLink({
   className,
   id,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
   id: string;
 }) {
@@ -1090,9 +984,11 @@ function BlockTooltip({
   block,
   mode,
 }: {
-  block: PeriodGridBlock;
+  block: MonitorGridBlock;
   mode: MonitorBlockGridMode;
 }) {
+  const knownBlock = block.kind === "known" ? block : null;
+
   return (
     <Tooltip.Popup
       className={cn(
@@ -1106,36 +1002,38 @@ function BlockTooltip({
         <dt className="text-muted-foreground">Height</dt>
         <dd>{block.height}</dd>
         <dt className="text-muted-foreground">Hash</dt>
-        <dd className="break-all">{block.hash ?? "Unavailable"}</dd>
+        <dd className="break-all">{knownBlock?.hash ?? "Unavailable"}</dd>
         <dt className="text-muted-foreground">Version</dt>
-        <dd>{formatBlockVersion(block.version)}</dd>
+        <dd>{formatBlockVersion(knownBlock?.version)}</dd>
         <dt className="text-muted-foreground">Time</dt>
-        <dd>{formatBlockTime(block.time)}</dd>
+        <dd>{formatBlockTime(knownBlock?.time)}</dd>
         <dt className="text-muted-foreground">Txs</dt>
-        <dd>{formatBlockTransactions(block.nTx)}</dd>
+        <dd>{formatBlockTransactions(knownBlock?.nTx)}</dd>
       </dl>
       <p
         className={cn(
           "mt-3",
-          mode === "bip110" && block.signaling === true
+          mode === "bip110" && knownBlock?.signaling === true
             ? "text-primary"
             : "text-muted-foreground",
         )}
       >
-        {mode === "bip110" && block.signaling === true ? "" : "x "}
+        {mode === "bip110" && knownBlock?.signaling === true ? "" : "x "}
         {formatBlockStatus(block, mode)}
       </p>
     </Tooltip.Popup>
   );
 }
 
-function blockTitle(block: PeriodGridBlock, mode: MonitorBlockGridMode) {
+function blockTitle(block: MonitorGridBlock, mode: MonitorBlockGridMode) {
+  const knownBlock = block.kind === "known" ? block : null;
+
   return [
     `Height ${block.height}`,
-    `Hash ${block.hash ?? "Unavailable"}`,
-    `Version ${formatBlockVersion(block.version)}`,
-    `Time ${formatBlockTime(block.time)}`,
-    `Txs ${formatBlockTransactions(block.nTx)}`,
+    `Hash ${knownBlock?.hash ?? "Unavailable"}`,
+    `Version ${formatBlockVersion(knownBlock?.version)}`,
+    `Time ${formatBlockTime(knownBlock?.time)}`,
+    `Txs ${formatBlockTransactions(knownBlock?.nTx)}`,
     formatBlockStatus(block, mode),
   ].join("\n");
 }
@@ -1144,10 +1042,11 @@ function BlockTile({
   block,
   mode,
 }: {
-  block: PeriodGridBlock;
+  block: MonitorGridBlock;
   mode: MonitorBlockGridMode;
 }) {
-  const signaling = mode === "bip110" && block.signaling === true;
+  const signaling =
+    mode === "bip110" && block.kind === "known" && block.signaling;
   const unavailable = blockDetailUnavailable(block);
 
   return (
@@ -1201,7 +1100,7 @@ function readRecentWindow(): RecentWindow {
 
 /**
  * Keeps the selected window in `?window=` and anchors the URL to the card, so
- * a shared link opens on the same view and scrolls to it.
+ * a shared link opens on the same view and scrolls to it
  */
 function useRecentWindow(): [RecentWindow, (next: RecentWindow) => void] {
   const [windowSize, setWindowSize] = useState<RecentWindow>(
@@ -1571,9 +1470,10 @@ export function MonitorBlockGrid({
     };
 
     const handleMonitorDataEvent = (event: Event) => {
-      if (!isMonitorDataEvent(event)) return;
+      const detail = monitorDataEventDetail(event);
+      if (!detail) return;
 
-      applyCachedData(event.detail.data);
+      applyCachedData(detail.data);
       setLoading(false);
     };
 

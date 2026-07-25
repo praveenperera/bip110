@@ -449,6 +449,8 @@ const historyRows = [
     </section>
 
     <script>
+      import { parseMonitorData } from "@/lib/monitor";
+
       const API_URL = "/api/monitor";
       const LOCAL_DEV_API_URL = "https://bip110monitor.com/api";
       const CACHE_KEY = "bip110-monitor-data";
@@ -457,37 +459,6 @@ const historyRows = [
       const CACHE_TTL_MS = 60_000;
       const PERIOD_BLOCK_COUNT = 2016;
 
-      function isRecord(value) {
-        return typeof value === "object" && value !== null;
-      }
-
-      function isFiniteNumber(value) {
-        return typeof value === "number" && Number.isFinite(value);
-      }
-
-      function isPeriod(value) {
-        return (
-          isRecord(value) &&
-          isFiniteNumber(value.periodNum) &&
-          isFiniteNumber(value.startBlock) &&
-          isFiniteNumber(value.endBlock) &&
-          isFiniteNumber(value.totalBlocks)
-        );
-      }
-
-      function isMonitorData(value) {
-        return (
-          isRecord(value) &&
-          isFiniteNumber(value.tip) &&
-          isFiniteNumber(value.chainTip) &&
-          isFiniteNumber(value.periodNum) &&
-          isFiniteNumber(value.periodStart) &&
-          isFiniteNumber(value.periodEnd) &&
-          isFiniteNumber(value.totalBlocks) &&
-          (!Array.isArray(value.periods) || value.periods.every(isPeriod))
-        );
-      }
-
       function readCachedMonitorData() {
         try {
           const cached = window.localStorage.getItem(CACHE_KEY);
@@ -495,15 +466,19 @@ const historyRows = [
 
           const parsed = JSON.parse(cached);
           if (
-            !isRecord(parsed) ||
+            typeof parsed !== "object" ||
+            parsed === null ||
             parsed.version !== CACHE_VERSION ||
-            typeof parsed.cachedAt !== "number" ||
-            !isMonitorData(parsed.data)
+            typeof parsed.cachedAt !== "number"
           ) {
             return null;
           }
 
-          return parsed;
+          return {
+            cachedAt: parsed.cachedAt,
+            data: parseMonitorData(parsed.data),
+            version: CACHE_VERSION,
+          };
         } catch {
           return null;
         }
@@ -547,14 +522,14 @@ const historyRows = [
         const response = await fetch(API_URL);
 
         if (response.ok) {
-          return await response.json();
+          return parseMonitorData(await response.json());
         }
 
         if (response.status === 404 && isLocalDevHost()) {
           const fallbackResponse = await fetch(LOCAL_DEV_API_URL);
 
           if (fallbackResponse.ok) {
-            return await fallbackResponse.json();
+            return parseMonitorData(await fallbackResponse.json());
           }
         }
 
@@ -814,8 +789,6 @@ const historyRows = [
         refreshInFlight = true;
         fetchMonitorData()
           .then((data) => {
-            if (!isMonitorData(data)) return;
-
             const cachedAt = Date.now();
             writeCachedMonitorData(data, cachedAt);
             renderChainState(data);

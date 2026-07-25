@@ -1,14 +1,17 @@
 import { ursfBlockGridHtml } from "./block-grid";
 import {
+  PERIOD_SIZE,
+  type MonitorBlock,
+  type MonitorData,
+} from "../lib/monitor";
+import {
   CACHE_TTL_SECONDS,
   formatInteger,
   formatPercent,
   jsonResponse,
-  PERIOD_SIZE,
   readMonitorData,
 } from "./monitor-data";
 import { readMonitorBlocks } from "./monitor-blocks";
-import type { MonitorBlock, MonitorData } from "./types";
 
 export const URSF_MONITOR_PAGE_PATHS = new Set([
   "/ursf-monitor",

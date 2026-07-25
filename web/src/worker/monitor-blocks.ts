@@ -1,5 +1,9 @@
+import {
+  parseMonitorBlocksPayload,
+  type MonitorBlock,
+  type MonitorBlocksPayload,
+} from "../lib/monitor";
 import { defaultCache, jsonResponse } from "./monitor-data";
-import type { MonitorBlock, MonitorBlocksPayload } from "./types";
 
 const UPSTREAM_MONITOR_PAGE = "https://bip110monitor.com";
 const MAX_MONITOR_HTML_BYTES = 1_000_000;
@@ -61,7 +65,7 @@ export async function readMonitorBlocks(
     throw new Error(`monitor block data unavailable: ${response.status}`);
   }
 
-  return (await response.clone().json()) as MonitorBlocksPayload;
+  return parseMonitorBlocksPayload(await response.clone().json());
 }
 
 async function fetchCachedMonitorBlocksResponse(
