@@ -218,6 +218,8 @@ Components should be precise, quiet, and actionable. They are compact enough for
 - **Style:** Block tiles are `48px` high, mono, rounded `6px`, and arranged in an auto-fill grid.
 - **Default State:** Neutral border, paper background, muted text.
 - **Signaling State:** Amber border, pale amber fill, amber text, and the Inset Signal shadow.
+- **Clean State:** A small amber check in the lower-right corner marks blocks with zero BIP-110 violations, independently of signaling.
+- **Unavailable State:** Missing violation data receives no visual treatment and makes no cleanliness claim.
 - **Interaction:** Hover and focus may move the tile up by `0.5px`; this is data inspection feedback, not decorative motion.
 
 ### Technical Accordions

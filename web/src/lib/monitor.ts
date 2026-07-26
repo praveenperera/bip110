@@ -1,6 +1,9 @@
 /** Number of blocks in one difficulty adjustment period */
 export const PERIOD_SIZE = 2016;
 
+/** Number of recent blocks shown before the monitor grid is expanded */
+export const MONITOR_GRID_VISIBLE_BLOCKS = 144;
+
 /** Signaling summary for one difficulty adjustment period */
 export interface MonitorPeriod {
   periodNum: number;
@@ -54,9 +57,22 @@ export type SignalingMinerDiscovery =
   | { status: "unidentified" }
   | { status: "unavailable" };
 
+/** Known BIP-110 violations or an unavailable classification */
+export type Bip110ViolationStatus =
+  | { status: "known"; count: number }
+  | { status: "unavailable" };
+
+/** BIP-110 violation data attributed to one block */
+export interface Bip110BlockViolationReport {
+  hash: string;
+  height: number;
+  violations: Extract<Bip110ViolationStatus, { status: "known" }>;
+}
+
 /** Known block details returned by the monitor blocks API */
-export type MonitorBlock = UnclassifiedMonitorBlock &
-  (
+export type MonitorBlock = UnclassifiedMonitorBlock & {
+  bip110Violations: Bip110ViolationStatus;
+} & (
     | { signaling: true; signalingMiner: SignalingMinerDiscovery }
     | { signaling: false; signalingMiner: null }
   );
@@ -157,6 +173,42 @@ export function parseBlockMiningAttribution(
   return { poolName, poolSlug, templateMinerName };
 }
 
+/** Parses a block's BIP-110 violation count from Kilombino */
+export function parseBip110BlockViolationReport(
+  value: unknown,
+): Bip110BlockViolationReport {
+  if (!isRecord(value)) {
+    throw new Error("BIP-110 block response must be an object");
+  }
+
+  const hash = stringField(value, "id");
+  if (!/^[0-9a-f]{64}$/i.test(hash)) {
+    throw new Error("BIP-110 block response id must be a block hash");
+  }
+
+  const height = nonNegativeIntegerField(value, "height");
+  if (!isRecord(value.extras)) {
+    throw new Error("BIP-110 block response extras must be an object");
+  }
+
+  return {
+    hash,
+    height,
+    violations: {
+      status: "known",
+      count: nonNegativeIntegerField(value.extras, "bip110ViolationCount"),
+    },
+  };
+}
+
+/** Returns whether a classified block has zero BIP-110 violations */
+export function isCleanMonitorBlock(block: MonitorBlock): boolean {
+  return (
+    block.bip110Violations.status === "known" &&
+    block.bip110Violations.count === 0
+  );
+}
+
 /** Returns the stable identity used to track a miner's first signal */
 export function signalingMinerId(
   attribution: BlockMiningAttribution,
@@ -254,6 +306,7 @@ function parseMonitorBlock(value: unknown): MonitorBlock {
   }
 
   const block = {
+    bip110Violations: parseBip110ViolationStatus(value.bip110Violations),
     hash: stringField(value, "hash"),
     height: numberField(value, "height"),
     nTx: numberField(value, "nTx"),
@@ -277,6 +330,24 @@ function parseMonitorBlock(value: unknown): MonitorBlock {
     ...block,
     signaling: true,
     signalingMiner: parseSignalingMinerDiscovery(signalingMiner),
+  };
+}
+
+function parseBip110ViolationStatus(value: unknown): Bip110ViolationStatus {
+  if (value === undefined) return { status: "unavailable" };
+  if (!isRecord(value)) {
+    throw new Error("monitor block API violation status must be an object");
+  }
+
+  const status = stringField(value, "status");
+  if (status === "unavailable") return { status };
+  if (status !== "known") {
+    throw new Error("monitor block API violation status is invalid");
+  }
+
+  return {
+    status,
+    count: nonNegativeIntegerField(value, "count"),
   };
 }
 
@@ -363,6 +434,21 @@ function numberField(
 
   if (typeof fieldValue !== "number" || !Number.isFinite(fieldValue)) {
     throw new Error(`monitor API field ${fieldName} must be a number`);
+  }
+
+  return fieldValue;
+}
+
+function nonNegativeIntegerField(
+  value: Record<string, unknown>,
+  fieldName: string,
+): number {
+  const fieldValue = numberField(value, fieldName);
+
+  if (!Number.isSafeInteger(fieldValue) || fieldValue < 0) {
+    throw new Error(
+      `monitor API field ${fieldName} must be a non-negative integer`,
+    );
   }
 
   return fieldValue;

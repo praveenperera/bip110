@@ -7,7 +7,13 @@ import {
   useState,
 } from "react";
 import { Tooltip } from "@base-ui/react/tooltip";
-import { AlertCircle, ExternalLink, RefreshCw, Sparkles } from "lucide-react";
+import {
+  AlertCircle,
+  Check,
+  ExternalLink,
+  RefreshCw,
+  Sparkles,
+} from "lucide-react";
 import {
   CartesianGrid,
   Line,
@@ -23,6 +29,8 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   currentPeriodGrid,
+  isCleanMonitorBlock,
+  MONITOR_GRID_VISIBLE_BLOCKS,
   parseBlockMiningAttribution,
   parseMonitorBlocksPayload,
   parseMonitorData,
@@ -80,7 +88,6 @@ const MONITOR_SECTION_IDS = [
 const REQUIRED_SIGNALING_BLOCKS = Math.ceil(
   PERIOD_BLOCK_COUNT * (ACTIVATION_THRESHOLD / 100),
 );
-const GRID_VISIBLE_BLOCKS = 144;
 
 type StatusCardProps = {
   label: string;
@@ -456,10 +463,6 @@ function formatEstimatedTime(blocks: number) {
 
 function clampPercent(value: number) {
   return Math.min(Math.max(value, 0), 100);
-}
-
-function blockDetailUnavailable(block: MonitorGridBlock) {
-  return block.kind === "placeholder";
 }
 
 function formatBlockVersion(value: number | undefined) {
@@ -1071,6 +1074,10 @@ function BlockTooltip({
         ? "Unavailable"
         : formatBlockMiner(attribution);
   const firstMinerSignal = isFirstMinerSignal(block);
+  const violationCount =
+    mode === "bip110" && knownBlock?.bip110Violations.status === "known"
+      ? knownBlock.bip110Violations.count
+      : null;
 
   return (
     <Tooltip.Popup
@@ -1094,6 +1101,14 @@ function BlockTooltip({
         <dd>{formatBlockTransactions(knownBlock?.nTx)}</dd>
         <dt className="text-muted-foreground">Miner</dt>
         <dd>{knownBlock ? minedBy : "Unavailable"}</dd>
+        {violationCount !== null ? (
+          <>
+            <dt className="text-muted-foreground">Clean</dt>
+            <dd>{violationCount === 0 ? "Yes" : "No"}</dd>
+            <dt className="text-muted-foreground">Violations</dt>
+            <dd>{formatNumber(violationCount)}</dd>
+          </>
+        ) : null}
       </dl>
       <p
         className={cn(
@@ -1117,6 +1132,10 @@ function BlockTooltip({
 
 function blockTitle(block: MonitorGridBlock, mode: MonitorBlockGridMode) {
   const knownBlock = block.kind === "known" ? block : null;
+  const violationCount =
+    mode === "bip110" && knownBlock?.bip110Violations.status === "known"
+      ? knownBlock.bip110Violations.count
+      : null;
   const firstMinerSignal =
     knownBlock?.signaling === true &&
     knownBlock.signalingMiner.status === "identified" &&
@@ -1130,6 +1149,10 @@ function blockTitle(block: MonitorGridBlock, mode: MonitorBlockGridMode) {
     `Version ${formatBlockVersion(knownBlock?.version)}`,
     `Time ${formatBlockTime(knownBlock?.time)}`,
     `Txs ${formatBlockTransactions(knownBlock?.nTx)}`,
+    violationCount === null
+      ? null
+      : `Clean ${violationCount === 0 ? "Yes" : "No"}`,
+    violationCount === null ? null : `Violations ${violationCount}`,
     formatBlockStatus(block, mode),
     firstMinerSignal,
   ]
@@ -1151,8 +1174,9 @@ function BlockTile({
   const attributionState = serverAttributionState ?? clientAttributionState;
   const signaling =
     mode === "bip110" && block.kind === "known" && block.signaling;
+  const clean =
+    mode === "bip110" && block.kind === "known" && isCleanMonitorBlock(block);
   const firstMinerSignal = mode === "bip110" && isFirstMinerSignal(block);
-  const unavailable = blockDetailUnavailable(block);
 
   const loadMiningAttribution = useCallback(() => {
     if (!blockHash || attributionState.status !== "idle") return;
@@ -1194,7 +1218,6 @@ function BlockTile({
             "border-primary/50 bg-primary/10 text-primary shadow-[inset_0_-3px_0_var(--primary)] hover:border-primary/70 hover:bg-primary/15 hover:text-primary",
           firstMinerSignal &&
             "border-primary bg-primary/20 text-primary ring-2 ring-primary/60 shadow-[inset_0_-3px_0_var(--primary),0_0_18px_color-mix(in_oklab,var(--primary)_45%,transparent)] hover:border-primary hover:bg-primary/25",
-          unavailable && "border-dashed",
         )}
       >
         {firstMinerSignal && (
@@ -1209,6 +1232,13 @@ function BlockTile({
             />
           </>
         )}
+        {clean ? (
+          <Check
+            className="pointer-events-none absolute bottom-1 right-1 size-3 text-primary"
+            strokeWidth={3}
+            aria-hidden="true"
+          />
+        ) : null}
         <span className="relative z-10">{block.height}</span>
       </Tooltip.Trigger>
       <Tooltip.Portal>
@@ -1391,7 +1421,7 @@ function PeriodBlockGrid({
 
   const visibleBlocks = showAll
     ? gridBlocks
-    : gridBlocks.slice(0, GRID_VISIBLE_BLOCKS);
+    : gridBlocks.slice(0, MONITOR_GRID_VISIBLE_BLOCKS);
   const hiddenCount = Math.max(gridBlocks.length - visibleBlocks.length, 0);
   const liveBlockCount = blocks?.length ?? 0;
   const hasLiveBlocks = liveBlockCount > 0;
@@ -1482,15 +1512,29 @@ function PeriodBlockGrid({
             Not signaling
           </span>
           {mode === "bip110" && (
-            <span className="inline-flex items-center gap-2">
-              <span
-                className="relative size-3 rounded-sm border border-primary bg-primary/20 ring-1 ring-primary/60"
-                aria-hidden="true"
-              >
-                <Sparkles className="absolute -right-1 -top-1 size-2.5 text-primary" />
+            <>
+              <span className="inline-flex items-center gap-2">
+                <span
+                  className="relative size-3 rounded-sm border border-border bg-background"
+                  aria-hidden="true"
+                >
+                  <Check
+                    className="absolute -bottom-0.5 -right-0.5 size-3 text-primary"
+                    strokeWidth={3}
+                  />
+                </span>
+                Clean
               </span>
-              Miner&apos;s first-ever signal
-            </span>
+              <span className="inline-flex items-center gap-2">
+                <span
+                  className="relative size-3 rounded-sm border border-primary bg-primary/20 ring-1 ring-primary/60"
+                  aria-hidden="true"
+                >
+                  <Sparkles className="absolute -right-1 -top-1 size-2.5 text-primary" />
+                </span>
+                Miner&apos;s first-ever signal
+              </span>
+            </>
           )}
         </div>
       </CardHeader>

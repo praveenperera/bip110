@@ -1,6 +1,9 @@
 import {
+  MONITOR_GRID_VISIBLE_BLOCKS,
   PERIOD_SIZE,
+  parseBip110BlockViolationReport,
   parseMonitorBlocksPayload,
+  type Bip110ViolationStatus,
   type MonitorBlock,
   type MonitorBlocksPayload,
   type UnclassifiedMonitorBlock,
@@ -9,6 +12,9 @@ import { defaultCache, jsonResponse } from "./monitor-data";
 import type { SignalingBlockClassification } from "./signaling-miner-history";
 
 const UPSTREAM_MONITOR_PAGE = "https://bip110monitor.com";
+const KILOMBINO_BLOCKS_API_URL = "https://mempool.kilombino.com/api/v1/blocks";
+const KILOMBINO_BLOCK_PAGE_SIZE = 15;
+const KILOMBINO_REQUEST_TIMEOUT_MS = 3_000;
 const MAX_MONITOR_HTML_BYTES = 1_000_000;
 const BLOCK_TILE_PATTERN =
   /<div class="block-tile\s+(sig|nosig)(?:\s+[^"]*)?"\s+data-height="(\d+)"\s+data-hash="([0-9a-fA-F]{64})"\s+data-version="0x([0-9a-fA-F]+)"\s+data-time="([^"]+)"\s+data-ntx="(\d+)">/g;
@@ -246,26 +252,102 @@ async function classifiedMonitorBlocks(
   env: Env,
   payload: UnclassifiedMonitorBlocksPayload,
 ): Promise<MonitorBlocksPayload> {
-  const classifications = await classifySignalingBlocks(env, payload.blocks);
+  const [classifications, violationReports] = await Promise.all([
+    classifySignalingBlocks(env, payload.blocks),
+    readBip110ViolationReports(payload.blocks),
+  ]);
   const classificationsByHash = new Map(
     classifications.map((classification) => [
       classification.hash,
       classification.discovery,
     ]),
   );
-  const blocks: MonitorBlock[] = payload.blocks.map((block) =>
-    block.signaling
-      ? {
+  const violationsByHash = new Map(
+    violationReports.map((report) => [report.hash, report.violations]),
+  );
+  const blocks: MonitorBlock[] = payload.blocks.map((block) => {
+    const bip110Violations: Bip110ViolationStatus = violationsByHash.get(
+      block.hash,
+    ) ?? { status: "unavailable" };
+
+    return block.signaling
+      ? ({
           ...block,
+          bip110Violations,
           signaling: true,
           signalingMiner: classificationsByHash.get(block.hash) ?? {
             status: "unavailable",
           },
-        }
-      : { ...block, signaling: false, signalingMiner: null },
-  );
+        } satisfies MonitorBlock)
+      : {
+          ...block,
+          bip110Violations,
+          signaling: false,
+          signalingMiner: null,
+        };
+  });
 
   return { ...payload, blocks };
+}
+
+async function readBip110ViolationReports(
+  blocks: readonly UnclassifiedMonitorBlock[],
+) {
+  const pageHeights = blocks
+    .slice(0, MONITOR_GRID_VISIBLE_BLOCKS)
+    .filter((_, index) => index % KILOMBINO_BLOCK_PAGE_SIZE === 0)
+    .map((block) => block.height);
+  const pages = await Promise.allSettled(
+    pageHeights.map(readBip110ViolationPage),
+  );
+  const failedPageCount = pages.filter(
+    (page) => page.status === "rejected",
+  ).length;
+
+  if (failedPageCount > 0) {
+    console.error(
+      JSON.stringify({
+        event: "bip110_violation_classification_failed",
+        failedPageCount,
+        requestedPageCount: pageHeights.length,
+      }),
+    );
+  }
+
+  return pages.flatMap((page) =>
+    page.status === "fulfilled" ? page.value : [],
+  );
+}
+
+async function readBip110ViolationPage(startHeight: number) {
+  const response = await fetch(`${KILOMBINO_BLOCKS_API_URL}/${startHeight}`, {
+    headers: { accept: "application/json" },
+    signal: AbortSignal.timeout(KILOMBINO_REQUEST_TIMEOUT_MS),
+  });
+  if (!response.ok) {
+    throw new Error(
+      `Kilombino block API returned ${response.status} for height ${startHeight}`,
+    );
+  }
+
+  const value: unknown = await response.json();
+  if (!Array.isArray(value)) {
+    throw new Error("Kilombino block API response must be an array");
+  }
+
+  const reports = value.flatMap((block) => {
+    try {
+      return [parseBip110BlockViolationReport(block)];
+    } catch {
+      return [];
+    }
+  });
+
+  if (value.length > 0 && reports.length === 0) {
+    throw new Error("Kilombino block API returned no valid blocks");
+  }
+
+  return reports;
 }
 
 async function classifySignalingBlocks(

@@ -3,6 +3,8 @@ import test from "node:test";
 
 import {
   currentPeriodGrid,
+  isCleanMonitorBlock,
+  parseBip110BlockViolationReport,
   parseBlockMiningAttribution,
   parseMonitorBlocksPayload,
   parseMonitorData,
@@ -89,6 +91,10 @@ test("monitor block payloads are parsed at runtime", () => {
   const payload = parseMonitorBlocksPayload({
     blocks: [
       {
+        bip110Violations: {
+          status: "known",
+          count: 0,
+        },
         hash: "a".repeat(64),
         height: 961_058,
         nTx: 2_345,
@@ -110,6 +116,10 @@ test("monitor block payloads are parsed at runtime", () => {
   });
 
   assert.equal(payload.blocks[0].height, 961_058);
+  assert.deepEqual(payload.blocks[0].bip110Violations, {
+    status: "known",
+    count: 0,
+  });
   assert.deepEqual(payload.blocks[0].signalingMiner, {
     status: "identified",
     attribution: {
@@ -122,6 +132,60 @@ test("monitor block payloads are parsed at runtime", () => {
   assert.throws(
     () => parseMonitorBlocksPayload({ blocks: [{}], updatedAt: "now" }),
     /field hash must be a string/,
+  );
+});
+
+test("BIP-110 cleanliness is derived from zero violations", () => {
+  const cleanReport = parseBip110BlockViolationReport({
+    id: "c".repeat(64),
+    height: 961_058,
+    extras: {
+      bip110ViolationCount: 0,
+    },
+  });
+  const violatingReport = parseBip110BlockViolationReport({
+    id: "d".repeat(64),
+    height: 961_057,
+    extras: {
+      bip110ViolationCount: 3,
+    },
+  });
+  const monitorBlock = {
+    bip110Violations: cleanReport.violations,
+    hash: cleanReport.hash,
+    height: cleanReport.height,
+    nTx: 1_234,
+    signaling: false,
+    signalingMiner: null,
+    time: 1_774_441_200,
+    version: 0x20000000,
+  };
+
+  assert.equal(isCleanMonitorBlock(monitorBlock), true);
+  assert.equal(
+    isCleanMonitorBlock({
+      ...monitorBlock,
+      bip110Violations: violatingReport.violations,
+    }),
+    false,
+  );
+  assert.equal(
+    isCleanMonitorBlock({
+      ...monitorBlock,
+      bip110Violations: { status: "unavailable" },
+    }),
+    false,
+  );
+  assert.throws(
+    () =>
+      parseBip110BlockViolationReport({
+        id: "e".repeat(64),
+        height: 961_056,
+        extras: {
+          bip110ViolationCount: -1,
+        },
+      }),
+    /non-negative integer/,
   );
 });
 
@@ -199,6 +263,10 @@ test("block mining attribution tolerates unavailable pool metadata", () => {
 test("current-period grids distinguish known blocks from placeholders", () => {
   const data = parseMonitorData(monitorSnapshot());
   const block = {
+    bip110Violations: {
+      status: "known",
+      count: 0,
+    },
     hash: "b".repeat(64),
     height: 961_058,
     nTx: 1_234,

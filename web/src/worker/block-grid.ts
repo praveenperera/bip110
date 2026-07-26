@@ -1,5 +1,7 @@
 import {
   currentPeriodGrid,
+  isCleanMonitorBlock,
+  MONITOR_GRID_VISIBLE_BLOCKS,
   type BlockMiningAttribution,
   type MonitorBlock,
   type MonitorData,
@@ -8,7 +10,6 @@ import {
 import { formatInteger } from "./monitor-data";
 
 const MEMPOOL_BLOCK_URL = "https://mempool.guide/block";
-const STATIC_GRID_BLOCK_COUNT = 144;
 
 export function bip110BlockGridHtml(
   data: MonitorData,
@@ -40,7 +41,7 @@ function gridBlocksFor(
   data: MonitorData,
   blocks: MonitorBlock[],
 ): MonitorGridBlock[] {
-  return currentPeriodGrid(data, blocks).slice(0, STATIC_GRID_BLOCK_COUNT);
+  return currentPeriodGrid(data, blocks).slice(0, MONITOR_GRID_VISIBLE_BLOCKS);
 }
 
 function bip110BlockLinkHtml(block: MonitorGridBlock): string {
@@ -49,6 +50,7 @@ function bip110BlockLinkHtml(block: MonitorGridBlock): string {
     block.signaling &&
     block.signalingMiner.status === "identified" &&
     block.signalingMiner.firstSignal;
+  const clean = block.kind === "known" && isCleanMonitorBlock(block);
   const className = [
     "relative flex h-12 items-center justify-center overflow-hidden rounded-md border px-2 font-mono text-sm font-semibold tracking-normal transition-colors",
     block.kind === "known" && block.signaling
@@ -57,7 +59,6 @@ function bip110BlockLinkHtml(block: MonitorGridBlock): string {
     firstMinerSignal
       ? "border-primary bg-primary/20 ring-2 ring-primary/60 shadow-[inset_0_-3px_0_var(--primary),0_0_18px_color-mix(in_oklab,var(--primary)_45%,transparent)]"
       : "",
-    block.kind === "known" ? "" : "border-dashed",
   ]
     .filter(Boolean)
     .join(" ");
@@ -69,14 +70,15 @@ function bip110BlockLinkHtml(block: MonitorGridBlock): string {
       block.kind === "known" && block.signaling
         ? "SIGNALING BIP-110"
         : "not signaling",
+    clean,
     firstMinerSignal,
+    showCleanliness: true,
   });
 }
 
 function ursfBlockLinkHtml(block: MonitorGridBlock): string {
   const className = [
     "ursf-block-cell relative flex h-12 items-center justify-center overflow-hidden rounded-md border border-[var(--ursf-border)] bg-[var(--ursf-block)] px-2 font-mono text-sm font-semibold tracking-normal text-[var(--ursf-block-text)] transition-colors",
-    block.kind === "known" ? "" : "border-dashed",
   ]
     .filter(Boolean)
     .join(" ");
@@ -84,20 +86,26 @@ function ursfBlockLinkHtml(block: MonitorGridBlock): string {
   return blockLinkHtml({
     block,
     className,
+    clean: false,
     status: "not signaling",
     firstMinerSignal: false,
+    showCleanliness: false,
   });
 }
 
 function blockLinkHtml({
   block,
   className,
+  clean,
   firstMinerSignal,
+  showCleanliness,
   status,
 }: {
   block: MonitorGridBlock;
   className: string;
+  clean: boolean;
   firstMinerSignal: boolean;
+  showCleanliness: boolean;
   status: string;
 }): string {
   const miner =
@@ -105,6 +113,12 @@ function blockLinkHtml({
     block.signaling &&
     block.signalingMiner.status === "identified"
       ? formatBlockMiner(block.signalingMiner.attribution)
+      : null;
+  const violationCount =
+    showCleanliness &&
+    block.kind === "known" &&
+    block.bip110Violations.status === "known"
+      ? block.bip110Violations.count
       : null;
   const title =
     block.kind === "known"
@@ -115,6 +129,10 @@ function blockLinkHtml({
           `Time ${formatBlockTime(block.time)}`,
           `Txs ${formatInteger(block.nTx)}`,
           miner ? `Miner ${miner}` : null,
+          violationCount === null
+            ? null
+            : `Clean ${violationCount === 0 ? "Yes" : "No"}`,
+          violationCount === null ? null : `Violations ${violationCount}`,
           status,
           firstMinerSignal ? `First-ever signal from ${miner}` : null,
         ]
@@ -124,8 +142,11 @@ function blockLinkHtml({
   const flare = firstMinerSignal
     ? '<span aria-hidden="true" class="pointer-events-none absolute right-1 top-0.5 text-xs text-primary motion-safe:animate-pulse">✦</span>'
     : "";
+  const cleanMarker = clean
+    ? '<span aria-hidden="true" class="pointer-events-none absolute bottom-0.5 right-1 text-xs font-bold leading-none text-primary">✓</span>'
+    : "";
 
-  return `<a href="${MEMPOOL_BLOCK_URL}/${block.height}" target="_blank" rel="noopener noreferrer" class="${className}" title="${escapeAttribute(title)}">${flare}<span class="relative z-10">${formatInteger(block.height)}</span></a>`;
+  return `<a href="${MEMPOOL_BLOCK_URL}/${block.height}" target="_blank" rel="noopener noreferrer" class="${className}" title="${escapeAttribute(title)}">${flare}${cleanMarker}<span class="relative z-10">${formatInteger(block.height)}</span></a>`;
 }
 
 function formatBlockMiner(attribution: BlockMiningAttribution): string {
