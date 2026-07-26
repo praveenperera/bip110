@@ -7,7 +7,7 @@ import {
   useState,
 } from "react";
 import { Tooltip } from "@base-ui/react/tooltip";
-import { AlertCircle, ExternalLink, RefreshCw } from "lucide-react";
+import { AlertCircle, ExternalLink, RefreshCw, Sparkles } from "lucide-react";
 import {
   CartesianGrid,
   Line,
@@ -486,6 +486,34 @@ function formatBlockMiner(attribution: BlockMiningAttribution | null) {
   if (!attribution.templateMinerName) return attribution.poolName;
 
   return `${attribution.poolName} (${attribution.templateMinerName})`;
+}
+
+function blockServerAttributionState(
+  block: MonitorGridBlock,
+): BlockMiningAttributionState | null {
+  if (block.kind !== "known" || !block.signaling) return null;
+
+  if (block.signalingMiner.status === "identified") {
+    return {
+      status: "loaded",
+      attribution: block.signalingMiner.attribution,
+    };
+  }
+
+  if (block.signalingMiner.status === "unidentified") {
+    return { status: "loaded", attribution: null };
+  }
+
+  return null;
+}
+
+function isFirstMinerSignal(block: MonitorGridBlock): boolean {
+  return (
+    block.kind === "known" &&
+    block.signaling &&
+    block.signalingMiner.status === "identified" &&
+    block.signalingMiner.firstSignal
+  );
 }
 
 function formatBlockStatus(
@@ -1042,6 +1070,7 @@ function BlockTooltip({
       : attributionState.status === "unavailable"
         ? "Unavailable"
         : formatBlockMiner(attribution);
+  const firstMinerSignal = isFirstMinerSignal(block);
 
   return (
     <Tooltip.Popup
@@ -1077,12 +1106,23 @@ function BlockTooltip({
         {mode === "bip110" && knownBlock?.signaling === true ? "" : "x "}
         {formatBlockStatus(block, mode)}
       </p>
+      {firstMinerSignal && (
+        <p className="mt-2 font-sans text-xs font-semibold text-primary">
+          First-ever BIP-110 signal from {formatBlockMiner(attribution)}
+        </p>
+      )}
     </Tooltip.Popup>
   );
 }
 
 function blockTitle(block: MonitorGridBlock, mode: MonitorBlockGridMode) {
   const knownBlock = block.kind === "known" ? block : null;
+  const firstMinerSignal =
+    knownBlock?.signaling === true &&
+    knownBlock.signalingMiner.status === "identified" &&
+    knownBlock.signalingMiner.firstSignal
+      ? `First-ever signal from ${formatBlockMiner(knownBlock.signalingMiner.attribution)}`
+      : null;
 
   return [
     `Height ${block.height}`,
@@ -1091,7 +1131,10 @@ function blockTitle(block: MonitorGridBlock, mode: MonitorBlockGridMode) {
     `Time ${formatBlockTime(knownBlock?.time)}`,
     `Txs ${formatBlockTransactions(knownBlock?.nTx)}`,
     formatBlockStatus(block, mode),
-  ].join("\n");
+    firstMinerSignal,
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 function BlockTile({
@@ -1101,23 +1144,26 @@ function BlockTile({
   block: MonitorGridBlock;
   mode: MonitorBlockGridMode;
 }) {
-  const [attributionState, setAttributionState] =
+  const [clientAttributionState, setClientAttributionState] =
     useState<BlockMiningAttributionState>({ status: "idle" });
   const blockHash = block.kind === "known" ? block.hash : null;
+  const serverAttributionState = blockServerAttributionState(block);
+  const attributionState = serverAttributionState ?? clientAttributionState;
   const signaling =
     mode === "bip110" && block.kind === "known" && block.signaling;
+  const firstMinerSignal = mode === "bip110" && isFirstMinerSignal(block);
   const unavailable = blockDetailUnavailable(block);
 
   const loadMiningAttribution = useCallback(() => {
     if (!blockHash || attributionState.status !== "idle") return;
 
-    setAttributionState({ status: "loading" });
+    setClientAttributionState({ status: "loading" });
     void fetchBlockMiningAttribution(blockHash).then(
       (attribution) => {
-        setAttributionState({ status: "loaded", attribution });
+        setClientAttributionState({ status: "loaded", attribution });
       },
       () => {
-        setAttributionState({ status: "unavailable" });
+        setClientAttributionState({ status: "unavailable" });
       },
     );
   }, [attributionState.status, blockHash]);
@@ -1146,10 +1192,24 @@ function BlockTile({
             : "border-border/60 bg-background/80 text-muted-foreground hover:border-border hover:bg-muted/50 hover:text-foreground",
           signaling &&
             "border-primary/50 bg-primary/10 text-primary shadow-[inset_0_-3px_0_var(--primary)] hover:border-primary/70 hover:bg-primary/15 hover:text-primary",
+          firstMinerSignal &&
+            "border-primary bg-primary/20 text-primary ring-2 ring-primary/60 shadow-[inset_0_-3px_0_var(--primary),0_0_18px_color-mix(in_oklab,var(--primary)_45%,transparent)] hover:border-primary hover:bg-primary/25",
           unavailable && "border-dashed",
         )}
       >
-        {block.height}
+        {firstMinerSignal && (
+          <>
+            <span
+              className="pointer-events-none absolute -right-2 -top-2 size-9 rounded-full bg-primary/35 blur-md motion-safe:animate-pulse"
+              aria-hidden="true"
+            />
+            <Sparkles
+              className="pointer-events-none absolute right-1 top-1 size-3 text-primary motion-safe:animate-pulse"
+              aria-hidden="true"
+            />
+          </>
+        )}
+        <span className="relative z-10">{block.height}</span>
       </Tooltip.Trigger>
       <Tooltip.Portal>
         <Tooltip.Positioner
@@ -1421,6 +1481,17 @@ function PeriodBlockGrid({
             />
             Not signaling
           </span>
+          {mode === "bip110" && (
+            <span className="inline-flex items-center gap-2">
+              <span
+                className="relative size-3 rounded-sm border border-primary bg-primary/20 ring-1 ring-primary/60"
+                aria-hidden="true"
+              >
+                <Sparkles className="absolute -right-1 -top-1 size-2.5 text-primary" />
+              </span>
+              Miner&apos;s first-ever signal
+            </span>
+          )}
         </div>
       </CardHeader>
 

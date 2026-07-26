@@ -43,7 +43,7 @@ export async function handleUrsfMonitorPageRequest(
 
   try {
     const data = await readMonitorData(request, ctx);
-    const blocks = await readUrsfMonitorBlocks(request, ctx, data.tip);
+    const blocks = await readUrsfMonitorBlocks(request, env, ctx, data.tip);
     return rewriteUrsfMonitorPage(assetResponse, data, blocks);
   } catch {
     return staticUrsfMonitorPage(assetResponse);
@@ -109,11 +109,12 @@ function rewriteUrsfMonitorPage(
 
 async function readUrsfMonitorBlocks(
   request: Request,
+  env: Env,
   ctx: ExecutionContext,
   expectedTip: number,
 ): Promise<MonitorBlock[]> {
   try {
-    const payload = await readMonitorBlocks(request, ctx, expectedTip);
+    const payload = await readMonitorBlocks(request, env, ctx, expectedTip);
     return payload.blocks;
   } catch {
     return [];

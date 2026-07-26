@@ -27,8 +27,8 @@ export interface MonitorData {
   updatedAt: string;
 }
 
-/** Known block details returned by the monitor blocks API */
-export interface MonitorBlock {
+/** Block details discovered from the upstream monitor */
+export interface UnclassifiedMonitorBlock {
   hash: string;
   height: number;
   nTx: number;
@@ -40,8 +40,26 @@ export interface MonitorBlock {
 /** Mining attribution reported by the block explorer */
 export interface BlockMiningAttribution {
   poolName: string;
+  poolSlug: string | null;
   templateMinerName: string | null;
 }
+
+/** Miner discovery attached to a signaling block */
+export type SignalingMinerDiscovery =
+  | {
+      status: "identified";
+      attribution: BlockMiningAttribution;
+      firstSignal: boolean;
+    }
+  | { status: "unidentified" }
+  | { status: "unavailable" };
+
+/** Known block details returned by the monitor blocks API */
+export type MonitorBlock = UnclassifiedMonitorBlock &
+  (
+    | { signaling: true; signalingMiner: SignalingMinerDiscovery }
+    | { signaling: false; signalingMiner: null }
+  );
 
 /** Wire payload returned by the monitor blocks API */
 export interface MonitorBlocksPayload {
@@ -129,13 +147,32 @@ export function parseBlockMiningAttribution(
   const poolName = optionalNonEmptyString(extras.pool.name);
   if (!poolName) return null;
 
+  const poolSlug = optionalNonEmptyString(extras.pool.slug);
   const minerNames = extras.pool.minerNames;
   const templateMinerName =
     poolName === "OCEAN" && Array.isArray(minerNames)
       ? optionalNonEmptyString(minerNames[1])
       : null;
 
-  return { poolName, templateMinerName };
+  return { poolName, poolSlug, templateMinerName };
+}
+
+/** Returns the stable identity used to track a miner's first signal */
+export function signalingMinerId(
+  attribution: BlockMiningAttribution,
+): string | null {
+  const poolId = normalizedMinerIdentityPart(
+    attribution.poolSlug ?? attribution.poolName,
+  );
+  if (!poolId || poolId === "unknown") return null;
+
+  if (poolId !== "ocean") return poolId;
+
+  const templateMinerId = attribution.templateMinerName
+    ? normalizedMinerIdentityPart(attribution.templateMinerName)
+    : null;
+
+  return templateMinerId ? `${poolId}:${templateMinerId}` : null;
 }
 
 /** Checks the range invariants enforced for monitor snapshots */
@@ -216,13 +253,65 @@ function parseMonitorBlock(value: unknown): MonitorBlock {
     throw new Error("monitor block API block must be an object");
   }
 
-  return {
+  const block = {
     hash: stringField(value, "hash"),
     height: numberField(value, "height"),
     nTx: numberField(value, "nTx"),
     signaling: booleanField(value, "signaling"),
     time: numberField(value, "time"),
     version: numberField(value, "version"),
+  };
+  const signalingMiner = value.signalingMiner;
+
+  if (!block.signaling) {
+    if (signalingMiner !== null) {
+      throw new Error(
+        "monitor block API non-signaling block must not have miner discovery",
+      );
+    }
+
+    return { ...block, signaling: false, signalingMiner: null };
+  }
+
+  return {
+    ...block,
+    signaling: true,
+    signalingMiner: parseSignalingMinerDiscovery(signalingMiner),
+  };
+}
+
+function parseSignalingMinerDiscovery(value: unknown): SignalingMinerDiscovery {
+  if (!isRecord(value)) {
+    throw new Error(
+      "monitor block API signaling block must have miner discovery",
+    );
+  }
+
+  const status = stringField(value, "status");
+  if (status === "unidentified" || status === "unavailable") {
+    return { status };
+  }
+
+  if (status !== "identified") {
+    throw new Error("monitor block API miner discovery status is invalid");
+  }
+
+  if (!isRecord(value.attribution)) {
+    throw new Error("monitor block API identified miner is invalid");
+  }
+
+  const attribution = {
+    poolName: stringField(value.attribution, "poolName"),
+    poolSlug: optionalNonEmptyString(value.attribution.poolSlug),
+    templateMinerName: optionalNonEmptyString(
+      value.attribution.templateMinerName,
+    ),
+  };
+
+  return {
+    status,
+    attribution,
+    firstSignal: booleanField(value, "firstSignal"),
   };
 }
 
@@ -297,4 +386,8 @@ function optionalNonEmptyString(value: unknown): string | null {
 
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+function normalizedMinerIdentityPart(value: string): string {
+  return value.trim().replaceAll(/\s+/g, " ").toLocaleLowerCase("en-US");
 }

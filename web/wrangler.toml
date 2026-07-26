@@ -5,6 +5,17 @@ main = "./src/worker.ts"
 [observability]
 enabled = true
 
+[[durable_objects.bindings]]
+name = "SIGNALING_MINER_HISTORY"
+class_name = "SignalingMinerHistory"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["SignalingMinerHistory"]
+
+[triggers]
+crons = ["*/5 * * * *"]
+
 [assets]
 directory = "./dist"
 binding = "ASSETS"

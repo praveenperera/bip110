@@ -6,6 +6,7 @@ import {
   parseBlockMiningAttribution,
   parseMonitorBlocksPayload,
   parseMonitorData,
+  signalingMinerId,
 } from "../src/lib/monitor.ts";
 
 function monitorSnapshot(overrides = {}) {
@@ -92,6 +93,15 @@ test("monitor block payloads are parsed at runtime", () => {
         height: 961_058,
         nTx: 2_345,
         signaling: true,
+        signalingMiner: {
+          status: "identified",
+          attribution: {
+            poolName: "OCEAN",
+            poolSlug: "ocean",
+            templateMinerName: "Roughnecks",
+          },
+          firstSignal: false,
+        },
         time: 1_774_441_200,
         version: 0x20000010,
       },
@@ -100,6 +110,15 @@ test("monitor block payloads are parsed at runtime", () => {
   });
 
   assert.equal(payload.blocks[0].height, 961_058);
+  assert.deepEqual(payload.blocks[0].signalingMiner, {
+    status: "identified",
+    attribution: {
+      poolName: "OCEAN",
+      poolSlug: "ocean",
+      templateMinerName: "Roughnecks",
+    },
+    firstSignal: false,
+  });
   assert.throws(
     () => parseMonitorBlocksPayload({ blocks: [{}], updatedAt: "now" }),
     /field hash must be a string/,
@@ -118,6 +137,7 @@ test("block mining attribution identifies the pool", () => {
     }),
     {
       poolName: "Foundry USA",
+      poolSlug: null,
       templateMinerName: null,
     },
   );
@@ -135,8 +155,36 @@ test("OCEAN block attribution identifies the template miner", () => {
     }),
     {
       poolName: "OCEAN",
+      poolSlug: null,
       templateMinerName: "Roughnecks",
     },
+  );
+});
+
+test("signaling miner identities distinguish OCEAN template makers", () => {
+  assert.equal(
+    signalingMinerId({
+      poolName: "OCEAN",
+      poolSlug: "ocean",
+      templateMinerName: " Roughnecks ",
+    }),
+    "ocean:roughnecks",
+  );
+  assert.equal(
+    signalingMinerId({
+      poolName: "OCEAN",
+      poolSlug: "ocean",
+      templateMinerName: "SoV",
+    }),
+    "ocean:sov",
+  );
+  assert.equal(
+    signalingMinerId({
+      poolName: "OCEAN",
+      poolSlug: "ocean",
+      templateMinerName: null,
+    }),
+    null,
   );
 });
 
@@ -155,6 +203,15 @@ test("current-period grids distinguish known blocks from placeholders", () => {
     height: 961_058,
     nTx: 1_234,
     signaling: true,
+    signalingMiner: {
+      status: "identified",
+      attribution: {
+        poolName: "OCEAN",
+        poolSlug: "ocean",
+        templateMinerName: "Roughnecks",
+      },
+      firstSignal: false,
+    },
     time: 1_774_441_200,
     version: 0x20000010,
   };

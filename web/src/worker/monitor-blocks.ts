@@ -1,9 +1,12 @@
 import {
+  PERIOD_SIZE,
   parseMonitorBlocksPayload,
   type MonitorBlock,
   type MonitorBlocksPayload,
+  type UnclassifiedMonitorBlock,
 } from "../lib/monitor";
 import { defaultCache, jsonResponse } from "./monitor-data";
+import type { SignalingBlockClassification } from "./signaling-miner-history";
 
 const UPSTREAM_MONITOR_PAGE = "https://bip110monitor.com";
 const MAX_MONITOR_HTML_BYTES = 1_000_000;
@@ -22,8 +25,14 @@ interface CachedMonitorBlocksResponse {
   cacheStatus: CacheStatus;
 }
 
+interface UnclassifiedMonitorBlocksPayload {
+  blocks: UnclassifiedMonitorBlock[];
+  updatedAt: string;
+}
+
 export async function handleMonitorBlocksApiRequest(
   request: Request,
+  env: Env,
   ctx: ExecutionContext,
 ): Promise<Response> {
   if (request.method !== "GET" && request.method !== "HEAD") {
@@ -38,6 +47,7 @@ export async function handleMonitorBlocksApiRequest(
 
   const { response, cacheStatus } = await fetchCachedMonitorBlocksResponse(
     request,
+    env,
     ctx,
   );
   const headers = new Headers(response.headers);
@@ -53,11 +63,13 @@ export async function handleMonitorBlocksApiRequest(
 
 export async function readMonitorBlocks(
   request: Request,
+  env: Env,
   ctx: ExecutionContext,
   expectedTip?: number,
 ): Promise<MonitorBlocksPayload> {
   const { response } = await fetchCachedMonitorBlocksResponse(
     monitorBlocksRequest(request, expectedTip),
+    env,
     ctx,
   );
 
@@ -70,6 +82,7 @@ export async function readMonitorBlocks(
 
 async function fetchCachedMonitorBlocksResponse(
   request: Request,
+  env: Env,
   ctx: ExecutionContext,
 ): Promise<CachedMonitorBlocksResponse> {
   const cache = defaultCache();
@@ -102,10 +115,11 @@ async function fetchCachedMonitorBlocksResponse(
     return unavailableResponse(502);
   }
 
-  const payload = parseMonitorBlocksHtml(html);
-  if (payload.blocks.length === 0) {
+  const upstreamPayload = parseMonitorBlocksHtml(html);
+  if (upstreamPayload.blocks.length === 0) {
     return unavailableResponse(502);
   }
+  const payload = await classifiedMonitorBlocks(env, upstreamPayload);
 
   const response = jsonResponse(payload, {
     headers: {
@@ -117,6 +131,36 @@ async function fetchCachedMonitorBlocksResponse(
   ctx.waitUntil(cache.put(cacheKey, response.clone()).catch(() => {}));
 
   return { response, cacheStatus: "MISS" };
+}
+
+/** Refreshes persistent signaling miner history outside user requests */
+export async function refreshSignalingMinerHistory(env: Env): Promise<void> {
+  const response = await fetch(UPSTREAM_MONITOR_PAGE, {
+    headers: { accept: "text/html" },
+  });
+  if (!response.ok) {
+    throw new Error(`monitor block history refresh failed: ${response.status}`);
+  }
+
+  const contentLength = response.headers.get("content-length");
+  if (
+    contentLength &&
+    Number.parseInt(contentLength, 10) > MAX_MONITOR_HTML_BYTES
+  ) {
+    throw new Error("monitor block history refresh exceeded size limit");
+  }
+
+  const html = await response.text();
+  if (html.length > MAX_MONITOR_HTML_BYTES) {
+    throw new Error("monitor block history refresh exceeded size limit");
+  }
+
+  const payload = parseMonitorBlocksHtml(html);
+  if (payload.blocks.length === 0) {
+    throw new Error("monitor block history refresh returned no blocks");
+  }
+
+  await classifySignalingBlocks(env, payload.blocks);
 }
 
 function monitorBlocksCacheKey(request: Request): Request {
@@ -171,8 +215,10 @@ function unavailableResponse(status: number): CachedMonitorBlocksResponse {
   };
 }
 
-function parseMonitorBlocksHtml(html: string): MonitorBlocksPayload {
-  const blocks: MonitorBlock[] = [];
+function parseMonitorBlocksHtml(
+  html: string,
+): UnclassifiedMonitorBlocksPayload {
+  const blocks: UnclassifiedMonitorBlock[] = [];
 
   for (const match of html.matchAll(BLOCK_TILE_PATTERN)) {
     const [, status, height, hash, version, time, nTx] = match;
@@ -194,6 +240,65 @@ function parseMonitorBlocksHtml(html: string): MonitorBlocksPayload {
     blocks,
     updatedAt: parseUpdatedAt(html) ?? new Date().toISOString(),
   };
+}
+
+async function classifiedMonitorBlocks(
+  env: Env,
+  payload: UnclassifiedMonitorBlocksPayload,
+): Promise<MonitorBlocksPayload> {
+  const classifications = await classifySignalingBlocks(env, payload.blocks);
+  const classificationsByHash = new Map(
+    classifications.map((classification) => [
+      classification.hash,
+      classification.discovery,
+    ]),
+  );
+  const blocks: MonitorBlock[] = payload.blocks.map((block) =>
+    block.signaling
+      ? {
+          ...block,
+          signaling: true,
+          signalingMiner: classificationsByHash.get(block.hash) ?? {
+            status: "unavailable",
+          },
+        }
+      : { ...block, signaling: false, signalingMiner: null },
+  );
+
+  return { ...payload, blocks };
+}
+
+async function classifySignalingBlocks(
+  env: Env,
+  blocks: readonly UnclassifiedMonitorBlock[],
+): Promise<SignalingBlockClassification[]> {
+  const signalingBlocks = blocks
+    .filter((block) => block.signaling)
+    .map(({ hash, height }) => ({ hash, height }));
+  if (signalingBlocks.length === 0) return [];
+
+  const highestBlock = blocks[0];
+  if (!highestBlock) return [];
+
+  const periodStart =
+    Math.floor(highestBlock.height / PERIOD_SIZE) * PERIOD_SIZE;
+
+  try {
+    return await env.SIGNALING_MINER_HISTORY.getByName("bip110").classify(
+      periodStart,
+      signalingBlocks,
+    );
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        error: error instanceof Error ? error.message : String(error),
+        event: "signaling_miner_classification_failed",
+        periodStart,
+      }),
+    );
+
+    return [];
+  }
 }
 
 function parseUpdatedAt(html: string): string | null {

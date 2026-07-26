@@ -5,6 +5,7 @@ import {
 import {
   MONITOR_BLOCKS_API_PATH,
   handleMonitorBlocksApiRequest,
+  refreshSignalingMinerHistory,
 } from "./worker/monitor-blocks";
 import {
   MONITOR_OG_IMAGE_PATH,
@@ -19,6 +20,8 @@ import {
   handleUrsfMonitorPageRequest,
 } from "./worker/ursf-monitor-page";
 
+export { SignalingMinerHistory } from "./worker/signaling-miner-history";
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -28,7 +31,7 @@ export default {
     }
 
     if (url.pathname === MONITOR_BLOCKS_API_PATH) {
-      return handleMonitorBlocksApiRequest(request, ctx);
+      return handleMonitorBlocksApiRequest(request, env, ctx);
     }
 
     if (MONITOR_PAGE_PATHS.has(url.pathname)) {
@@ -44,5 +47,8 @@ export default {
     }
 
     return env.ASSETS.fetch(request);
+  },
+  async scheduled(_controller, env) {
+    await refreshSignalingMinerHistory(env);
   },
 } satisfies ExportedHandler<Env>;
