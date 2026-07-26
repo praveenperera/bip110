@@ -37,6 +37,12 @@ export interface MonitorBlock {
   version: number;
 }
 
+/** Mining attribution reported by the block explorer */
+export interface BlockMiningAttribution {
+  poolName: string;
+  templateMinerName: string | null;
+}
+
 /** Wire payload returned by the monitor blocks API */
 export interface MonitorBlocksPayload {
   blocks: MonitorBlock[];
@@ -107,6 +113,29 @@ export function parseMonitorBlocksPayload(
     blocks: value.blocks.map(parseMonitorBlock),
     updatedAt: stringField(value, "updatedAt"),
   };
+}
+
+/** Parses mining attribution from a mempool-compatible block response */
+export function parseBlockMiningAttribution(
+  value: unknown,
+): BlockMiningAttribution | null {
+  if (!isRecord(value)) {
+    throw new Error("block explorer response must be an object");
+  }
+
+  const extras = value.extras;
+  if (!isRecord(extras) || !isRecord(extras.pool)) return null;
+
+  const poolName = optionalNonEmptyString(extras.pool.name);
+  if (!poolName) return null;
+
+  const minerNames = extras.pool.minerNames;
+  const templateMinerName =
+    poolName === "OCEAN" && Array.isArray(minerNames)
+      ? optionalNonEmptyString(minerNames[1])
+      : null;
+
+  return { poolName, templateMinerName };
 }
 
 /** Checks the range invariants enforced for monitor snapshots */
@@ -261,4 +290,11 @@ function booleanField(
   }
 
   return fieldValue;
+}
+
+function optionalNonEmptyString(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
 }

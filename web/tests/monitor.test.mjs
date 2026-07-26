@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   currentPeriodGrid,
+  parseBlockMiningAttribution,
   parseMonitorBlocksPayload,
   parseMonitorData,
 } from "../src/lib/monitor.ts";
@@ -102,6 +103,48 @@ test("monitor block payloads are parsed at runtime", () => {
   assert.throws(
     () => parseMonitorBlocksPayload({ blocks: [{}], updatedAt: "now" }),
     /field hash must be a string/,
+  );
+});
+
+test("block mining attribution identifies the pool", () => {
+  assert.deepEqual(
+    parseBlockMiningAttribution({
+      extras: {
+        pool: {
+          name: "Foundry USA",
+          minerNames: null,
+        },
+      },
+    }),
+    {
+      poolName: "Foundry USA",
+      templateMinerName: null,
+    },
+  );
+});
+
+test("OCEAN block attribution identifies the template miner", () => {
+  assert.deepEqual(
+    parseBlockMiningAttribution({
+      extras: {
+        pool: {
+          name: "OCEAN",
+          minerNames: [" OCEANXYZ ", " Roughnecks "],
+        },
+      },
+    }),
+    {
+      poolName: "OCEAN",
+      templateMinerName: "Roughnecks",
+    },
+  );
+});
+
+test("block mining attribution tolerates unavailable pool metadata", () => {
+  assert.equal(parseBlockMiningAttribution({ extras: {} }), null);
+  assert.throws(
+    () => parseBlockMiningAttribution("invalid"),
+    /block explorer response must be an object/,
   );
 });
 

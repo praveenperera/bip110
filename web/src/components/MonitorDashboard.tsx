@@ -23,8 +23,10 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   currentPeriodGrid,
+  parseBlockMiningAttribution,
   parseMonitorBlocksPayload,
   parseMonitorData,
+  type BlockMiningAttribution,
   type MonitorBlock,
   type MonitorBlocksPayload,
   type MonitorData,
@@ -51,6 +53,7 @@ const LOCAL_DEV_API_URL = "https://bip110monitor.com/api";
 const MONITOR_URL = "https://bip110monitor.com";
 const URSF_MONITOR_URL = "/ursf-monitor";
 const MEMPOOL_BLOCK_URL = "https://mempool.guide/block";
+const MEMPOOL_BLOCK_API_URL = "https://mempool.guide/api/v1/block";
 const CACHE_KEY = "bip110-monitor-data";
 const MONITOR_DATA_EVENT = "bip110-monitor-data";
 const CACHE_VERSION = 2;
@@ -128,6 +131,17 @@ type MonitorDataEventDetail = {
 type BlockDataStatus = "loading" | "live" | "unavailable";
 
 type MonitorBlockGridMode = "bip110" | "ursf";
+
+type BlockMiningAttributionState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "loaded"; attribution: BlockMiningAttribution | null }
+  | { status: "unavailable" };
+
+const blockMiningAttributionRequests = new Map<
+  string,
+  Promise<BlockMiningAttribution | null>
+>();
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -251,6 +265,29 @@ async function fetchMonitorBlocks(
   }
 
   return parseMonitorBlocksPayload(await response.json());
+}
+
+function fetchBlockMiningAttribution(
+  hash: string,
+): Promise<BlockMiningAttribution | null> {
+  const existingRequest = blockMiningAttributionRequests.get(hash);
+  if (existingRequest) return existingRequest;
+
+  const request = fetch(`${MEMPOOL_BLOCK_API_URL}/${hash}`)
+    .then(async (response) => {
+      if (!response.ok) {
+        throw new Error(`Block explorer API returned ${response.status}`);
+      }
+
+      return parseBlockMiningAttribution(await response.json());
+    })
+    .catch((error: unknown) => {
+      blockMiningAttributionRequests.delete(hash);
+      throw error;
+    });
+
+  blockMiningAttributionRequests.set(hash, request);
+  return request;
 }
 
 function useMonitorBlocks(
@@ -442,6 +479,13 @@ function formatBlockTime(value: number | undefined) {
 
 function formatBlockTransactions(value: number | undefined) {
   return value === undefined ? "Unavailable" : formatNumber(value);
+}
+
+function formatBlockMiner(attribution: BlockMiningAttribution | null) {
+  if (!attribution) return "Unknown";
+  if (!attribution.templateMinerName) return attribution.poolName;
+
+  return `${attribution.poolName} (${attribution.templateMinerName})`;
 }
 
 function formatBlockStatus(
@@ -981,13 +1025,23 @@ function SectionTitleLink({
 }
 
 function BlockTooltip({
+  attributionState,
   block,
   mode,
 }: {
+  attributionState: BlockMiningAttributionState;
   block: MonitorGridBlock;
   mode: MonitorBlockGridMode;
 }) {
   const knownBlock = block.kind === "known" ? block : null;
+  const attribution =
+    attributionState.status === "loaded" ? attributionState.attribution : null;
+  const minedBy =
+    attributionState.status === "idle" || attributionState.status === "loading"
+      ? "Loading…"
+      : attributionState.status === "unavailable"
+        ? "Unavailable"
+        : formatBlockMiner(attribution);
 
   return (
     <Tooltip.Popup
@@ -1009,6 +1063,8 @@ function BlockTooltip({
         <dd>{formatBlockTime(knownBlock?.time)}</dd>
         <dt className="text-muted-foreground">Txs</dt>
         <dd>{formatBlockTransactions(knownBlock?.nTx)}</dd>
+        <dt className="text-muted-foreground">Miner</dt>
+        <dd>{knownBlock ? minedBy : "Unavailable"}</dd>
       </dl>
       <p
         className={cn(
@@ -1045,12 +1101,33 @@ function BlockTile({
   block: MonitorGridBlock;
   mode: MonitorBlockGridMode;
 }) {
+  const [attributionState, setAttributionState] =
+    useState<BlockMiningAttributionState>({ status: "idle" });
+  const blockHash = block.kind === "known" ? block.hash : null;
   const signaling =
     mode === "bip110" && block.kind === "known" && block.signaling;
   const unavailable = blockDetailUnavailable(block);
 
+  const loadMiningAttribution = useCallback(() => {
+    if (!blockHash || attributionState.status !== "idle") return;
+
+    setAttributionState({ status: "loading" });
+    void fetchBlockMiningAttribution(blockHash).then(
+      (attribution) => {
+        setAttributionState({ status: "loaded", attribution });
+      },
+      () => {
+        setAttributionState({ status: "unavailable" });
+      },
+    );
+  }, [attributionState.status, blockHash]);
+
   return (
-    <Tooltip.Root>
+    <Tooltip.Root
+      onOpenChange={(open) => {
+        if (open) loadMiningAttribution();
+      }}
+    >
       <Tooltip.Trigger
         delay={80}
         closeDelay={0}
@@ -1083,7 +1160,11 @@ function BlockTile({
           positionMethod="fixed"
           collisionAvoidance={{ side: "flip", align: "shift" }}
         >
-          <BlockTooltip block={block} mode={mode} />
+          <BlockTooltip
+            attributionState={attributionState}
+            block={block}
+            mode={mode}
+          />
         </Tooltip.Positioner>
       </Tooltip.Portal>
     </Tooltip.Root>
@@ -1346,7 +1427,11 @@ function PeriodBlockGrid({
       <CardContent>
         <div className="grid grid-cols-[repeat(auto-fill,minmax(4.75rem,1fr))] gap-2 sm:grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))]">
           {visibleBlocks.map((block) => (
-            <BlockTile key={block.height} block={block} mode={mode} />
+            <BlockTile
+              key={block.kind === "known" ? block.hash : block.height}
+              block={block}
+              mode={mode}
+            />
           ))}
         </div>
 
