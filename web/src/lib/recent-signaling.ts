@@ -88,9 +88,9 @@ export function recentWindowHeading(window: RecentWindow): string {
 
 // blocks target ten minutes apart
 const RECENT_WINDOW_DURATIONS: Record<RecentWindow, string> = {
-  48: "roughly 8 hours",
-  72: "roughly 12 hours",
-  144: "roughly a day",
+  48: "roughly the last 8 hours",
+  72: "roughly the last 12 hours",
+  144: "roughly the last day",
 };
 
 /** Describes the target elapsed time for a recent-block window */
