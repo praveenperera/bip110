@@ -241,11 +241,7 @@ function monitorPageFields(
     "period-progress": `${formatInteger(data.totalBlocks)} / ${formatInteger(PERIOD_SIZE)}`,
     "period-start": formatInteger(data.periodStart),
     "recent-signaling-counts": recentSignalingCounts(recent),
-    "recent-signaling-detail": recentSignalingDetail(
-      recent,
-      data.pct,
-      data.periodNum,
-    ),
+    "recent-signaling-detail": recentSignalingDetail(recent, data.periodNum),
     "recent-signaling-heading": recentWindowHeading(recent.window),
     "recent-signaling-pct":
       recent.sampled === 0 ? "N/A" : formatPercent(recent.pct),

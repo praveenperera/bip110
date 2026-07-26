@@ -108,7 +108,6 @@ export function recentSignalingCounts(recent: RecentSignaling): string {
 /** Formats supporting detail for a recent-block summary */
 export function recentSignalingDetail(
   recent: RecentSignaling,
-  periodPct: number,
   periodNum: number,
 ): string {
   // the counts line already carries the unavailable message
@@ -118,5 +117,5 @@ export function recentSignalingDetail(
     return `Only ${recent.sampled} blocks have been mined since period ${periodNum} began, so this window covers ${recent.sampled} blocks.`;
   }
 
-  return `The period rate is ${periodPct.toFixed(2)}%. This window covers ${recentWindowDuration(recent.window)}.`;
+  return `This window covers ${recentWindowDuration(recent.window)}.`;
 }

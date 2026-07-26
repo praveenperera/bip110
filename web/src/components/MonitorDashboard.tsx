@@ -1218,7 +1218,7 @@ function RecentSignalingCard({
         </p>
         {!unavailable && (
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            {recentSignalingDetail(recent, data.pct, data.periodNum)}
+            {recentSignalingDetail(recent, data.periodNum)}
           </p>
         )}
       </CardContent>
