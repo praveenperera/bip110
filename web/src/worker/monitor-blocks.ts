@@ -19,6 +19,7 @@ import {
   readBip110MonitorBlocks,
   type Bip110MonitorBlocks,
 } from "./monitor-source";
+import { readWithBackgroundRefresh } from "./provider-fallback";
 import type { SignalingBlockClassification } from "./signaling-miner-history";
 
 const KILOMBINO_BLOCKS_API_URL = "https://mempool.kilombino.com/api/v1/blocks";
@@ -28,7 +29,7 @@ const KILOMBINO_REQUEST_TIMEOUT_MS = 3_000;
 const MAX_KILOMBINO_DIRECT_REQUESTS = KILOMBINO_BLOCK_PAGE_SIZE;
 const VIOLATION_CACHE_TTL_SECONDS = 31_536_000;
 const VIOLATION_CACHE_VERSION = 2;
-const RECONSTRUCTIONS_PER_REQUEST = 1;
+const VIOLATION_RECONSTRUCTIONS_PER_REFRESH = 1;
 
 export const MONITOR_BLOCKS_API_PATH = "/api/monitor-blocks";
 export const MONITOR_BLOCKS_CACHE_TTL_SECONDS = 60;
@@ -307,6 +308,39 @@ async function readBip110ViolationReports(
   blocks: readonly UnclassifiedMonitorBlock[],
 ) {
   const visibleBlocks = blocks.slice(0, MONITOR_GRID_VISIBLE_BLOCKS);
+
+  return readWithBackgroundRefresh(
+    () => readCachedViolationReports(request, visibleBlocks),
+    (cachedReports) => {
+      const cachedHashes = new Set(cachedReports.map((report) => report.hash));
+      const missingBlocks = visibleBlocks.filter(
+        (block) => !cachedHashes.has(block.hash),
+      );
+      if (missingBlocks.length === 0) return Promise.resolve();
+
+      return refreshViolationReports(
+        request,
+        visibleBlocks,
+        missingBlocks,
+      ).catch((error: unknown) => {
+        console.error(
+          JSON.stringify({
+            error: error instanceof Error ? error.message : String(error),
+            event: "bip110_violation_refresh_failed",
+          }),
+        );
+      });
+    },
+    (promise) => ctx.waitUntil(promise),
+  );
+}
+
+async function refreshViolationReports(
+  request: Request,
+  visibleBlocks: readonly UnclassifiedMonitorBlock[],
+  missingBlocks: readonly UnclassifiedMonitorBlock[],
+): Promise<void> {
+  const missingHashes = new Set(missingBlocks.map((block) => block.hash));
   const pageHeights = visibleBlocks
     .filter((_, index) => index % KILOMBINO_BLOCK_PAGE_SIZE === 0)
     .map((block) => block.height);
@@ -329,48 +363,35 @@ async function readBip110ViolationReports(
 
   const pageReports = pages
     .flatMap((page) => (page.status === "fulfilled" ? page.value : []))
-    .filter(isAuthoritativeKilombinoViolationReport);
+    .filter(
+      (report) =>
+        missingHashes.has(report.hash) &&
+        isAuthoritativeKilombinoViolationReport(report),
+    );
   const reportsByHash = new Map(
     pageReports.map((report) => [report.hash, report]),
   );
-  const missingAfterPages = visibleBlocks.filter(
-    (block) => !reportsByHash.has(block.hash),
-  );
-  const cachedReports = await readCachedViolationReports(
-    request,
-    missingAfterPages,
-  );
+  await cacheViolationReports(request, pageReports).catch(() => {});
 
-  for (const report of cachedReports) {
-    reportsByHash.set(report.hash, report);
-  }
-
-  const missingAfterCache = missingAfterPages.filter(
+  const missingAfterPages = missingBlocks.filter(
     (block) => !reportsByHash.has(block.hash),
   );
   const directReports = await readDirectBip110ViolationReports(
-    missingAfterCache.slice(0, MAX_KILOMBINO_DIRECT_REQUESTS),
-  );
+    missingAfterPages.slice(0, MAX_KILOMBINO_DIRECT_REQUESTS),
+  ).then((reports) => reports.filter(isAuthoritativeKilombinoViolationReport));
 
-  for (const report of directReports.filter(
-    isAuthoritativeKilombinoViolationReport,
-  )) {
+  for (const report of directReports) {
     reportsByHash.set(report.hash, report);
   }
+  await cacheViolationReports(request, directReports).catch(() => {});
 
-  const knownReports = [...reportsByHash.values()];
-  scheduleViolationReportCaching(request, ctx, knownReports);
-
-  const missingAfterDirect = missingAfterCache.filter(
+  const missingAfterDirect = missingAfterPages.filter(
     (block) => !reportsByHash.has(block.hash),
   );
-  scheduleViolationReconstruction(
+  await reconstructViolationReports(
     request,
-    ctx,
-    missingAfterDirect.slice(0, RECONSTRUCTIONS_PER_REQUEST),
+    missingAfterDirect.slice(0, VIOLATION_RECONSTRUCTIONS_PER_REFRESH),
   );
-
-  return knownReports;
 }
 
 async function readBip110ViolationPage(startHeight: number) {
@@ -461,23 +482,12 @@ async function readCachedViolationReports(
   return reports.filter((report) => report !== null);
 }
 
-function scheduleViolationReportCaching(
+async function reconstructViolationReports(
   request: Request,
-  ctx: ExecutionContext,
-  reports: readonly Bip110BlockViolationReport[],
-): void {
-  if (reports.length === 0) return;
-
-  ctx.waitUntil(cacheViolationReports(request, reports).catch(() => {}));
-}
-
-function scheduleViolationReconstruction(
-  request: Request,
-  ctx: ExecutionContext,
   blocks: readonly UnclassifiedMonitorBlock[],
-): void {
-  for (const block of blocks) {
-    ctx.waitUntil(
+): Promise<void> {
+  await Promise.all(
+    blocks.map((block) =>
       reconstructBip110ViolationReport(block)
         .then((report) => cacheViolationReports(request, [report]))
         .catch((error: unknown) => {
@@ -490,8 +500,8 @@ function scheduleViolationReconstruction(
             }),
           );
         }),
-    );
-  }
+    ),
+  );
 }
 
 async function cacheViolationReports(

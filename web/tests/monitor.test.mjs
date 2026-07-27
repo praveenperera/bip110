@@ -27,7 +27,10 @@ import {
 } from "../src/worker/mempool-api.ts";
 import { monitorDataFromBlocks } from "../src/worker/monitor-data.ts";
 import { parseBip110MonitorHtml } from "../src/worker/monitor-source.ts";
-import { readFirstAvailable } from "../src/worker/provider-fallback.ts";
+import {
+  readFirstAvailable,
+  readWithBackgroundRefresh,
+} from "../src/worker/provider-fallback.ts";
 
 function monitorSnapshot(overrides = {}) {
   return {
@@ -440,6 +443,28 @@ test("provider fallbacks use the first successful provider", async () => {
 
   assert.deepEqual(attempts, ["primary", "secondary"]);
   assert.deepEqual(result, { provider: "secondary", value: 42 });
+});
+
+test("background provider refreshes do not block cached values", async () => {
+  let finishRefresh;
+  const refresh = new Promise((resolve) => {
+    finishRefresh = resolve;
+  });
+  const read = readWithBackgroundRefresh(
+    async () => 42,
+    async () => refresh,
+    () => {},
+  );
+  const outcome = await Promise.race([
+    read.then((value) => ({ status: "returned", value })),
+    new Promise((resolve) =>
+      setTimeout(() => resolve({ status: "blocked" }), 25),
+    ),
+  ]);
+
+  assert.deepEqual(outcome, { status: "returned", value: 42 });
+  finishRefresh();
+  await refresh;
 });
 
 test("mempool blocks are normalized and signal through versionbits", () => {

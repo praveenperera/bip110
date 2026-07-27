@@ -33,3 +33,15 @@ export async function readFirstAvailable<Provider, Value>(
 
   throw new ProvidersUnavailableError(unavailableMessage, causes);
 }
+
+/** Returns a current value without awaiting its scheduled background refresh */
+export async function readWithBackgroundRefresh<Value>(
+  readCurrent: () => Promise<Value>,
+  refresh: (current: Value) => Promise<void>,
+  waitUntil: (promise: Promise<void>) => void,
+): Promise<Value> {
+  const current = await readCurrent();
+  waitUntil(refresh(current));
+
+  return current;
+}
