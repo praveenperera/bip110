@@ -9,7 +9,10 @@ import {
   type MonitorBlocksPayload,
   type UnclassifiedMonitorBlock,
 } from "../lib/monitor";
-import { reconstructBip110ViolationReport } from "./bip110-violations";
+import {
+  isAuthoritativeKilombinoViolationReport,
+  reconstructBip110ViolationReport,
+} from "./bip110-violations";
 import { readMempoolBlocks, readMempoolPeriod } from "./mempool-api";
 import { defaultCache, jsonResponse } from "./monitor-data";
 import {
@@ -24,6 +27,7 @@ const KILOMBINO_BLOCK_PAGE_SIZE = 15;
 const KILOMBINO_REQUEST_TIMEOUT_MS = 3_000;
 const MAX_KILOMBINO_DIRECT_REQUESTS = KILOMBINO_BLOCK_PAGE_SIZE;
 const VIOLATION_CACHE_TTL_SECONDS = 31_536_000;
+const VIOLATION_CACHE_VERSION = 2;
 const RECONSTRUCTIONS_PER_REQUEST = 1;
 
 export const MONITOR_BLOCKS_API_PATH = "/api/monitor-blocks";
@@ -323,9 +327,9 @@ async function readBip110ViolationReports(
     );
   }
 
-  const pageReports = pages.flatMap((page) =>
-    page.status === "fulfilled" ? page.value : [],
-  );
+  const pageReports = pages
+    .flatMap((page) => (page.status === "fulfilled" ? page.value : []))
+    .filter(isAuthoritativeKilombinoViolationReport);
   const reportsByHash = new Map(
     pageReports.map((report) => [report.hash, report]),
   );
@@ -348,7 +352,9 @@ async function readBip110ViolationReports(
     missingAfterCache.slice(0, MAX_KILOMBINO_DIRECT_REQUESTS),
   );
 
-  for (const report of directReports) {
+  for (const report of directReports.filter(
+    isAuthoritativeKilombinoViolationReport,
+  )) {
     reportsByHash.set(report.hash, report);
   }
 
@@ -519,7 +525,7 @@ async function cacheViolationReports(
 
 function violationCacheKey(request: Request, hash: string): Request {
   const url = new URL(request.url);
-  url.pathname = `/_cache/bip110-violations/${hash}`;
+  url.pathname = `/_cache/bip110-violations/v${VIOLATION_CACHE_VERSION}/${hash}`;
   url.search = "";
 
   return new Request(url.toString(), { method: "GET" });

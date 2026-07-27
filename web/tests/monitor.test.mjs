@@ -19,6 +19,7 @@ import {
 import {
   bip110TransactionViolations,
   countBip110ViolatingTransactions,
+  isAuthoritativeKilombinoViolationReport,
 } from "../src/worker/bip110-violations.ts";
 import {
   isBip110SignalingVersion,
@@ -266,6 +267,26 @@ test("BIP-110 cleanliness is derived from zero violations", () => {
       }),
     /non-negative integer/,
   );
+});
+
+test("Kilombino zero counts remain unverified until reconstruction", () => {
+  const zeroReport = parseBip110BlockViolationReport({
+    id: "e".repeat(64),
+    height: 961_056,
+    extras: {
+      bip110ViolationCount: 0,
+    },
+  });
+  const positiveReport = parseBip110BlockViolationReport({
+    id: "f".repeat(64),
+    height: 961_055,
+    extras: {
+      bip110ViolationCount: 1,
+    },
+  });
+
+  assert.equal(isAuthoritativeKilombinoViolationReport(zeroReport), false);
+  assert.equal(isAuthoritativeKilombinoViolationReport(positiveReport), true);
 });
 
 test("first miner signals require an identified signaling block", () => {

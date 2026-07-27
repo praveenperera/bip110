@@ -60,6 +60,13 @@ export function countBip110ViolatingTransactions(
   );
 }
 
+/** Returns whether Kilombino proves that a violation count has been indexed */
+export function isAuthoritativeKilombinoViolationReport(
+  report: Bip110BlockViolationReport,
+): boolean {
+  return report.violations.count > 0;
+}
+
 /** Returns the BIP-110 rule categories violated by one decoded transaction */
 export function bip110TransactionViolations(value: unknown): Bip110Violation[] {
   const transaction = parseTransaction(value);
