@@ -22,6 +22,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  MANDATORY_SIGNALING_HEIGHT,
+  mandatorySignalingEstimate,
+  shouldShowMandatorySignaling,
+  type MandatorySignalingCountdown,
+} from "@/lib/mandatory-signaling";
+import {
   currentPeriodGrid,
   isCleanMonitorBlock,
   isFirstMinerSignal,
@@ -95,6 +101,11 @@ type MonitorHighlightStat = {
   label: string;
   value: string;
   detail: string;
+};
+
+type CountdownUnit = {
+  label: string;
+  value: number;
 };
 
 type PeriodChartDatum = MonitorPeriod & {
@@ -571,6 +582,103 @@ function StatusCard({
         <p className="mt-1 text-sm text-muted-foreground">{detail}</p>
       </CardContent>
     </Card>
+  );
+}
+
+function countdownUnits(
+  countdown: MandatorySignalingCountdown,
+): CountdownUnit[] {
+  return [
+    { label: "Days", value: countdown.days },
+    { label: "Hrs", value: countdown.hours },
+    { label: "Min", value: countdown.minutes },
+    { label: "Sec", value: countdown.seconds },
+  ];
+}
+
+function formatCountdownUnit(value: number) {
+  return value.toString().padStart(2, "0");
+}
+
+function elapsedSecondsSince(value: string, now: number) {
+  const timestamp = Date.parse(value);
+  if (Number.isNaN(timestamp)) return 0;
+
+  return Math.max(Math.floor((now - timestamp) / 1000), 0);
+}
+
+function useMandatorySignalingClock() {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return now;
+}
+
+function MandatorySignalingCards({ data }: { data: MonitorData }) {
+  const now = useMandatorySignalingClock();
+  const estimate = mandatorySignalingEstimate(
+    data.tip,
+    elapsedSecondsSince(data.updatedAt, now),
+  );
+  const target = formatNumber(MANDATORY_SIGNALING_HEIGHT);
+  const units = countdownUnits(estimate.countdown);
+
+  return (
+    <section
+      className="grid gap-4 lg:grid-cols-2"
+      aria-label="Mandatory signaling schedule"
+    >
+      <Card className="min-h-80 border-primary/35 bg-card/70 py-0 ring-primary/10">
+        <CardContent className="flex h-full flex-col p-6 sm:p-8">
+          <h2 className="max-w-md text-base font-bold uppercase tracking-[0.08em] sm:text-xl">
+            Mandatory signaling begins in
+          </h2>
+
+          <div
+            className="my-8 grid grid-cols-2 gap-3 sm:my-10"
+            aria-label={`${units.map((unit) => `${unit.value} ${unit.label.toLowerCase()}`).join(", ")}`}
+          >
+            {units.map((unit) => (
+              <div
+                key={unit.label}
+                className="flex min-h-28 flex-col items-center justify-center rounded-xl border border-primary/25 bg-primary/[0.035] px-3 py-4"
+              >
+                <span className="font-mono text-4xl font-bold tracking-tight text-primary sm:text-5xl">
+                  {formatCountdownUnit(unit.value)}
+                </span>
+                <span className="mt-2 font-mono text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                  {unit.label}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <p className="mt-auto text-sm text-muted-foreground sm:text-base">
+            starts at #{target} · ~10 min/block
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card className="min-h-80 border-primary/35 bg-card/70 py-0 ring-primary/10">
+        <CardContent className="flex h-full flex-col p-6 sm:p-8">
+          <h2 className="max-w-md text-base font-bold uppercase tracking-[0.08em] sm:text-xl">
+            Blocks to mandatory phase
+          </h2>
+
+          <p className="my-auto py-10 font-mono text-6xl font-bold tracking-tight text-primary sm:text-7xl xl:text-8xl">
+            {formatNumber(estimate.blocksRemaining)}
+          </p>
+
+          <p className="mt-auto text-sm text-muted-foreground sm:text-base">
+            until #{target} · tip #{formatNumber(data.tip)}
+          </p>
+        </CardContent>
+      </Card>
+    </section>
   );
 }
 
@@ -2029,6 +2137,10 @@ export function MonitorDashboard() {
           detail={`${formatNumber(data.totalBlocks)} blocks tracked this period`}
         />
       </div>
+
+      {shouldShowMandatorySignaling(data.tip) ? (
+        <MandatorySignalingCards data={data} />
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
         <Card

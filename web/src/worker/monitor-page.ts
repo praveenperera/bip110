@@ -5,6 +5,11 @@ import {
   type MonitorData,
 } from "../lib/monitor";
 import {
+  MANDATORY_SIGNALING_HEIGHT,
+  mandatorySignalingEstimate,
+  shouldShowMandatorySignaling,
+} from "../lib/mandatory-signaling";
+import {
   ACTIVATION_THRESHOLD,
   CACHE_TTL_SECONDS,
   formatInteger,
@@ -133,6 +138,13 @@ function rewriteMonitorPage(
     );
   }
 
+  if (!shouldShowMandatorySignaling(data.tip)) {
+    rewriter = rewriter.on(
+      "[data-monitor-mandatory-signaling]",
+      new RemoveElementRewriter(),
+    );
+  }
+
   const transformed = rewriter
     .on(
       '[data-monitor-progress="activation"]',
@@ -211,6 +223,10 @@ function monitorPageFields(
   const previousPeriod =
     sortedPeriods.find((period) => period.periodNum === data.periodNum - 1) ??
     sortedPeriods.find((period) => period.periodNum < data.periodNum);
+  const mandatoryEstimate = mandatorySignalingEstimate(
+    data.tip,
+    elapsedSecondsSince(data.updatedAt),
+  );
 
   return {
     "blocks-left": formatInteger(blocksLeft),
@@ -240,6 +256,21 @@ function monitorPageFields(
       PERIOD_SIZE,
     ),
     "indexed-tip": formatInteger(data.tip),
+    "mandatory-blocks": formatInteger(mandatoryEstimate.blocksRemaining),
+    "mandatory-countdown-heading":
+      mandatoryEstimate.status === "pending"
+        ? "Mandatory signaling begins in"
+        : "Mandatory signaling height reached",
+    "mandatory-days": formatCountdownUnit(mandatoryEstimate.countdown.days),
+    "mandatory-hours": formatCountdownUnit(mandatoryEstimate.countdown.hours),
+    "mandatory-minutes": formatCountdownUnit(
+      mandatoryEstimate.countdown.minutes,
+    ),
+    "mandatory-seconds": formatCountdownUnit(
+      mandatoryEstimate.countdown.seconds,
+    ),
+    "mandatory-target": formatInteger(MANDATORY_SIGNALING_HEIGHT),
+    "mandatory-tip": formatInteger(data.tip),
     "period-detail": `${formatInteger(blocksLeft)} blocks remain in this period`,
     "period-end": formatInteger(data.periodEnd),
     "period-num": formatInteger(data.periodNum),
@@ -260,6 +291,17 @@ function monitorPageFields(
     threshold: formatInteger(requiredSignalBlocks),
     "updated-at": formatUpdatedAt(data.updatedAt),
   };
+}
+
+function elapsedSecondsSince(value: string): number {
+  const timestamp = Date.parse(value);
+  if (Number.isNaN(timestamp)) return 0;
+
+  return Math.max(Math.floor((Date.now() - timestamp) / 1000), 0);
+}
+
+function formatCountdownUnit(value: number): string {
+  return value.toString().padStart(2, "0");
 }
 
 function monitorSyncStatus(data: MonitorData): string {
@@ -590,6 +632,12 @@ class ClassRewriter implements HTMLRewriterElementContentHandlers {
 
   element(element: Element): void {
     element.setAttribute("class", this.className);
+  }
+}
+
+class RemoveElementRewriter implements HTMLRewriterElementContentHandlers {
+  element(element: Element): void {
+    element.remove();
   }
 }
 

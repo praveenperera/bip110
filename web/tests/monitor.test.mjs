@@ -11,6 +11,11 @@ import {
   parseMonitorData,
   signalingMinerId,
 } from "../src/lib/monitor.ts";
+import {
+  MANDATORY_SIGNALING_HEIGHT,
+  mandatorySignalingEstimate,
+  shouldShowMandatorySignaling,
+} from "../src/lib/mandatory-signaling.ts";
 
 function monitorSnapshot(overrides = {}) {
   return {
@@ -29,6 +34,41 @@ function monitorSnapshot(overrides = {}) {
     ...overrides,
   };
 }
+
+test("mandatory signaling estimate tracks the target block boundary", () => {
+  assert.deepEqual(
+    mandatorySignalingEstimate(MANDATORY_SIGNALING_HEIGHT - 1, 61),
+    {
+      status: "pending",
+      blocksRemaining: 1,
+      countdown: {
+        days: 0,
+        hours: 0,
+        minutes: 8,
+        seconds: 59,
+      },
+    },
+  );
+  assert.deepEqual(mandatorySignalingEstimate(MANDATORY_SIGNALING_HEIGHT), {
+    status: "reached",
+    blocksRemaining: 0,
+    countdown: {
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+    },
+  });
+  assert.equal(
+    shouldShowMandatorySignaling(MANDATORY_SIGNALING_HEIGHT - 1),
+    true,
+  );
+  assert.equal(shouldShowMandatorySignaling(MANDATORY_SIGNALING_HEIGHT), false);
+  assert.equal(
+    shouldShowMandatorySignaling(MANDATORY_SIGNALING_HEIGHT + 1),
+    false,
+  );
+});
 
 test("monitor snapshots have one canonical current period", () => {
   const input = monitorSnapshot({

@@ -145,6 +145,81 @@ const historyRows = [
             }
           </div>
 
+          <section
+            data-monitor-mandatory-signaling
+            class="grid gap-4 lg:grid-cols-2"
+            aria-label="Mandatory signaling schedule"
+          >
+            <article
+              class="min-h-80 rounded-xl border border-primary/35 bg-card/70 p-6 ring-1 ring-primary/10 sm:p-8"
+            >
+              <div class="flex h-full flex-col">
+                <h2
+                  class="max-w-md text-base font-bold uppercase tracking-[0.08em] sm:text-xl"
+                >
+                  <span data-monitor-field="mandatory-countdown-heading">
+                    Mandatory signaling begins in
+                  </span>
+                </h2>
+                <div
+                  class="my-8 grid grid-cols-2 gap-3 sm:my-10"
+                  aria-label="Estimated time to mandatory signaling"
+                >
+                  {
+                    [
+                      ["mandatory-days", "Days"],
+                      ["mandatory-hours", "Hrs"],
+                      ["mandatory-minutes", "Min"],
+                      ["mandatory-seconds", "Sec"],
+                    ].map(([field, label]) => (
+                      <div class="flex min-h-28 flex-col items-center justify-center rounded-xl border border-primary/25 bg-primary/[0.035] px-3 py-4">
+                        <span class="font-mono text-4xl font-bold tracking-tight text-primary sm:text-5xl">
+                          <span data-monitor-field={field}>00</span>
+                        </span>
+                        <span class="mt-2 font-mono text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                          {label}
+                        </span>
+                      </div>
+                    ))
+                  }
+                </div>
+                <p
+                  class="mt-auto text-sm text-muted-foreground sm:text-base"
+                >
+                  starts at #<span data-monitor-field="mandatory-target"
+                    >961,632</span
+                  >
+                  · ~10 min/block
+                </p>
+              </div>
+            </article>
+
+            <article
+              class="min-h-80 rounded-xl border border-primary/35 bg-card/70 p-6 ring-1 ring-primary/10 sm:p-8"
+            >
+              <div class="flex h-full flex-col">
+                <h2
+                  class="max-w-md text-base font-bold uppercase tracking-[0.08em] sm:text-xl"
+                >
+                  Blocks to mandatory phase
+                </h2>
+                <p
+                  class="my-auto py-10 font-mono text-6xl font-bold tracking-tight text-primary sm:text-7xl xl:text-8xl"
+                >
+                  <span data-monitor-field="mandatory-blocks">N/A</span>
+                </p>
+                <p
+                  class="mt-auto text-sm text-muted-foreground sm:text-base"
+                >
+                  until #<span data-monitor-field="mandatory-target"
+                    >961,632</span
+                  >
+                  · tip #<span data-monitor-field="mandatory-tip">N/A</span>
+                </p>
+              </div>
+            </article>
+          </section>
+
           <div
             class="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]"
           >
