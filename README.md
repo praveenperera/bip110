@@ -12,6 +12,21 @@ npm install
 npm run dev
 ```
 
+The development command compiles ReScript before Astro starts and recompiles
+through Astro's Vite watcher. Run all formatting, tests, and production-build
+checks with:
+
+```bash
+cd web
+npm run check
+```
+
+The project uses Astro for static pages, ReScript for application logic,
+validation, state, request planning, and package-light React presentation, and
+TypeScript for narrow runtime and package adapters. See the
+[ReScript rewrite case study](https://github.com/praveenperera/research/blob/master/rescript-rewrite-evaluation/RESCRIPT_CASE_STUDY.md)
+for the measured tradeoffs and architecture decision.
+
 ## Deploy
 
 ### Production
