@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   currentPeriodGrid,
   isCleanMonitorBlock,
+  isFirstMinerSignal,
   parseBip110BlockViolationReport,
   parseBlockMiningAttribution,
   parseMonitorBlocksPayload,
@@ -186,6 +187,40 @@ test("BIP-110 cleanliness is derived from zero violations", () => {
         },
       }),
     /non-negative integer/,
+  );
+});
+
+test("first miner signals require an identified signaling block", () => {
+  const block = {
+    bip110Violations: { status: "known", count: 0 },
+    hash: "f".repeat(64),
+    height: 961_058,
+    kind: "known",
+    nTx: 1_234,
+    signaling: true,
+    signalingMiner: {
+      status: "identified",
+      attribution: {
+        poolName: "OCEAN",
+        poolSlug: "ocean",
+        templateMinerName: "Roughnecks",
+      },
+      firstSignal: true,
+    },
+    time: 1_774_441_200,
+    version: 0x20000010,
+  };
+
+  assert.equal(isFirstMinerSignal(block), true);
+  assert.equal(
+    isFirstMinerSignal({
+      ...block,
+      signalingMiner: {
+        ...block.signalingMiner,
+        firstSignal: false,
+      },
+    }),
+    false,
   );
 });
 

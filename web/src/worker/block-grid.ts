@@ -1,6 +1,7 @@
 import {
   currentPeriodGrid,
   isCleanMonitorBlock,
+  isFirstMinerSignal,
   MONITOR_GRID_VISIBLE_BLOCKS,
   type BlockMiningAttribution,
   type MonitorBlock,
@@ -37,6 +38,27 @@ export function ursfBlockGridHtml(
   return gridBlocks.map((block) => ursfBlockLinkHtml(block)).join("");
 }
 
+/** Renders the first-signal legend entry when a visible tile has that state */
+export function bip110FirstSignalLegendHtml(
+  data: MonitorData,
+  blocks: MonitorBlock[],
+): string {
+  const hasFirstMinerSignal = gridBlocksFor(data, blocks).some(
+    isFirstMinerSignal,
+  );
+
+  if (!hasFirstMinerSignal) return "";
+
+  return [
+    '<span class="inline-flex items-center gap-2">',
+    '<span class="relative size-3 rounded-sm border border-primary bg-primary/20 ring-1 ring-primary/60" aria-hidden="true">',
+    '<span class="absolute -right-1 -top-1 text-[0.625rem] leading-none text-primary">✦</span>',
+    "</span>",
+    "Miner's first-ever signal",
+    "</span>",
+  ].join("");
+}
+
 function gridBlocksFor(
   data: MonitorData,
   blocks: MonitorBlock[],
@@ -45,19 +67,16 @@ function gridBlocksFor(
 }
 
 function bip110BlockLinkHtml(block: MonitorGridBlock): string {
-  const firstMinerSignal =
-    block.kind === "known" &&
-    block.signaling &&
-    block.signalingMiner.status === "identified" &&
-    block.signalingMiner.firstSignal;
+  const firstMinerSignal = isFirstMinerSignal(block);
   const clean = block.kind === "known" && isCleanMonitorBlock(block);
   const className = [
     "relative flex h-12 items-center justify-center overflow-hidden rounded-md border px-2 font-mono text-sm font-semibold tracking-normal transition-colors",
     block.kind === "known" && block.signaling
-      ? "border-primary/50 bg-primary/10 text-primary shadow-[inset_0_-3px_0_var(--primary)]"
-      : "border-border/60 bg-background/80 text-muted-foreground",
+      ? "bg-primary/10 text-primary shadow-[inset_0_-3px_0_var(--primary)]"
+      : "bg-background/80 text-muted-foreground",
+    clean ? "border-primary/30" : "border-border/60",
     firstMinerSignal
-      ? "border-primary bg-primary/20 ring-2 ring-primary/60 shadow-[inset_0_-3px_0_var(--primary),0_0_18px_color-mix(in_oklab,var(--primary)_45%,transparent)]"
+      ? "bg-primary/20 ring-2 ring-primary/60 shadow-[inset_0_-3px_0_var(--primary),0_0_18px_color-mix(in_oklab,var(--primary)_45%,transparent)]"
       : "",
   ]
     .filter(Boolean)
@@ -142,11 +161,8 @@ function blockLinkHtml({
   const flare = firstMinerSignal
     ? '<span aria-hidden="true" class="pointer-events-none absolute right-1 top-0.5 text-xs text-primary motion-safe:animate-pulse">✦</span>'
     : "";
-  const cleanMarker = clean
-    ? '<span aria-hidden="true" class="pointer-events-none absolute bottom-0.5 right-1 text-xs font-bold leading-none text-primary">✓</span>'
-    : "";
 
-  return `<a href="${MEMPOOL_BLOCK_URL}/${block.height}" target="_blank" rel="noopener noreferrer" class="${className}" title="${escapeAttribute(title)}">${flare}${cleanMarker}<span class="relative z-10">${formatInteger(block.height)}</span></a>`;
+  return `<a href="${MEMPOOL_BLOCK_URL}/${block.height}" target="_blank" rel="noopener noreferrer" class="${className}" title="${escapeAttribute(title)}">${flare}<span class="relative z-10">${formatInteger(block.height)}</span></a>`;
 }
 
 function formatBlockMiner(attribution: BlockMiningAttribution): string {

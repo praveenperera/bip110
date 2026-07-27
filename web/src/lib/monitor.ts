@@ -209,6 +209,16 @@ export function isCleanMonitorBlock(block: MonitorBlock): boolean {
   );
 }
 
+/** Returns whether a grid block is a miner's first identified signal */
+export function isFirstMinerSignal(block: MonitorGridBlock): boolean {
+  return (
+    block.kind === "known" &&
+    block.signaling &&
+    block.signalingMiner.status === "identified" &&
+    block.signalingMiner.firstSignal
+  );
+}
+
 /** Returns the stable identity used to track a miner's first signal */
 export function signalingMinerId(
   attribution: BlockMiningAttribution,

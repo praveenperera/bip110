@@ -1,4 +1,4 @@
-import { bip110BlockGridHtml } from "./block-grid";
+import { bip110BlockGridHtml, bip110FirstSignalLegendHtml } from "./block-grid";
 import {
   PERIOD_SIZE,
   type MonitorBlock,
@@ -157,6 +157,10 @@ function rewriteMonitorPage(
     .on(
       "[data-monitor-block-grid]",
       new InnerHtmlRewriter(bip110BlockGridHtml(data, blocks)),
+    )
+    .on(
+      "[data-monitor-first-signal-key]",
+      new InnerHtmlRewriter(bip110FirstSignalLegendHtml(data, blocks)),
     )
     .transform(response);
 

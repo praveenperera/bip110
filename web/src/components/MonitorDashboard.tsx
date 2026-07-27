@@ -7,13 +7,7 @@ import {
   useState,
 } from "react";
 import { Tooltip } from "@base-ui/react/tooltip";
-import {
-  AlertCircle,
-  Check,
-  ExternalLink,
-  RefreshCw,
-  Sparkles,
-} from "lucide-react";
+import { AlertCircle, ExternalLink, RefreshCw, Sparkles } from "lucide-react";
 import {
   CartesianGrid,
   Line,
@@ -30,6 +24,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   currentPeriodGrid,
   isCleanMonitorBlock,
+  isFirstMinerSignal,
   MONITOR_GRID_VISIBLE_BLOCKS,
   parseBlockMiningAttribution,
   parseMonitorBlocksPayload,
@@ -508,15 +503,6 @@ function blockServerAttributionState(
   }
 
   return null;
-}
-
-function isFirstMinerSignal(block: MonitorGridBlock): boolean {
-  return (
-    block.kind === "known" &&
-    block.signaling &&
-    block.signalingMiner.status === "identified" &&
-    block.signalingMiner.firstSignal
-  );
 }
 
 function formatBlockStatus(
@@ -1215,9 +1201,10 @@ function BlockTile({
             ? "ursf-block-cell border-[var(--ursf-border)] bg-[var(--ursf-block)] text-[var(--ursf-block-text)] hover:bg-[var(--ursf-card-hover)]"
             : "border-border/60 bg-background/80 text-muted-foreground hover:border-border hover:bg-muted/50 hover:text-foreground",
           signaling &&
-            "border-primary/50 bg-primary/10 text-primary shadow-[inset_0_-3px_0_var(--primary)] hover:border-primary/70 hover:bg-primary/15 hover:text-primary",
+            "bg-primary/10 text-primary shadow-[inset_0_-3px_0_var(--primary)] hover:bg-primary/15 hover:text-primary",
+          clean && "border-primary/30 hover:border-primary/50",
           firstMinerSignal &&
-            "border-primary bg-primary/20 text-primary ring-2 ring-primary/60 shadow-[inset_0_-3px_0_var(--primary),0_0_18px_color-mix(in_oklab,var(--primary)_45%,transparent)] hover:border-primary hover:bg-primary/25",
+            "bg-primary/20 text-primary ring-2 ring-primary/60 shadow-[inset_0_-3px_0_var(--primary),0_0_18px_color-mix(in_oklab,var(--primary)_45%,transparent)] hover:bg-primary/25",
         )}
       >
         {firstMinerSignal && (
@@ -1232,13 +1219,6 @@ function BlockTile({
             />
           </>
         )}
-        {clean ? (
-          <Check
-            className="pointer-events-none absolute bottom-1 right-1 size-3 text-primary"
-            strokeWidth={3}
-            aria-hidden="true"
-          />
-        ) : null}
         <span className="relative z-10">{block.height}</span>
       </Tooltip.Trigger>
       <Tooltip.Portal>
@@ -1423,6 +1403,8 @@ function PeriodBlockGrid({
     ? gridBlocks
     : gridBlocks.slice(0, MONITOR_GRID_VISIBLE_BLOCKS);
   const hiddenCount = Math.max(gridBlocks.length - visibleBlocks.length, 0);
+  const hasFirstMinerSignal =
+    mode === "bip110" && visibleBlocks.some(isFirstMinerSignal);
   const liveBlockCount = blocks?.length ?? 0;
   const hasLiveBlocks = liveBlockCount > 0;
 
@@ -1515,25 +1497,22 @@ function PeriodBlockGrid({
             <>
               <span className="inline-flex items-center gap-2">
                 <span
-                  className="relative size-3 rounded-sm border border-border bg-background"
+                  className="size-3 rounded-sm border border-primary/30 bg-background"
                   aria-hidden="true"
-                >
-                  <Check
-                    className="absolute -bottom-0.5 -right-0.5 size-3 text-primary"
-                    strokeWidth={3}
-                  />
-                </span>
+                />
                 Clean
               </span>
-              <span className="inline-flex items-center gap-2">
-                <span
-                  className="relative size-3 rounded-sm border border-primary bg-primary/20 ring-1 ring-primary/60"
-                  aria-hidden="true"
-                >
-                  <Sparkles className="absolute -right-1 -top-1 size-2.5 text-primary" />
+              {hasFirstMinerSignal ? (
+                <span className="inline-flex items-center gap-2">
+                  <span
+                    className="relative size-3 rounded-sm border border-primary bg-primary/20 ring-1 ring-primary/60"
+                    aria-hidden="true"
+                  >
+                    <Sparkles className="absolute -right-1 -top-1 size-2.5 text-primary" />
+                  </span>
+                  Miner&apos;s first-ever signal
                 </span>
-                Miner&apos;s first-ever signal
-              </span>
+              ) : null}
             </>
           )}
         </div>
