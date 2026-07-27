@@ -103,6 +103,10 @@ const resolvedOgImageType = ogImageType ?? inferredOgImageType;
       html:not(.js) [data-js-only] {
         display: none !important;
       }
+
+      html:not(.js) [data-testid="js-only"] {
+        display: none !important;
+      }
     </style>
     <noscript>
       <style>

@@ -1,4 +1,16 @@
 import { PERIOD_SIZE, type UnclassifiedMonitorBlock } from "../lib/monitor.ts";
+import {
+  ascendingPageStarts,
+  descendingPageStarts,
+  hasContiguousRange,
+  isBip110SignalingVersion,
+  mapConcurrent,
+  parseMempoolBlock,
+  parsePositiveHeight,
+  selectBlockRange,
+  validateBlockRange,
+  validateTransactionRequest,
+} from "./Mempool.gen.ts";
 import { readFirstAvailable } from "./provider-fallback.ts";
 
 const MEMPOOL_PAGE_SIZE = 15;
@@ -6,9 +18,6 @@ const MEMPOOL_TRANSACTION_PAGE_SIZE = 25;
 const MEMPOOL_REQUEST_TIMEOUT_MS = 5_000;
 const MAX_JSON_RESPONSE_BYTES = 12_000_000;
 const FETCH_CONCURRENCY = 6;
-const VERSION_BITS_TOP_MASK = 0xe000_0000;
-const VERSION_BITS_TOP_BITS = 0x2000_0000;
-const BIP110_VERSION_BIT = 4;
 
 /** Ordered public mempool-compatible providers used for automatic failover */
 export const MEMPOOL_PROVIDERS = [
@@ -42,37 +51,6 @@ export interface MempoolPeriodResult extends MempoolBlocksResult {
 
 interface MempoolBlockPage {
   blocks: UnclassifiedMonitorBlock[];
-}
-
-/** Returns whether a block version uses versionbits signaling for BIP-110 */
-export function isBip110SignalingVersion(version: number): boolean {
-  return (
-    (version & VERSION_BITS_TOP_MASK) === VERSION_BITS_TOP_BITS &&
-    (version & (1 << BIP110_VERSION_BIT)) !== 0
-  );
-}
-
-/** Parses a mempool-compatible block summary */
-export function parseMempoolBlock(value: unknown): UnclassifiedMonitorBlock {
-  if (!isRecord(value)) {
-    throw new Error("mempool block response must be an object");
-  }
-
-  const hash = stringField(value, "id");
-  if (!/^[0-9a-f]{64}$/i.test(hash)) {
-    throw new Error("mempool block id must be a block hash");
-  }
-
-  const version = integerField(value, "version");
-
-  return {
-    hash,
-    height: nonNegativeIntegerField(value, "height"),
-    nTx: nonNegativeIntegerField(value, "tx_count"),
-    signaling: isBip110SignalingVersion(version),
-    time: nonNegativeIntegerField(value, "timestamp"),
-    version,
-  };
 }
 
 /** Reads recent blocks with automatic mempool.space to mempool.guide failover */
@@ -130,12 +108,7 @@ export async function readMempoolPeriod(): Promise<MempoolPeriodResult> {
 export async function readMempoolBlockTransactions(
   block: Pick<UnclassifiedMonitorBlock, "hash" | "nTx">,
 ): Promise<{ provider: MempoolProviderId; transactions: unknown[] }> {
-  if (!/^[0-9a-f]{64}$/i.test(block.hash)) {
-    throw new Error("block transaction request hash is invalid");
-  }
-  if (!Number.isSafeInteger(block.nTx) || block.nTx <= 0) {
-    throw new Error("block transaction request count is invalid");
-  }
+  validateTransactionRequest(block.hash, block.nTx);
 
   const result = await readFirstAvailable(
     MEMPOOL_PROVIDERS,
@@ -154,9 +127,9 @@ async function readProviderTip(provider: MempoolProvider): Promise<number> {
     `${provider.apiUrl}/blocks/tip/height`,
     "text/plain",
   );
-  const value = Number.parseInt((await response.text()).trim(), 10);
+  const value = parsePositiveHeight((await response.text()).trim());
 
-  if (!Number.isSafeInteger(value) || value <= 0) {
+  if (value == null) {
     throw new Error(`${provider.id} returned an invalid chain tip`);
   }
 
@@ -168,29 +141,16 @@ async function readProviderBlocks(
   startHeight: number,
   limit: number,
 ): Promise<UnclassifiedMonitorBlock[]> {
-  const pageHeights: number[] = [];
-
-  for (
-    let height = startHeight;
-    height > startHeight - limit;
-    height -= MEMPOOL_PAGE_SIZE
-  ) {
-    pageHeights.push(height);
-  }
-
   const pages = await mapConcurrent(
-    pageHeights,
+    descendingPageStarts(startHeight, limit, MEMPOOL_PAGE_SIZE),
     FETCH_CONCURRENCY,
     async (height) => readProviderBlockPage(provider, height),
   );
-  const minimumHeight = Math.max(startHeight - limit + 1, 0);
-  const blocks = uniqueBlocks(
-    pages
-      .flatMap((page) => page.blocks)
-      .filter(
-        (block) => block.height >= minimumHeight && block.height <= startHeight,
-      ),
-  ).slice(0, limit);
+  const blocks = selectBlockRange(
+    pages.flatMap((page) => page.blocks),
+    startHeight,
+    limit,
+  );
 
   if (blocks.length === 0) {
     throw new Error(`${provider.id} returned no blocks`);
@@ -225,18 +185,8 @@ async function readProviderBlockTransactions(
   provider: MempoolProvider,
   block: Pick<UnclassifiedMonitorBlock, "hash" | "nTx">,
 ): Promise<unknown[]> {
-  const pageIndexes: number[] = [];
-
-  for (
-    let index = 0;
-    index < block.nTx;
-    index += MEMPOOL_TRANSACTION_PAGE_SIZE
-  ) {
-    pageIndexes.push(index);
-  }
-
   const pages = await mapConcurrent(
-    pageIndexes,
+    ascendingPageStarts(block.nTx, MEMPOOL_TRANSACTION_PAGE_SIZE),
     FETCH_CONCURRENCY,
     async (index) => {
       const response = await fetchWithTimeout(
@@ -296,95 +246,13 @@ async function readJson(response: Response): Promise<unknown> {
   return JSON.parse(text) as unknown;
 }
 
-async function mapConcurrent<Input, Output>(
-  values: readonly Input[],
-  concurrency: number,
-  map: (value: Input) => Promise<Output>,
-): Promise<Output[]> {
-  const output: Output[] = [];
-
-  for (let index = 0; index < values.length; index += concurrency) {
-    output.push(
-      ...(await Promise.all(values.slice(index, index + concurrency).map(map))),
-    );
-  }
-
-  return output;
-}
-
-function uniqueBlocks(
-  blocks: readonly UnclassifiedMonitorBlock[],
-): UnclassifiedMonitorBlock[] {
-  const byHeight = new Map<number, UnclassifiedMonitorBlock>();
-
-  for (const block of [...blocks].sort(
-    (left, right) => right.height - left.height,
-  )) {
-    if (!byHeight.has(block.height)) {
-      byHeight.set(block.height, block);
-    }
-  }
-
-  return [...byHeight.values()];
-}
-
-function hasContiguousRange(
-  blocks: readonly UnclassifiedMonitorBlock[],
-  start: number,
-  end: number,
-): boolean {
-  if (blocks.length !== end - start + 1) return false;
-
-  return blocks.every((block, index) => block.height === end - index);
-}
-
-function validateBlockRange(startHeight: number, limit: number): void {
-  if (!Number.isSafeInteger(startHeight) || startHeight <= 0) {
-    throw new Error("mempool block start height is invalid");
-  }
-  if (!Number.isSafeInteger(limit) || limit <= 0 || limit > PERIOD_SIZE) {
-    throw new Error("mempool block limit is invalid");
-  }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function stringField(
-  value: Record<string, unknown>,
-  fieldName: string,
-): string {
-  const fieldValue = value[fieldName];
-  if (typeof fieldValue !== "string") {
-    throw new Error(`mempool block field ${fieldName} must be a string`);
-  }
-
-  return fieldValue;
-}
-
-function integerField(
-  value: Record<string, unknown>,
-  fieldName: string,
-): number {
-  const fieldValue = value[fieldName];
-  if (!Number.isSafeInteger(fieldValue)) {
-    throw new Error(`mempool block field ${fieldName} must be an integer`);
-  }
-
-  return fieldValue as number;
-}
-
-function nonNegativeIntegerField(
-  value: Record<string, unknown>,
-  fieldName: string,
-): number {
-  const fieldValue = integerField(value, fieldName);
-  if (fieldValue < 0) {
-    throw new Error(
-      `mempool block field ${fieldName} must be a non-negative integer`,
-    );
-  }
-
-  return fieldValue;
-}
+export {
+  ascendingPageStarts,
+  descendingPageStarts,
+  isBip110SignalingVersion,
+  mapConcurrent,
+  parseMempoolBlock,
+  parsePositiveHeight,
+  selectBlockRange,
+  validateTransactionRequest,
+};

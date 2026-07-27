@@ -2,6 +2,13 @@
 dist/
 # generated types
 .astro/
+/lib/
+src/**/*.res.js
+src/**/*.gen.ts
+src/**/*.gen.tsx
+tests/**/*.res.js
+tests/**/*.gen.ts
+tests/**/*.gen.tsx
 # local wrangler state
 .wrangler/
 

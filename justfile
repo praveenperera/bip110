@@ -1,6 +1,6 @@
 # development server
 dev: dev-stop
-    cd web && npm run dev -- --host --open
+    cd web && npm run dev
 
 # stop any existing astro development server
 [private]
@@ -66,7 +66,7 @@ nostr username npub:
 [group('format'), private]
 [working-directory: 'web']
 fmt-web:
-    npx prettier --write .
+    npm run format
 
 # format terraform code
 [group('format'), private]

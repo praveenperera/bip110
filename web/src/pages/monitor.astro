@@ -2,7 +2,7 @@
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
-import { MonitorDashboard } from "@/components/MonitorDashboard";
+import { make as MonitorDashboard } from "@/components/MonitorDashboard.res.js";
 
 const stats = [
   {
@@ -183,14 +183,20 @@ const historyRows = [
                     ))
                   }
                 </div>
-                <p
-                  class="mt-auto text-sm text-muted-foreground sm:text-base"
-                >
-                  starts at #<span data-monitor-field="mandatory-target"
-                    >961,632</span
-                  >
-                  · ~10 min/block
-                </p>
+                <div class="mt-auto space-y-1 text-sm sm:text-base">
+                  <p class="font-medium text-foreground/80">
+                    Estimated start:
+                    <span data-monitor-field="mandatory-expected-at"
+                      >Loading estimate</span
+                    >
+                  </p>
+                  <p class="text-muted-foreground">
+                    starts at #<span data-monitor-field="mandatory-target"
+                      >961,632</span
+                    >
+                    · ~10 min/block
+                  </p>
+                </div>
               </div>
             </article>
 
@@ -208,9 +214,7 @@ const historyRows = [
                 >
                   <span data-monitor-field="mandatory-blocks">N/A</span>
                 </p>
-                <p
-                  class="mt-auto text-sm text-muted-foreground sm:text-base"
-                >
+                <p class="mt-auto text-sm text-muted-foreground sm:text-base">
                   until #<span data-monitor-field="mandatory-target"
                     >961,632</span
                   >
@@ -224,9 +228,10 @@ const historyRows = [
             class="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]"
           >
             <section
-              id="current-period"
+              id="static-current-period"
               class="scroll-mt-24 rounded-lg border border-border/50 bg-card/50 p-6"
             >
+              <noscript><span id="current-period"></span></noscript>
               <h2 class="text-xl font-semibold">
                 <a
                   href="#current-period"
@@ -345,9 +350,10 @@ const historyRows = [
             </section>
 
             <section
-              id="rules"
+              id="static-rules"
               class="scroll-mt-24 rounded-lg border border-border/50 bg-card/50 p-6"
             >
+              <noscript><span id="rules"></span></noscript>
               <h2 class="text-xl font-semibold">
                 <a
                   href="#rules"
@@ -399,9 +405,12 @@ const historyRows = [
           </div>
 
           <section
-            id="difficulty-adjustment-period-history"
+            id="static-difficulty-adjustment-period-history"
             class="scroll-mt-24 rounded-lg border border-border/50 bg-card/50 p-6"
           >
+            <noscript
+              ><span id="difficulty-adjustment-period-history"></span></noscript
+            >
             <h2 class="text-xl font-semibold">
               <a
                 href="#difficulty-adjustment-period-history"
@@ -487,10 +496,11 @@ const historyRows = [
           </section>
 
           <section
-            id="recent-signaling"
+            id="static-recent-signaling"
             class="rounded-lg border border-border/50 bg-card/50 p-6"
             aria-labelledby="static-recent-signaling-title"
           >
+            <noscript><span id="recent-signaling"></span></noscript>
             <p
               class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
             >
@@ -523,10 +533,11 @@ const historyRows = [
           </section>
 
           <section
-            id="block-grid"
+            id="static-block-grid"
             class="rounded-lg border border-border/50 bg-card/50 p-6"
             aria-labelledby="static-block-grid-title"
           >
+            <noscript><span id="block-grid"></span></noscript>
             <div
               class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
             >
@@ -569,8 +580,7 @@ const historyRows = [
                 <span class="inline-flex items-center gap-2">
                   <span
                     class="size-3 rounded-sm border border-primary/30 bg-background"
-                    aria-hidden="true"
-                  ></span>
+                    aria-hidden="true"></span>
                   Clean
                 </span>
                 <span data-monitor-first-signal-key class="contents"></span>

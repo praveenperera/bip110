@@ -1,18 +1,30 @@
 import {
-  PERIOD_SIZE,
   parseMonitorData,
   type MonitorData,
   type UnclassifiedMonitorBlock,
 } from "../lib/monitor.ts";
+import { monitorDataFromBlocks as rescriptMonitorDataFromBlocks } from "../lib/Monitor.gen.ts";
+import {
+  activationThreshold as ACTIVATION_THRESHOLD,
+  formatInteger,
+  formatPercent,
+  monitorDescription,
+} from "./MonitorPresentation.gen.ts";
 import { readMempoolPeriod } from "./mempool-api.ts";
 import { readBip110MonitorBlocks } from "./monitor-source.ts";
+import { readFirstAvailable } from "./provider-fallback.ts";
+import { monitorApiPath } from "./WorkerRouter.gen.ts";
 
 const UPSTREAM_MONITOR_API = "https://bip110monitor.com/api";
 const MONITOR_REQUEST_TIMEOUT_MS = 5_000;
 
-export const MONITOR_API_PATH = "/api/monitor";
 export const CACHE_TTL_SECONDS = 60;
-export const ACTIVATION_THRESHOLD = 55;
+export {
+  ACTIVATION_THRESHOLD,
+  formatInteger,
+  formatPercent,
+  monitorDescription,
+};
 
 type CacheStatus = "HIT" | "MISS" | "BYPASS";
 type MonitorSource =
@@ -20,29 +32,11 @@ type MonitorSource =
   | "bip110monitor-page"
   | "mempool-guide"
   | "mempool-space";
+type MonitorProvider = "api" | "page" | "mempool";
 
 interface CachedMonitorResponse {
   response: Response;
   cacheStatus: CacheStatus;
-}
-
-const integerFormatter = new Intl.NumberFormat("en-US");
-
-export function formatInteger(value: number): string {
-  return integerFormatter.format(value);
-}
-
-export function formatPercent(value: number): string {
-  return `${value.toFixed(2)}%`;
-}
-
-export function monitorDescription(data: MonitorData): string {
-  return [
-    `BIP-110 status: ${formatPercent(data.pct)} of blocks signaling`,
-    `in difficulty adjustment period ${data.periodNum}`,
-    `(${formatInteger(data.signalingCount)} of ${formatInteger(data.totalBlocks)} blocks).`,
-    `${ACTIVATION_THRESHOLD}% needed to activate.`,
-  ].join(" ");
 }
 
 export function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
@@ -57,7 +51,7 @@ export function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
 
 export function monitorCacheKey(request: Request): Request {
   const url = new URL(request.url);
-  url.pathname = MONITOR_API_PATH;
+  url.pathname = monitorApiPath;
   url.search = "";
 
   return new Request(url.toString(), { method: "GET" });
@@ -129,28 +123,47 @@ async function readMonitorDataWithFallbacks(): Promise<{
   data: MonitorData;
   source: MonitorSource;
 }> {
-  try {
-    return {
-      data: await readUpstreamMonitorApi(),
-      source: "bip110monitor-api",
-    };
-  } catch {}
+  const providers = ["api", "page", "mempool"] as const;
+  const result = await readFirstAvailable<
+    MonitorProvider,
+    {
+      data: MonitorData;
+      source: MonitorSource;
+    }
+  >(
+    providers,
+    async (provider) => {
+      if (provider === "api") {
+        return {
+          data: await readUpstreamMonitorApi(),
+          source: "bip110monitor-api",
+        };
+      }
 
-  try {
-    const payload = await readBip110MonitorBlocks();
+      if (provider === "page") {
+        const payload = await readBip110MonitorBlocks();
 
-    return {
-      data: monitorDataFromBlocks(payload.blocks, payload.updatedAt),
-      source: "bip110monitor-page",
-    };
-  } catch {}
+        return {
+          data: monitorDataFromBlocks(payload.blocks, payload.updatedAt),
+          source: "bip110monitor-page",
+        };
+      }
 
-  const payload = await readMempoolPeriod();
+      const payload = await readMempoolPeriod();
 
-  return {
-    data: monitorDataFromBlocks(payload.blocks, payload.updatedAt, payload.tip),
-    source: payload.provider,
-  };
+      return {
+        data: monitorDataFromBlocks(
+          payload.blocks,
+          payload.updatedAt,
+          payload.tip,
+        ),
+        source: payload.provider,
+      };
+    },
+    "Monitor data providers unavailable",
+  );
+
+  return result.value;
 }
 
 async function readUpstreamMonitorApi(): Promise<MonitorData> {
@@ -172,58 +185,17 @@ export function monitorDataFromBlocks(
   updatedAt: string,
   expectedTip?: number,
 ): MonitorData {
-  const tip = expectedTip ?? Math.max(...blocks.map((block) => block.height));
-  if (!Number.isSafeInteger(tip) || tip <= 0) {
-    throw new Error("monitor fallback blocks contain no valid tip");
-  }
-
-  const periodNum = Math.floor(tip / PERIOD_SIZE);
-  const periodStart = periodNum * PERIOD_SIZE;
-  const periodEnd = periodStart + PERIOD_SIZE - 1;
-  const periodBlocks = [...blocks]
-    .filter((block) => block.height >= periodStart && block.height <= tip)
-    .sort((left, right) => right.height - left.height);
-  const totalBlocks = tip - periodStart + 1;
-
-  if (
-    periodBlocks.length !== totalBlocks ||
-    periodBlocks.some((block, index) => block.height !== tip - index)
-  ) {
-    throw new Error("monitor fallback blocks do not cover the current period");
-  }
-
-  const signalingCount = periodBlocks.filter((block) => block.signaling).length;
-
-  return parseMonitorData({
-    bip: "110",
-    tip,
-    chainTip: tip,
-    periodNum,
-    periodStart,
-    periodEnd,
-    totalBlocks,
-    signalingCount,
-    pct: totalBlocks === 0 ? 0 : (signalingCount / totalBlocks) * 100,
-    periods: [],
-    synced: true,
+  return rescriptMonitorDataFromBlocks(
+    [...blocks],
     updatedAt,
-  });
+    expectedTip ?? null,
+  );
 }
 
 export async function handleMonitorApiRequest(
   request: Request,
   ctx: ExecutionContext,
 ): Promise<Response> {
-  if (request.method !== "GET" && request.method !== "HEAD") {
-    return jsonResponse(
-      { error: "Method not allowed" },
-      {
-        status: 405,
-        headers: { allow: "GET, HEAD" },
-      },
-    );
-  }
-
   const { response, cacheStatus } = await fetchCachedMonitorResponse(
     request,
     ctx,

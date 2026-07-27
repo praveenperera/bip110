@@ -1379,19 +1379,9 @@ const heroFacts = [
 </Layout>
 
 <script>
-  document.addEventListener("click", (event) => {
-    const target = event.target;
+  import { start } from "@/components/LineNoteDismiss.res.js";
 
-    if (!(target instanceof Node)) return;
-
-    document
-      .querySelectorAll<HTMLDetailsElement>(".line-note[open]")
-      .forEach((note) => {
-        if (!note.contains(target)) {
-          note.open = false;
-        }
-      });
-  });
+  start();
 </script>
 
 <style is:global>
@@ -1484,5 +1474,4 @@ const heroFacts = [
       left: auto;
     }
   }
-
 </style>

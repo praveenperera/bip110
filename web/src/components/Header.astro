@@ -1,6 +1,6 @@
 ---
-import { NavMenu } from "./NavMenu";
-import { ThemeToggle } from "./ThemeToggle";
+import { make as NavMenu } from "./NavMenu.res.js";
+import { make as ThemeToggle } from "./ThemeToggle.res.js";
 ---
 
 <header
@@ -14,7 +14,9 @@ import { ThemeToggle } from "./ThemeToggle";
           class="flex items-center gap-2 group"
           aria-label="BIP-110 Home"
         >
-          <span class="text-[15px] font-semibold tracking-tight text-foreground">
+          <span
+            class="text-[15px] font-semibold tracking-tight text-foreground"
+          >
             BIP-110
           </span>
         </a>

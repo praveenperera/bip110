@@ -1,37 +1,45 @@
 import {
   MONITOR_GRID_VISIBLE_BLOCKS,
-  PERIOD_SIZE,
   parseBip110BlockViolationReport,
   parseMonitorBlocksPayload,
   type Bip110BlockViolationReport,
-  type Bip110ViolationStatus,
-  type MonitorBlock,
   type MonitorBlocksPayload,
   type UnclassifiedMonitorBlock,
 } from "../lib/monitor";
+import { reconstructBip110ViolationReport } from "./bip110-violations";
 import {
-  isAuthoritativeKilombinoViolationReport,
-  reconstructBip110ViolationReport,
-} from "./bip110-violations";
-import { readMempoolBlocks, readMempoolPeriod } from "./mempool-api";
+  parsePositiveHeight,
+  readMempoolBlocks,
+  readMempoolPeriod,
+} from "./mempool-api";
 import { defaultCache, jsonResponse } from "./monitor-data";
 import {
   readBip110MonitorBlocks,
   type Bip110MonitorBlocks,
 } from "./monitor-source";
-import { readWithBackgroundRefresh } from "./provider-fallback";
-import type { SignalingBlockClassification } from "./signaling-miner-history";
+import {
+  cacheTtl as selectMonitorBlocksCacheTtl,
+  classifyBlocks,
+  mergeBlocks,
+  signalingPlan,
+} from "./MonitorBlocksModel.gen.ts";
+import type { signalingBlockClassification as SignalingBlockClassification } from "./SignalingMinerHistoryModel.gen.ts";
+import {
+  groupBlocksByPeriod,
+  maxDirectRequests,
+  missingBlocks,
+  monitorReport,
+  reconstructionsPerRefresh,
+  selectAuthoritativeReports,
+  storedReports,
+  violationPageHeights,
+} from "./ViolationStoreModel.gen.ts";
+import { monitorBlocksApiPath } from "./WorkerRouter.gen.ts";
 
 const KILOMBINO_BLOCKS_API_URL = "https://mempool.kilombino.com/api/v1/blocks";
 const KILOMBINO_BLOCK_API_URL = "https://mempool.kilombino.com/api/block";
-const KILOMBINO_BLOCK_PAGE_SIZE = 15;
 const KILOMBINO_REQUEST_TIMEOUT_MS = 3_000;
-const MAX_KILOMBINO_DIRECT_REQUESTS = KILOMBINO_BLOCK_PAGE_SIZE;
-const VIOLATION_CACHE_TTL_SECONDS = 31_536_000;
-const VIOLATION_CACHE_VERSION = 2;
-const VIOLATION_RECONSTRUCTIONS_PER_REFRESH = 1;
 
-export const MONITOR_BLOCKS_API_PATH = "/api/monitor-blocks";
 export const MONITOR_BLOCKS_CACHE_TTL_SECONDS = 60;
 const MONITOR_BLOCKS_CATCH_UP_CACHE_TTL_SECONDS = 5;
 
@@ -53,16 +61,6 @@ export async function handleMonitorBlocksApiRequest(
   env: Env,
   ctx: ExecutionContext,
 ): Promise<Response> {
-  if (request.method !== "GET" && request.method !== "HEAD") {
-    return jsonResponse(
-      { error: "Method not allowed" },
-      {
-        status: 405,
-        headers: { allow: "GET, HEAD" },
-      },
-    );
-  }
-
   const { response, cacheStatus } = await fetchCachedMonitorBlocksResponse(
     request,
     env,
@@ -126,12 +124,7 @@ async function fetchCachedMonitorBlocksResponse(
     return unavailableResponse(502);
   }
 
-  const payload = await classifiedMonitorBlocks(
-    request,
-    env,
-    ctx,
-    upstreamPayload,
-  );
+  const payload = await classifiedMonitorBlocks(env, ctx, upstreamPayload);
 
   const response = jsonResponse(payload, {
     headers: {
@@ -155,7 +148,7 @@ export async function refreshSignalingMinerHistory(env: Env): Promise<void> {
 
 function monitorBlocksCacheKey(request: Request): Request {
   const url = new URL(request.url);
-  url.pathname = MONITOR_BLOCKS_API_PATH;
+  url.pathname = monitorBlocksApiPath;
   const expectedTip = monitorBlocksExpectedTip(request);
   url.search = expectedTip === null ? "" : `?tip=${expectedTip}`;
 
@@ -173,21 +166,19 @@ function monitorBlocksRequest(request: Request, expectedTip?: number): Request {
 
 function monitorBlocksExpectedTip(request: Request): number | null {
   const value = new URL(request.url).searchParams.get("tip");
-  if (!value || !/^\d+$/.test(value)) return null;
-
-  const tip = Number.parseInt(value, 10);
-  return Number.isSafeInteger(tip) && tip > 0 ? tip : null;
+  return value ? (parsePositiveHeight(value) ?? null) : null;
 }
 
 function monitorBlocksCacheTtl(
   payload: MonitorBlocksPayload,
   expectedTip: number | null,
 ): number {
-  if (expectedTip === null || payload.blocks[0]?.height === expectedTip) {
-    return MONITOR_BLOCKS_CACHE_TTL_SECONDS;
-  }
-
-  return MONITOR_BLOCKS_CATCH_UP_CACHE_TTL_SECONDS;
+  return selectMonitorBlocksCacheTtl(
+    payload.blocks,
+    expectedTip,
+    MONITOR_BLOCKS_CACHE_TTL_SECONDS,
+    MONITOR_BLOCKS_CATCH_UP_CACHE_TTL_SECONDS,
+  );
 }
 
 function unavailableResponse(status: number): CachedMonitorBlocksResponse {
@@ -229,7 +220,7 @@ async function readMonitorBlocksWithFallbacks(
       ? await readMempoolPeriod()
       : await readMempoolBlocks(expectedTip, MONITOR_GRID_VISIBLE_BLOCKS);
   const blocks = monitorPayload
-    ? mergeMonitorBlocks(monitorPayload.blocks, mempoolPayload.blocks)
+    ? mergeBlocks(monitorPayload.blocks, mempoolPayload.blocks)
     : mempoolPayload.blocks;
 
   return {
@@ -241,109 +232,126 @@ async function readMonitorBlocksWithFallbacks(
   };
 }
 
-function mergeMonitorBlocks(
-  monitorBlocks: readonly UnclassifiedMonitorBlock[],
-  fallbackBlocks: readonly UnclassifiedMonitorBlock[],
-): UnclassifiedMonitorBlock[] {
-  const byHeight = new Map(
-    monitorBlocks.map((block) => [block.height, block] as const),
-  );
-
-  for (const block of fallbackBlocks) {
-    byHeight.set(block.height, block);
-  }
-
-  return [...byHeight.values()].sort(
-    (left, right) => right.height - left.height,
-  );
-}
-
 async function classifiedMonitorBlocks(
-  request: Request,
   env: Env,
   ctx: ExecutionContext,
   payload: UnclassifiedMonitorBlocksPayload,
 ): Promise<MonitorBlocksPayload> {
   const [classifications, violationReports] = await Promise.all([
     classifySignalingBlocks(env, payload.blocks),
-    readBip110ViolationReports(request, ctx, payload.blocks),
+    readBip110ViolationReports(env, ctx, payload.blocks),
   ]);
-  const classificationsByHash = new Map(
-    classifications.map((classification) => [
-      classification.hash,
-      classification.discovery,
-    ]),
-  );
-  const violationsByHash = new Map(
-    violationReports.map((report) => [report.hash, report.violations]),
-  );
-  const blocks: MonitorBlock[] = payload.blocks.map((block) => {
-    const bip110Violations: Bip110ViolationStatus = violationsByHash.get(
-      block.hash,
-    ) ?? { status: "unavailable" };
 
-    return block.signaling
-      ? ({
-          ...block,
-          bip110Violations,
-          signaling: true,
-          signalingMiner: classificationsByHash.get(block.hash) ?? {
-            status: "unavailable",
-          },
-        } satisfies MonitorBlock)
-      : {
-          ...block,
-          bip110Violations,
-          signaling: false,
-          signalingMiner: null,
-        };
-  });
-
-  return { blocks, updatedAt: payload.updatedAt };
+  return classifyBlocks(
+    payload.blocks,
+    classifications,
+    violationReports,
+    payload.updatedAt,
+  ) as MonitorBlocksPayload;
 }
 
 async function readBip110ViolationReports(
-  request: Request,
+  env: Env,
   ctx: ExecutionContext,
   blocks: readonly UnclassifiedMonitorBlock[],
 ) {
   const visibleBlocks = blocks.slice(0, MONITOR_GRID_VISIBLE_BLOCKS);
+  const refreshes: Promise<void>[] = [];
+  const reports = await Promise.all(
+    groupBlocksByPeriod(visibleBlocks, (block) => block.height).map(
+      async ({ blocks: periodBlocks, periodStart }) => {
+        try {
+          const snapshot = await violationStore(env, periodStart).readAndClaim(
+            periodStart,
+            periodBlocks,
+          );
+          if (snapshot.refresh.status === "claimed") {
+            const missingPeriodBlocks = missingBlocks(
+              periodBlocks,
+              snapshot.reports,
+              (block) => block.hash,
+            );
+            refreshes.push(
+              refreshViolationReports(
+                env,
+                periodStart,
+                snapshot.refresh.token,
+                periodBlocks,
+                missingPeriodBlocks,
+              ),
+            );
+          }
 
-  return readWithBackgroundRefresh(
-    () => readCachedViolationReports(request, visibleBlocks),
-    (cachedReports) => {
-      const cachedHashes = new Set(cachedReports.map((report) => report.hash));
-      const missingBlocks = visibleBlocks.filter(
-        (block) => !cachedHashes.has(block.hash),
-      );
-      if (missingBlocks.length === 0) return Promise.resolve();
-
-      return refreshViolationReports(
-        request,
-        visibleBlocks,
-        missingBlocks,
-      ).catch((error: unknown) => {
-        console.error(
-          JSON.stringify({
-            error: error instanceof Error ? error.message : String(error),
-            event: "bip110_violation_refresh_failed",
-          }),
-        );
-      });
-    },
-    (promise) => ctx.waitUntil(promise),
+          return snapshot.reports.map(monitorReport);
+        } catch (error) {
+          console.error(
+            JSON.stringify({
+              error: error instanceof Error ? error.message : String(error),
+              event: "bip110_violation_store_failed",
+              periodStart,
+            }),
+          );
+          return [];
+        }
+      },
+    ),
   );
+
+  if (refreshes.length > 0) {
+    ctx.waitUntil(
+      Promise.all(refreshes).then(
+        () => undefined,
+        (error: unknown) => {
+          console.error(
+            JSON.stringify({
+              error: error instanceof Error ? error.message : String(error),
+              event: "bip110_violation_refresh_failed",
+            }),
+          );
+        },
+      ),
+    );
+  }
+
+  return reports.flat();
 }
 
 async function refreshViolationReports(
-  request: Request,
+  env: Env,
+  periodStart: number,
+  token: string,
   visibleBlocks: readonly UnclassifiedMonitorBlock[],
   missingBlocks: readonly UnclassifiedMonitorBlock[],
 ): Promise<void> {
-  const missingHashes = new Set(missingBlocks.map((block) => block.hash));
-  const pageHeights = visibleBlocks
-    .filter((_, index) => index % KILOMBINO_BLOCK_PAGE_SIZE === 0)
-    .map((block) => block.height);
+  try {
+    await refreshClaimedViolationReports(
+      env,
+      periodStart,
+      visibleBlocks,
+      missingBlocks,
+    );
+  } finally {
+    await violationStore(env, periodStart)
+      .finishRefresh(token)
+      .catch((error: unknown) => {
+        console.error(
+          JSON.stringify({
+            error: error instanceof Error ? error.message : String(error),
+            event: "bip110_violation_refresh_release_failed",
+            periodStart,
+          }),
+        );
+      });
+  }
+}
+
+async function refreshClaimedViolationReports(
+  env: Env,
+  periodStart: number,
+  visibleBlocks: readonly UnclassifiedMonitorBlock[],
+  missingBlocks: readonly UnclassifiedMonitorBlock[],
+): Promise<void> {
+  const pageHeights = violationPageHeights([...visibleBlocks]);
   const pages = await Promise.allSettled(
     pageHeights.map(readBip110ViolationPage),
   );
@@ -361,36 +369,25 @@ async function refreshViolationReports(
     );
   }
 
-  const pageReports = pages
-    .flatMap((page) => (page.status === "fulfilled" ? page.value : []))
-    .filter(
-      (report) =>
-        missingHashes.has(report.hash) &&
-        isAuthoritativeKilombinoViolationReport(report),
-    );
-  const reportsByHash = new Map(
-    pageReports.map((report) => [report.hash, report]),
+  const pageSelection = selectAuthoritativeReports(
+    [...missingBlocks],
+    pages.flatMap((page) => (page.status === "fulfilled" ? page.value : [])),
   );
-  await cacheViolationReports(request, pageReports).catch(() => {});
+  await persistViolationReports(env, periodStart, pageSelection.reports);
 
-  const missingAfterPages = missingBlocks.filter(
-    (block) => !reportsByHash.has(block.hash),
+  const directCandidates = await readDirectBip110ViolationReports(
+    pageSelection.remainingBlocks.slice(0, maxDirectRequests),
   );
-  const directReports = await readDirectBip110ViolationReports(
-    missingAfterPages.slice(0, MAX_KILOMBINO_DIRECT_REQUESTS),
-  ).then((reports) => reports.filter(isAuthoritativeKilombinoViolationReport));
-
-  for (const report of directReports) {
-    reportsByHash.set(report.hash, report);
-  }
-  await cacheViolationReports(request, directReports).catch(() => {});
-
-  const missingAfterDirect = missingAfterPages.filter(
-    (block) => !reportsByHash.has(block.hash),
+  const directSelection = selectAuthoritativeReports(
+    pageSelection.remainingBlocks,
+    directCandidates,
   );
+  await persistViolationReports(env, periodStart, directSelection.reports);
+
   await reconstructViolationReports(
-    request,
-    missingAfterDirect.slice(0, VIOLATION_RECONSTRUCTIONS_PER_REFRESH),
+    env,
+    periodStart,
+    directSelection.remainingBlocks.slice(0, reconstructionsPerRefresh),
   );
 }
 
@@ -456,40 +453,15 @@ async function readDirectBip110ViolationReports(
   );
 }
 
-async function readCachedViolationReports(
-  request: Request,
-  blocks: readonly UnclassifiedMonitorBlock[],
-) {
-  const cache = defaultCache();
-  const reports = await Promise.all(
-    blocks.map(async (block) => {
-      const response = await cache.match(
-        violationCacheKey(request, block.hash),
-      );
-      if (!response) return null;
-
-      try {
-        const report = parseBip110BlockViolationReport(await response.json());
-        return report.hash === block.hash && report.height === block.height
-          ? report
-          : null;
-      } catch {
-        return null;
-      }
-    }),
-  );
-
-  return reports.filter((report) => report !== null);
-}
-
 async function reconstructViolationReports(
-  request: Request,
+  env: Env,
+  periodStart: number,
   blocks: readonly UnclassifiedMonitorBlock[],
 ): Promise<void> {
   await Promise.all(
     blocks.map((block) =>
       reconstructBip110ViolationReport(block)
-        .then((report) => cacheViolationReports(request, [report]))
+        .then((report) => persistViolationReports(env, periodStart, [report]))
         .catch((error: unknown) => {
           console.error(
             JSON.stringify({
@@ -504,69 +476,41 @@ async function reconstructViolationReports(
   );
 }
 
-async function cacheViolationReports(
-  request: Request,
+async function persistViolationReports(
+  env: Env,
+  periodStart: number,
   reports: readonly Bip110BlockViolationReport[],
 ): Promise<void> {
-  const cache = defaultCache();
+  if (reports.length === 0) return;
 
-  await Promise.all(
-    reports.map((report) =>
-      cache.put(
-        violationCacheKey(request, report.hash),
-        jsonResponse(
-          {
-            id: report.hash,
-            height: report.height,
-            extras: {
-              bip110ViolationCount: report.violations.count,
-            },
-          },
-          {
-            headers: {
-              "cache-control": `public, max-age=${VIOLATION_CACHE_TTL_SECONDS}, immutable`,
-            },
-          },
-        ),
-      ),
-    ),
+  await violationStore(env, periodStart).putReports(
+    periodStart,
+    storedReports([...reports]),
   );
 }
 
-function violationCacheKey(request: Request, hash: string): Request {
-  const url = new URL(request.url);
-  url.pathname = `/_cache/bip110-violations/v${VIOLATION_CACHE_VERSION}/${hash}`;
-  url.search = "";
-
-  return new Request(url.toString(), { method: "GET" });
+function violationStore(env: Env, periodStart: number) {
+  return env.BIP110_VIOLATIONS.getByName(periodStart.toString());
 }
 
 async function classifySignalingBlocks(
   env: Env,
   blocks: readonly UnclassifiedMonitorBlock[],
 ): Promise<SignalingBlockClassification[]> {
-  const signalingBlocks = blocks
-    .filter((block) => block.signaling)
-    .map(({ hash, height }) => ({ hash, height }));
-  if (signalingBlocks.length === 0) return [];
-
-  const highestBlock = blocks[0];
-  if (!highestBlock) return [];
-
-  const periodStart =
-    Math.floor(highestBlock.height / PERIOD_SIZE) * PERIOD_SIZE;
+  const plan = signalingPlan([...blocks]);
+  if (!plan) return [];
 
   try {
     return await env.SIGNALING_MINER_HISTORY.getByName("bip110").classify(
-      periodStart,
-      signalingBlocks,
+      plan.periodStart,
+      plan.blocks,
     );
   } catch (error) {
     console.error(
       JSON.stringify({
         error: error instanceof Error ? error.message : String(error),
         event: "signaling_miner_classification_failed",
-        periodStart,
+        periodStart: plan.periodStart,
       }),
     );
 

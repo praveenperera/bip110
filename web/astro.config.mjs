@@ -1,59 +1,56 @@
 // @ts-check
+import { execFile } from "node:child_process";
+
 import { defineConfig } from "astro/config";
 
 import react from "@astrojs/react";
 import tailwindcss from "@tailwindcss/vite";
+import { fromHtml as monitorBlocksFromHtml } from "./src/worker/MonitorSourceModel.res.js";
+import {
+  monitorBlocksApiPath,
+  requestMethod,
+} from "./src/worker/WorkerRouter.res.js";
 
 const UPSTREAM_MONITOR_PAGE = "https://bip110monitor.com";
-const MONITOR_BLOCKS_API_PATH = "/api/monitor-blocks";
-const BLOCK_TILE_PATTERN =
-  /<div class="block-tile\s+(sig|nosig)(?:\s+[^"]*)?"\s+data-height="(\d+)"\s+data-hash="([0-9a-fA-F]{64})"\s+data-version="0x([0-9a-fA-F]+)"\s+data-time="([^"]+)"\s+data-ntx="(\d+)">/g;
-const UPDATED_AT_PATTERN = /Updated:\s*([0-9-]+\s+[0-9:]+\s+UTC)/;
 
-function parseMonitorUtcTime(value) {
-  const milliseconds = Date.parse(
-    value.trim().replace(" UTC", "Z").replace(" ", "T"),
-  );
+function compileReScript() {
+  return new Promise((resolve, reject) => {
+    execFile(
+      "npm",
+      ["run", "res:build"],
+      { cwd: process.cwd() },
+      (error, stdout, stderr) => {
+        if (!error) {
+          resolve();
+          return;
+        }
 
-  if (Number.isNaN(milliseconds)) {
-    return null;
-  }
-
-  return Math.floor(milliseconds / 1000);
+        reject(new Error(stderr || stdout || "ReScript compilation failed"));
+      },
+    );
+  });
 }
 
-function parseUpdatedAt(html) {
-  const match = html.match(UPDATED_AT_PATTERN);
-  if (!match) return null;
-
-  const timestamp = parseMonitorUtcTime(match[1]);
-  if (!timestamp) return null;
-
-  return new Date(timestamp * 1000).toISOString();
-}
-
-function parseMonitorBlocksHtml(html) {
-  const blocks = [];
-
-  for (const match of html.matchAll(BLOCK_TILE_PATTERN)) {
-    const [, status, height, hash, version, time, nTx] = match;
-    const parsedTime = parseMonitorUtcTime(time);
-
-    if (!parsedTime) continue;
-
-    blocks.push({
-      hash,
-      height: Number.parseInt(height, 10),
-      nTx: Number.parseInt(nTx, 10),
-      signaling: status === "sig",
-      time: parsedTime,
-      version: Number.parseInt(version, 16),
-    });
-  }
+function rescriptDevPlugin() {
+  let previousCompile = Promise.resolve();
 
   return {
-    blocks,
-    updatedAt: parseUpdatedAt(html) ?? new Date().toISOString(),
+    name: "bip110-rescript-dev",
+    configureServer(server) {
+      server.watcher.add(["src/**/*.res", "src/**/*.resi"]);
+    },
+    async handleHotUpdate({ file, server }) {
+      if (!file.endsWith(".res") && !file.endsWith(".resi")) {
+        return;
+      }
+
+      const compile = previousCompile.catch(() => {}).then(compileReScript);
+      previousCompile = compile;
+      await compile;
+      server.ws.send({ type: "full-reload" });
+
+      return [];
+    },
   };
 }
 
@@ -68,12 +65,12 @@ function monitorBlocksDevApiPlugin() {
         }
 
         const url = new URL(req.url, "http://localhost");
-        if (url.pathname !== MONITOR_BLOCKS_API_PATH) {
+        if (url.pathname !== monitorBlocksApiPath) {
           next();
           return;
         }
 
-        if (req.method !== "GET" && req.method !== "HEAD") {
+        if (requestMethod(req.method ?? "") === "unsupported") {
           res.statusCode = 405;
           res.setHeader("allow", "GET, HEAD");
           res.setHeader("content-type", "application/json; charset=utf-8");
@@ -90,7 +87,10 @@ function monitorBlocksDevApiPlugin() {
             throw new Error(`upstream returned ${upstreamResponse.status}`);
           }
 
-          const payload = parseMonitorBlocksHtml(await upstreamResponse.text());
+          const payload = monitorBlocksFromHtml(
+            await upstreamResponse.text(),
+            new Date().toISOString(),
+          );
           if (payload.blocks.length === 0) {
             throw new Error("upstream page had no block tiles");
           }
@@ -129,6 +129,6 @@ export default defineConfig({
     optimizeDeps: {
       include: ["react-dom/client"],
     },
-    plugins: [monitorBlocksDevApiPlugin(), tailwindcss()],
+    plugins: [rescriptDevPlugin(), monitorBlocksDevApiPlugin(), tailwindcss()],
   },
 });

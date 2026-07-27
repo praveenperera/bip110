@@ -9,9 +9,17 @@ enabled = true
 name = "SIGNALING_MINER_HISTORY"
 class_name = "SignalingMinerHistory"
 
+[[durable_objects.bindings]]
+name = "BIP110_VIOLATIONS"
+class_name = "Bip110ViolationStore"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["SignalingMinerHistory"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["Bip110ViolationStore"]
 
 [triggers]
 crons = ["*/5 * * * *"]

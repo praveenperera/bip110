@@ -7,29 +7,19 @@ import {
   type SignalingMinerDiscovery,
 } from "../lib/monitor";
 import {
+  classifications as signalingClassifications,
+  discoveryBatches,
   historicalFirstSignals,
   historicalSignalingMinerId,
-} from "./historical-signaling-miners";
+  missingBlocks as missingSignalingBlocks,
+  schemaUpgrade as signalingSchemaUpgrade,
+  shouldRetryUnresolved,
+  type signalingBlockClassification as SignalingBlockClassification,
+  type signalingBlockReference as SignalingBlockReference,
+  validatedSignalingBlocks as validatedSignalingBlocksRescript,
+} from "./SignalingMinerHistoryModel.gen.ts";
 import { MEMPOOL_PROVIDERS } from "./mempool-api.ts";
 import { readFirstAvailable } from "./provider-fallback.ts";
-
-const MAX_PERIOD_SIGNALS = 2016;
-const MAX_DISCOVERIES_PER_CALL = 40;
-const DISCOVERY_CONCURRENCY = 8;
-const UNRESOLVED_RETRY_MS = 60 * 60 * 1000;
-const BLOCK_HASH_PATTERN = /^[0-9a-f]{64}$/;
-
-/** Minimal signaling block data sent across the Durable Object RPC boundary */
-export interface SignalingBlockReference {
-  hash: string;
-  height: number;
-}
-
-/** Persistent miner discovery for one signaling block */
-export interface SignalingBlockClassification {
-  discovery: SignalingMinerDiscovery;
-  hash: string;
-}
 
 type StoredSignalingBlock = {
   checked_at: number;
@@ -64,37 +54,38 @@ export class SignalingMinerHistory extends DurableObject<Env> {
     const orderedBlocks = validatedSignalingBlocks(periodStart, blocks);
     this.reconcileCurrentPeriod(periodStart, orderedBlocks);
 
-    const storedClassifications = new Map<string, SignalingMinerDiscovery>();
-    const missingBlocks: SignalingBlockReference[] = [];
+    const storedClassifications: SignalingBlockClassification[] = [];
 
     for (const block of orderedBlocks) {
       const stored = this.storedDiscovery(block.hash);
 
       if (stored) {
-        storedClassifications.set(block.hash, stored);
-      } else {
-        missingBlocks.push(block);
+        storedClassifications.push({
+          discovery: stored,
+          hash: block.hash,
+        });
       }
     }
 
-    const discoveredAttributions = await discoverBlockMiners(
-      missingBlocks.slice(0, MAX_DISCOVERIES_PER_CALL),
+    const missingBlocks = missingSignalingBlocks(
+      orderedBlocks,
+      storedClassifications,
     );
-    const newClassifications = new Map<string, SignalingMinerDiscovery>();
+    const discoveredAttributions = await discoverBlockMiners(missingBlocks);
+    const newClassifications = discoveredAttributions.map(
+      ({ attribution, block }) => ({
+        discovery: attribution
+          ? this.persistDiscovery(block, attribution)
+          : this.persistUnresolved(block, "unavailable"),
+        hash: block.hash,
+      }),
+    );
 
-    for (const { attribution, block } of discoveredAttributions) {
-      const discovery = attribution
-        ? this.persistDiscovery(block, attribution)
-        : this.persistUnresolved(block, "unavailable");
-
-      newClassifications.set(block.hash, discovery);
-    }
-
-    return orderedBlocks.map((block) => ({
-      discovery: storedClassifications.get(block.hash) ??
-        newClassifications.get(block.hash) ?? { status: "unavailable" },
-      hash: block.hash,
-    }));
+    return signalingClassifications(
+      orderedBlocks,
+      storedClassifications,
+      newClassifications,
+    );
   }
 
   private migrate(): void {
@@ -135,11 +126,82 @@ export class SignalingMinerHistory extends DurableObject<Env> {
       `);
     }
 
+    const columns = this.ctx.storage.sql
+      .exec<{ name: string }>("PRAGMA table_info(signaling_blocks)")
+      .toArray()
+      .map((column) => column.name);
+    const upgrade = signalingSchemaUpgrade(currentVersion, columns);
+
+    if (upgrade === "rebuildLegacy") {
+      this.rebuildLegacySignalingBlocks(columns.includes("checked_at"));
+    } else if (upgrade === "addCheckedAt") {
+      this.ctx.storage.sql.exec(
+        "ALTER TABLE signaling_blocks ADD COLUMN checked_at INTEGER NOT NULL DEFAULT 0",
+      );
+    }
+    if (upgrade !== "current") {
+      this.ctx.storage.sql.exec(
+        "INSERT OR IGNORE INTO _sql_schema_migrations (id) VALUES (3)",
+      );
+    }
+
     this.seedHistoricalMiners();
   }
 
+  private rebuildLegacySignalingBlocks(hasCheckedAt: boolean): void {
+    this.ctx.storage.transactionSync(() => {
+      if (!hasCheckedAt) {
+        this.ctx.storage.sql.exec(
+          "ALTER TABLE signaling_blocks ADD COLUMN checked_at INTEGER NOT NULL DEFAULT 0",
+        );
+      }
+
+      this.ctx.storage.sql.exec(`
+        DROP TABLE IF EXISTS signaling_blocks_v3;
+        CREATE TABLE signaling_blocks_v3 (
+          hash TEXT PRIMARY KEY,
+          height INTEGER NOT NULL,
+          status TEXT NOT NULL
+            CHECK (status IN ('identified', 'unidentified', 'unavailable')),
+          miner_id TEXT,
+          pool_name TEXT,
+          pool_slug TEXT,
+          template_miner_name TEXT,
+          first_signal INTEGER NOT NULL CHECK (first_signal IN (0, 1)),
+          checked_at INTEGER NOT NULL
+        );
+        INSERT INTO signaling_blocks_v3 (
+          hash,
+          height,
+          status,
+          miner_id,
+          pool_name,
+          pool_slug,
+          template_miner_name,
+          first_signal,
+          checked_at
+        )
+        SELECT
+          hash,
+          height,
+          'identified',
+          miner_id,
+          pool_name,
+          pool_slug,
+          template_miner_name,
+          first_signal,
+          checked_at
+        FROM signaling_blocks;
+        DROP TABLE signaling_blocks;
+        ALTER TABLE signaling_blocks_v3 RENAME TO signaling_blocks;
+        CREATE INDEX signaling_blocks_height
+          ON signaling_blocks (height);
+      `);
+    });
+  }
+
   private seedHistoricalMiners(): void {
-    for (const signal of historicalFirstSignals()) {
+    for (const signal of historicalFirstSignals) {
       this.ctx.storage.sql.exec(
         `INSERT OR IGNORE INTO signaling_miners
           (miner_id, first_height, first_hash)
@@ -217,7 +279,7 @@ export class SignalingMinerHistory extends DurableObject<Env> {
     if (!block) return null;
 
     if (block.status !== "identified") {
-      if (Date.now() - block.checked_at < UNRESOLVED_RETRY_MS) {
+      if (!shouldRetryUnresolved(block.checked_at, Date.now())) {
         return { status: block.status };
       }
 
@@ -347,32 +409,7 @@ function validatedSignalingBlocks(
   periodStart: number,
   blocks: readonly SignalingBlockReference[],
 ): SignalingBlockReference[] {
-  if (!Number.isSafeInteger(periodStart) || periodStart <= 0) {
-    throw new Error("signaling period start is invalid");
-  }
-
-  if (blocks.length > MAX_PERIOD_SIGNALS) {
-    throw new Error("signaling block list exceeds one period");
-  }
-
-  const uniqueBlocks = new Map<string, SignalingBlockReference>();
-
-  for (const block of blocks) {
-    if (
-      !BLOCK_HASH_PATTERN.test(block.hash) ||
-      !Number.isSafeInteger(block.height) ||
-      block.height < periodStart ||
-      block.height >= periodStart + MAX_PERIOD_SIGNALS
-    ) {
-      throw new Error("signaling block reference is invalid");
-    }
-
-    uniqueBlocks.set(block.hash, block);
-  }
-
-  return [...uniqueBlocks.values()].sort(
-    (left, right) => left.height - right.height,
-  );
+  return validatedSignalingBlocksRescript(periodStart, [...blocks]);
 }
 
 async function discoverBlockMiner(
@@ -403,8 +440,7 @@ async function discoverBlockMiners(
 ): Promise<DiscoveredBlockMiner[]> {
   const discovered: DiscoveredBlockMiner[] = [];
 
-  for (let index = 0; index < blocks.length; index += DISCOVERY_CONCURRENCY) {
-    const batch = blocks.slice(index, index + DISCOVERY_CONCURRENCY);
+  for (const batch of discoveryBatches([...blocks])) {
     discovered.push(
       ...(await Promise.all(
         batch.map(async (block) => ({
