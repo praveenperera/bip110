@@ -1,12 +1,25 @@
-import { parseMonitorData, type MonitorData } from "../lib/monitor";
+import {
+  PERIOD_SIZE,
+  parseMonitorData,
+  type MonitorData,
+  type UnclassifiedMonitorBlock,
+} from "../lib/monitor.ts";
+import { readMempoolPeriod } from "./mempool-api.ts";
+import { readBip110MonitorBlocks } from "./monitor-source.ts";
 
 const UPSTREAM_MONITOR_API = "https://bip110monitor.com/api";
+const MONITOR_REQUEST_TIMEOUT_MS = 5_000;
 
 export const MONITOR_API_PATH = "/api/monitor";
 export const CACHE_TTL_SECONDS = 60;
 export const ACTIVATION_THRESHOLD = 55;
 
 type CacheStatus = "HIT" | "MISS" | "BYPASS";
+type MonitorSource =
+  | "bip110monitor-api"
+  | "bip110monitor-page"
+  | "mempool-guide"
+  | "mempool-space";
 
 interface CachedMonitorResponse {
   response: Response;
@@ -64,21 +77,31 @@ export async function fetchCachedMonitorResponse(
 
   if (cached) {
     return {
-      response: await normalizedMonitorResponse(cached),
+      response: cached,
       cacheStatus: "HIT",
     };
   }
 
-  const upstreamResponse = await fetch(UPSTREAM_MONITOR_API, {
-    headers: { accept: "application/json" },
-  });
+  try {
+    const { data, source } = await readMonitorDataWithFallbacks();
+    const response = normalizedMonitorResponse(data, source);
 
-  if (!upstreamResponse.ok) {
+    ctx.waitUntil(cache.put(cacheKey, response.clone()).catch(() => {}));
+
+    return { response, cacheStatus: "MISS" };
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        error: error instanceof Error ? error.message : String(error),
+        event: "monitor_data_providers_failed",
+      }),
+    );
+
     return {
       response: jsonResponse(
         { error: "Monitor API unavailable" },
         {
-          status: upstreamResponse.status,
+          status: 502,
           headers: {
             "cache-control": "no-store",
           },
@@ -87,26 +110,103 @@ export async function fetchCachedMonitorResponse(
       cacheStatus: "BYPASS",
     };
   }
-
-  const response = await normalizedMonitorResponse(upstreamResponse);
-
-  ctx.waitUntil(cache.put(cacheKey, response.clone()).catch(() => {}));
-
-  return { response, cacheStatus: "MISS" };
 }
 
-async function normalizedMonitorResponse(
-  response: Response,
-): Promise<Response> {
-  const data = parseMonitorData(await response.clone().json());
-
+function normalizedMonitorResponse(
+  data: MonitorData,
+  source: MonitorSource,
+): Response {
   return jsonResponse(data, {
     headers: {
       "access-control-allow-origin": "*",
       "cache-control": `public, max-age=${CACHE_TTL_SECONDS}`,
+      "x-bip110-monitor-source": source,
     },
-    status: response.status,
-    statusText: response.statusText,
+  });
+}
+
+async function readMonitorDataWithFallbacks(): Promise<{
+  data: MonitorData;
+  source: MonitorSource;
+}> {
+  try {
+    return {
+      data: await readUpstreamMonitorApi(),
+      source: "bip110monitor-api",
+    };
+  } catch {}
+
+  try {
+    const payload = await readBip110MonitorBlocks();
+
+    return {
+      data: monitorDataFromBlocks(payload.blocks, payload.updatedAt),
+      source: "bip110monitor-page",
+    };
+  } catch {}
+
+  const payload = await readMempoolPeriod();
+
+  return {
+    data: monitorDataFromBlocks(payload.blocks, payload.updatedAt, payload.tip),
+    source: payload.provider,
+  };
+}
+
+async function readUpstreamMonitorApi(): Promise<MonitorData> {
+  const response = await fetch(UPSTREAM_MONITOR_API, {
+    headers: { accept: "application/json" },
+    signal: AbortSignal.timeout(MONITOR_REQUEST_TIMEOUT_MS),
+  });
+
+  if (!response.ok) {
+    throw new Error(`BIP-110 monitor API returned ${response.status}`);
+  }
+
+  return parseMonitorData(await response.json());
+}
+
+/** Builds a current-period monitor snapshot from contiguous block summaries */
+export function monitorDataFromBlocks(
+  blocks: readonly UnclassifiedMonitorBlock[],
+  updatedAt: string,
+  expectedTip?: number,
+): MonitorData {
+  const tip = expectedTip ?? Math.max(...blocks.map((block) => block.height));
+  if (!Number.isSafeInteger(tip) || tip <= 0) {
+    throw new Error("monitor fallback blocks contain no valid tip");
+  }
+
+  const periodNum = Math.floor(tip / PERIOD_SIZE);
+  const periodStart = periodNum * PERIOD_SIZE;
+  const periodEnd = periodStart + PERIOD_SIZE - 1;
+  const periodBlocks = [...blocks]
+    .filter((block) => block.height >= periodStart && block.height <= tip)
+    .sort((left, right) => right.height - left.height);
+  const totalBlocks = tip - periodStart + 1;
+
+  if (
+    periodBlocks.length !== totalBlocks ||
+    periodBlocks.some((block, index) => block.height !== tip - index)
+  ) {
+    throw new Error("monitor fallback blocks do not cover the current period");
+  }
+
+  const signalingCount = periodBlocks.filter((block) => block.signaling).length;
+
+  return parseMonitorData({
+    bip: "110",
+    tip,
+    chainTip: tip,
+    periodNum,
+    periodStart,
+    periodEnd,
+    totalBlocks,
+    signalingCount,
+    pct: totalBlocks === 0 ? 0 : (signalingCount / totalBlocks) * 100,
+    periods: [],
+    synced: true,
+    updatedAt,
   });
 }
 

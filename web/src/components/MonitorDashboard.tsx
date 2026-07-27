@@ -62,7 +62,10 @@ const LOCAL_DEV_API_URL = "https://bip110monitor.com/api";
 const MONITOR_URL = "https://bip110monitor.com";
 const URSF_MONITOR_URL = "/ursf-monitor";
 const MEMPOOL_BLOCK_URL = "https://mempool.guide/block";
-const MEMPOOL_BLOCK_API_URL = "https://mempool.guide/api/v1/block";
+const MEMPOOL_BLOCK_API_URLS = [
+  "https://mempool.space/api/v1/block",
+  "https://mempool.guide/api/v1/block",
+] as const;
 const CACHE_KEY = "bip110-monitor-data";
 const MONITOR_DATA_EVENT = "bip110-monitor-data";
 const CACHE_VERSION = 2;
@@ -286,18 +289,30 @@ function fetchBlockMiningAttribution(
   const existingRequest = blockMiningAttributionRequests.get(hash);
   if (existingRequest) return existingRequest;
 
-  const request = fetch(`${MEMPOOL_BLOCK_API_URL}/${hash}`)
-    .then(async (response) => {
-      if (!response.ok) {
-        throw new Error(`Block explorer API returned ${response.status}`);
-      }
+  const request = (async () => {
+    const errors: unknown[] = [];
 
-      return parseBlockMiningAttribution(await response.json());
-    })
-    .catch((error: unknown) => {
-      blockMiningAttributionRequests.delete(hash);
-      throw error;
-    });
+    for (const apiUrl of MEMPOOL_BLOCK_API_URLS) {
+      try {
+        const response = await fetch(`${apiUrl}/${hash}`);
+        if (!response.ok) {
+          throw new Error(`Block explorer API returned ${response.status}`);
+        }
+
+        return parseBlockMiningAttribution(await response.json());
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+
+    throw new AggregateError(
+      errors,
+      "Block mining attribution providers unavailable",
+    );
+  })().catch((error: unknown) => {
+    blockMiningAttributionRequests.delete(hash);
+    throw error;
+  });
 
   blockMiningAttributionRequests.set(hash, request);
   return request;

@@ -3,22 +3,28 @@ import {
   PERIOD_SIZE,
   parseBip110BlockViolationReport,
   parseMonitorBlocksPayload,
+  type Bip110BlockViolationReport,
   type Bip110ViolationStatus,
   type MonitorBlock,
   type MonitorBlocksPayload,
   type UnclassifiedMonitorBlock,
 } from "../lib/monitor";
+import { reconstructBip110ViolationReport } from "./bip110-violations";
+import { readMempoolBlocks, readMempoolPeriod } from "./mempool-api";
 import { defaultCache, jsonResponse } from "./monitor-data";
+import {
+  readBip110MonitorBlocks,
+  type Bip110MonitorBlocks,
+} from "./monitor-source";
 import type { SignalingBlockClassification } from "./signaling-miner-history";
 
-const UPSTREAM_MONITOR_PAGE = "https://bip110monitor.com";
 const KILOMBINO_BLOCKS_API_URL = "https://mempool.kilombino.com/api/v1/blocks";
+const KILOMBINO_BLOCK_API_URL = "https://mempool.kilombino.com/api/block";
 const KILOMBINO_BLOCK_PAGE_SIZE = 15;
 const KILOMBINO_REQUEST_TIMEOUT_MS = 3_000;
-const MAX_MONITOR_HTML_BYTES = 1_000_000;
-const BLOCK_TILE_PATTERN =
-  /<div class="block-tile\s+(sig|nosig)(?:\s+[^"]*)?"\s+data-height="(\d+)"\s+data-hash="([0-9a-fA-F]{64})"\s+data-version="0x([0-9a-fA-F]+)"\s+data-time="([^"]+)"\s+data-ntx="(\d+)">/g;
-const UPDATED_AT_PATTERN = /Updated:\s*([0-9-]+\s+[0-9:]+\s+UTC)/;
+const MAX_KILOMBINO_DIRECT_REQUESTS = KILOMBINO_BLOCK_PAGE_SIZE;
+const VIOLATION_CACHE_TTL_SECONDS = 31_536_000;
+const RECONSTRUCTIONS_PER_REQUEST = 1;
 
 export const MONITOR_BLOCKS_API_PATH = "/api/monitor-blocks";
 export const MONITOR_BLOCKS_CACHE_TTL_SECONDS = 60;
@@ -33,6 +39,7 @@ interface CachedMonitorBlocksResponse {
 
 interface UnclassifiedMonitorBlocksPayload {
   blocks: UnclassifiedMonitorBlock[];
+  source: string;
   updatedAt: string;
 }
 
@@ -100,37 +107,32 @@ async function fetchCachedMonitorBlocksResponse(
     return { response: cached, cacheStatus: "HIT" };
   }
 
-  const upstreamResponse = await fetch(UPSTREAM_MONITOR_PAGE, {
-    headers: { accept: "text/html" },
-  });
+  let upstreamPayload: UnclassifiedMonitorBlocksPayload;
 
-  if (!upstreamResponse.ok) {
-    return unavailableResponse(upstreamResponse.status);
-  }
-
-  const contentLength = upstreamResponse.headers.get("content-length");
-  if (
-    contentLength &&
-    Number.parseInt(contentLength, 10) > MAX_MONITOR_HTML_BYTES
-  ) {
+  try {
+    upstreamPayload = await readMonitorBlocksWithFallbacks(expectedTip);
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        error: error instanceof Error ? error.message : String(error),
+        event: "monitor_block_providers_failed",
+      }),
+    );
     return unavailableResponse(502);
   }
 
-  const html = await upstreamResponse.text();
-  if (html.length > MAX_MONITOR_HTML_BYTES) {
-    return unavailableResponse(502);
-  }
-
-  const upstreamPayload = parseMonitorBlocksHtml(html);
-  if (upstreamPayload.blocks.length === 0) {
-    return unavailableResponse(502);
-  }
-  const payload = await classifiedMonitorBlocks(env, upstreamPayload);
+  const payload = await classifiedMonitorBlocks(
+    request,
+    env,
+    ctx,
+    upstreamPayload,
+  );
 
   const response = jsonResponse(payload, {
     headers: {
       "access-control-allow-origin": "*",
       "cache-control": `public, max-age=${monitorBlocksCacheTtl(payload, expectedTip)}`,
+      "x-bip110-blocks-source": upstreamPayload.source,
     },
   });
 
@@ -141,30 +143,7 @@ async function fetchCachedMonitorBlocksResponse(
 
 /** Refreshes persistent signaling miner history outside user requests */
 export async function refreshSignalingMinerHistory(env: Env): Promise<void> {
-  const response = await fetch(UPSTREAM_MONITOR_PAGE, {
-    headers: { accept: "text/html" },
-  });
-  if (!response.ok) {
-    throw new Error(`monitor block history refresh failed: ${response.status}`);
-  }
-
-  const contentLength = response.headers.get("content-length");
-  if (
-    contentLength &&
-    Number.parseInt(contentLength, 10) > MAX_MONITOR_HTML_BYTES
-  ) {
-    throw new Error("monitor block history refresh exceeded size limit");
-  }
-
-  const html = await response.text();
-  if (html.length > MAX_MONITOR_HTML_BYTES) {
-    throw new Error("monitor block history refresh exceeded size limit");
-  }
-
-  const payload = parseMonitorBlocksHtml(html);
-  if (payload.blocks.length === 0) {
-    throw new Error("monitor block history refresh returned no blocks");
-  }
+  const payload = await readMonitorBlocksWithFallbacks(null);
 
   await classifySignalingBlocks(env, payload.blocks);
 }
@@ -221,40 +200,68 @@ function unavailableResponse(status: number): CachedMonitorBlocksResponse {
   };
 }
 
-function parseMonitorBlocksHtml(
-  html: string,
-): UnclassifiedMonitorBlocksPayload {
-  const blocks: UnclassifiedMonitorBlock[] = [];
+async function readMonitorBlocksWithFallbacks(
+  expectedTip: number | null,
+): Promise<UnclassifiedMonitorBlocksPayload> {
+  let monitorPayload: Bip110MonitorBlocks | null = null;
 
-  for (const match of html.matchAll(BLOCK_TILE_PATTERN)) {
-    const [, status, height, hash, version, time, nTx] = match;
-    const parsedTime = parseMonitorUtcTime(time);
+  try {
+    monitorPayload = await readBip110MonitorBlocks();
+  } catch {}
 
-    if (!parsedTime) continue;
-
-    blocks.push({
-      hash,
-      height: Number.parseInt(height, 10),
-      nTx: Number.parseInt(nTx, 10),
-      signaling: status === "sig",
-      time: parsedTime,
-      version: Number.parseInt(version, 16),
-    });
+  const monitorTip = monitorPayload
+    ? Math.max(...monitorPayload.blocks.map((block) => block.height))
+    : null;
+  if (monitorPayload && (expectedTip === null || monitorTip === expectedTip)) {
+    return {
+      ...monitorPayload,
+      source: "bip110monitor-page",
+    };
   }
+
+  const mempoolPayload =
+    expectedTip === null
+      ? await readMempoolPeriod()
+      : await readMempoolBlocks(expectedTip, MONITOR_GRID_VISIBLE_BLOCKS);
+  const blocks = monitorPayload
+    ? mergeMonitorBlocks(monitorPayload.blocks, mempoolPayload.blocks)
+    : mempoolPayload.blocks;
 
   return {
     blocks,
-    updatedAt: parseUpdatedAt(html) ?? new Date().toISOString(),
+    source: monitorPayload
+      ? `bip110monitor-page+${mempoolPayload.provider}`
+      : mempoolPayload.provider,
+    updatedAt: mempoolPayload.updatedAt,
   };
 }
 
+function mergeMonitorBlocks(
+  monitorBlocks: readonly UnclassifiedMonitorBlock[],
+  fallbackBlocks: readonly UnclassifiedMonitorBlock[],
+): UnclassifiedMonitorBlock[] {
+  const byHeight = new Map(
+    monitorBlocks.map((block) => [block.height, block] as const),
+  );
+
+  for (const block of fallbackBlocks) {
+    byHeight.set(block.height, block);
+  }
+
+  return [...byHeight.values()].sort(
+    (left, right) => right.height - left.height,
+  );
+}
+
 async function classifiedMonitorBlocks(
+  request: Request,
   env: Env,
+  ctx: ExecutionContext,
   payload: UnclassifiedMonitorBlocksPayload,
 ): Promise<MonitorBlocksPayload> {
   const [classifications, violationReports] = await Promise.all([
     classifySignalingBlocks(env, payload.blocks),
-    readBip110ViolationReports(payload.blocks),
+    readBip110ViolationReports(request, ctx, payload.blocks),
   ]);
   const classificationsByHash = new Map(
     classifications.map((classification) => [
@@ -287,14 +294,16 @@ async function classifiedMonitorBlocks(
         };
   });
 
-  return { ...payload, blocks };
+  return { blocks, updatedAt: payload.updatedAt };
 }
 
 async function readBip110ViolationReports(
+  request: Request,
+  ctx: ExecutionContext,
   blocks: readonly UnclassifiedMonitorBlock[],
 ) {
-  const pageHeights = blocks
-    .slice(0, MONITOR_GRID_VISIBLE_BLOCKS)
+  const visibleBlocks = blocks.slice(0, MONITOR_GRID_VISIBLE_BLOCKS);
+  const pageHeights = visibleBlocks
     .filter((_, index) => index % KILOMBINO_BLOCK_PAGE_SIZE === 0)
     .map((block) => block.height);
   const pages = await Promise.allSettled(
@@ -314,9 +323,48 @@ async function readBip110ViolationReports(
     );
   }
 
-  return pages.flatMap((page) =>
+  const pageReports = pages.flatMap((page) =>
     page.status === "fulfilled" ? page.value : [],
   );
+  const reportsByHash = new Map(
+    pageReports.map((report) => [report.hash, report]),
+  );
+  const missingAfterPages = visibleBlocks.filter(
+    (block) => !reportsByHash.has(block.hash),
+  );
+  const cachedReports = await readCachedViolationReports(
+    request,
+    missingAfterPages,
+  );
+
+  for (const report of cachedReports) {
+    reportsByHash.set(report.hash, report);
+  }
+
+  const missingAfterCache = missingAfterPages.filter(
+    (block) => !reportsByHash.has(block.hash),
+  );
+  const directReports = await readDirectBip110ViolationReports(
+    missingAfterCache.slice(0, MAX_KILOMBINO_DIRECT_REQUESTS),
+  );
+
+  for (const report of directReports) {
+    reportsByHash.set(report.hash, report);
+  }
+
+  const knownReports = [...reportsByHash.values()];
+  scheduleViolationReportCaching(request, ctx, knownReports);
+
+  const missingAfterDirect = missingAfterCache.filter(
+    (block) => !reportsByHash.has(block.hash),
+  );
+  scheduleViolationReconstruction(
+    request,
+    ctx,
+    missingAfterDirect.slice(0, RECONSTRUCTIONS_PER_REQUEST),
+  );
+
+  return knownReports;
 }
 
 async function readBip110ViolationPage(startHeight: number) {
@@ -350,6 +398,133 @@ async function readBip110ViolationPage(startHeight: number) {
   return reports;
 }
 
+async function readDirectBip110ViolationReports(
+  blocks: readonly UnclassifiedMonitorBlock[],
+) {
+  const reports = await Promise.allSettled(
+    blocks.map(async (block) => {
+      const response = await fetch(`${KILOMBINO_BLOCK_API_URL}/${block.hash}`, {
+        headers: { accept: "application/json" },
+        signal: AbortSignal.timeout(KILOMBINO_REQUEST_TIMEOUT_MS),
+      });
+      if (!response.ok) {
+        throw new Error(
+          `Kilombino block API returned ${response.status} for ${block.hash}`,
+        );
+      }
+
+      const report = parseBip110BlockViolationReport(await response.json());
+      if (report.hash !== block.hash || report.height !== block.height) {
+        throw new Error(
+          "Kilombino direct block response did not match request",
+        );
+      }
+
+      return report;
+    }),
+  );
+
+  return reports.flatMap((report) =>
+    report.status === "fulfilled" ? [report.value] : [],
+  );
+}
+
+async function readCachedViolationReports(
+  request: Request,
+  blocks: readonly UnclassifiedMonitorBlock[],
+) {
+  const cache = defaultCache();
+  const reports = await Promise.all(
+    blocks.map(async (block) => {
+      const response = await cache.match(
+        violationCacheKey(request, block.hash),
+      );
+      if (!response) return null;
+
+      try {
+        const report = parseBip110BlockViolationReport(await response.json());
+        return report.hash === block.hash && report.height === block.height
+          ? report
+          : null;
+      } catch {
+        return null;
+      }
+    }),
+  );
+
+  return reports.filter((report) => report !== null);
+}
+
+function scheduleViolationReportCaching(
+  request: Request,
+  ctx: ExecutionContext,
+  reports: readonly Bip110BlockViolationReport[],
+): void {
+  if (reports.length === 0) return;
+
+  ctx.waitUntil(cacheViolationReports(request, reports).catch(() => {}));
+}
+
+function scheduleViolationReconstruction(
+  request: Request,
+  ctx: ExecutionContext,
+  blocks: readonly UnclassifiedMonitorBlock[],
+): void {
+  for (const block of blocks) {
+    ctx.waitUntil(
+      reconstructBip110ViolationReport(block)
+        .then((report) => cacheViolationReports(request, [report]))
+        .catch((error: unknown) => {
+          console.error(
+            JSON.stringify({
+              error: error instanceof Error ? error.message : String(error),
+              event: "bip110_violation_reconstruction_failed",
+              hash: block.hash,
+              height: block.height,
+            }),
+          );
+        }),
+    );
+  }
+}
+
+async function cacheViolationReports(
+  request: Request,
+  reports: readonly Bip110BlockViolationReport[],
+): Promise<void> {
+  const cache = defaultCache();
+
+  await Promise.all(
+    reports.map((report) =>
+      cache.put(
+        violationCacheKey(request, report.hash),
+        jsonResponse(
+          {
+            id: report.hash,
+            height: report.height,
+            extras: {
+              bip110ViolationCount: report.violations.count,
+            },
+          },
+          {
+            headers: {
+              "cache-control": `public, max-age=${VIOLATION_CACHE_TTL_SECONDS}, immutable`,
+            },
+          },
+        ),
+      ),
+    ),
+  );
+}
+
+function violationCacheKey(request: Request, hash: string): Request {
+  const url = new URL(request.url);
+  url.pathname = `/_cache/bip110-violations/${hash}`;
+  url.search = "";
+
+  return new Request(url.toString(), { method: "GET" });
+}
+
 async function classifySignalingBlocks(
   env: Env,
   blocks: readonly UnclassifiedMonitorBlock[],
@@ -381,26 +556,4 @@ async function classifySignalingBlocks(
 
     return [];
   }
-}
-
-function parseUpdatedAt(html: string): string | null {
-  const match = html.match(UPDATED_AT_PATTERN);
-  if (!match) return null;
-
-  const timestamp = parseMonitorUtcTime(match[1]);
-  if (!timestamp) return null;
-
-  return new Date(timestamp * 1000).toISOString();
-}
-
-function parseMonitorUtcTime(value: string): number | null {
-  const milliseconds = Date.parse(
-    value.trim().replace(" UTC", "Z").replace(" ", "T"),
-  );
-
-  if (Number.isNaN(milliseconds)) {
-    return null;
-  }
-
-  return Math.floor(milliseconds / 1000);
 }

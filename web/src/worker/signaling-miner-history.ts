@@ -10,8 +10,9 @@ import {
   historicalFirstSignals,
   historicalSignalingMinerId,
 } from "./historical-signaling-miners";
+import { MEMPOOL_PROVIDERS } from "./mempool-api.ts";
+import { readFirstAvailable } from "./provider-fallback.ts";
 
-const MEMPOOL_BLOCK_API_URL = "https://mempool.guide/api/v1/block";
 const MAX_PERIOD_SIGNALS = 2016;
 const MAX_DISCOVERIES_PER_CALL = 40;
 const DISCOVERY_CONCURRENCY = 8;
@@ -378,10 +379,20 @@ async function discoverBlockMiner(
   hash: string,
 ): Promise<BlockMiningAttribution | null> {
   try {
-    const response = await fetch(`${MEMPOOL_BLOCK_API_URL}/${hash}`);
-    if (!response.ok) return null;
+    const result = await readFirstAvailable(
+      MEMPOOL_PROVIDERS,
+      async (provider) => {
+        const response = await fetch(`${provider.apiUrl}/v1/block/${hash}`);
+        if (!response.ok) {
+          throw new Error(`${provider.id} returned ${response.status}`);
+        }
 
-    return parseBlockMiningAttribution(await response.json());
+        return parseBlockMiningAttribution(await response.json());
+      },
+      "block mining attribution providers unavailable",
+    );
+
+    return result.value;
   } catch {
     return null;
   }

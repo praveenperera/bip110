@@ -16,6 +16,17 @@ import {
   mandatorySignalingEstimate,
   shouldShowMandatorySignaling,
 } from "../src/lib/mandatory-signaling.ts";
+import {
+  bip110TransactionViolations,
+  countBip110ViolatingTransactions,
+} from "../src/worker/bip110-violations.ts";
+import {
+  isBip110SignalingVersion,
+  parseMempoolBlock,
+} from "../src/worker/mempool-api.ts";
+import { monitorDataFromBlocks } from "../src/worker/monitor-data.ts";
+import { parseBip110MonitorHtml } from "../src/worker/monitor-source.ts";
+import { readFirstAvailable } from "../src/worker/provider-fallback.ts";
 
 function monitorSnapshot(overrides = {}) {
   return {
@@ -32,6 +43,33 @@ function monitorSnapshot(overrides = {}) {
     synced: true,
     updatedAt: "2026-07-25T12:00:00.000Z",
     ...overrides,
+  };
+}
+
+function decodedTransaction({
+  prevoutScript = `0014${"11".repeat(20)}`,
+  scriptSig = "",
+  txid = "a".repeat(64),
+  witness = [],
+  outputScript = `0014${"22".repeat(20)}`,
+} = {}) {
+  return {
+    txid,
+    vin: [
+      {
+        is_coinbase: false,
+        prevout: {
+          scriptpubkey: prevoutScript,
+        },
+        scriptsig: scriptSig,
+        witness,
+      },
+    ],
+    vout: [
+      {
+        scriptpubkey: outputScript,
+      },
+    ],
   };
 }
 
@@ -364,4 +402,174 @@ test("current-period grids distinguish known blocks from placeholders", () => {
     { height: 961_057, kind: "placeholder" },
     { height: 961_056, kind: "placeholder" },
   ]);
+});
+
+test("provider fallbacks use the first successful provider", async () => {
+  const attempts = [];
+  const result = await readFirstAvailable(
+    ["primary", "secondary"],
+    async (provider) => {
+      attempts.push(provider);
+      if (provider === "primary") throw new Error("offline");
+
+      return 42;
+    },
+    "providers unavailable",
+  );
+
+  assert.deepEqual(attempts, ["primary", "secondary"]);
+  assert.deepEqual(result, { provider: "secondary", value: 42 });
+});
+
+test("mempool blocks are normalized and signal through versionbits", () => {
+  const block = parseMempoolBlock({
+    id: "b".repeat(64),
+    height: 959_859,
+    timestamp: 1_785_170_435,
+    tx_count: 4_077,
+    version: 0x2000_0010,
+  });
+
+  assert.equal(block.signaling, true);
+  assert.equal(isBip110SignalingVersion(0x2000_0010), true);
+  assert.equal(isBip110SignalingVersion(0x0000_0010), false);
+  assert.equal(isBip110SignalingVersion(0x2000_0000), false);
+});
+
+test("monitor snapshots can be reconstructed from contiguous block summaries", () => {
+  const data = monitorDataFromBlocks(
+    [
+      {
+        hash: "c".repeat(64),
+        height: 4_033,
+        nTx: 20,
+        signaling: true,
+        time: 1_785_170_435,
+        version: 0x2000_0010,
+      },
+      {
+        hash: "d".repeat(64),
+        height: 4_032,
+        nTx: 10,
+        signaling: false,
+        time: 1_785_169_835,
+        version: 0x2000_0000,
+      },
+    ],
+    "2026-07-27T12:00:00.000Z",
+  );
+
+  assert.equal(data.tip, 4_033);
+  assert.equal(data.periodStart, 4_032);
+  assert.equal(data.periodEnd, 6_047);
+  assert.equal(data.totalBlocks, 2);
+  assert.equal(data.signalingCount, 1);
+  assert.equal(data.pct, 50);
+  assert.throws(
+    () =>
+      monitorDataFromBlocks(
+        [
+          {
+            hash: "c".repeat(64),
+            height: 4_033,
+            nTx: 20,
+            signaling: true,
+            time: 1_785_170_435,
+            version: 0x2000_0010,
+          },
+        ],
+        "2026-07-27T12:00:00.000Z",
+      ),
+    /do not cover the current period/,
+  );
+});
+
+test("monitor HTML remains a valid block metadata provider", () => {
+  const payload = parseBip110MonitorHtml(`
+    <div class="block-tile sig" data-height="959859" data-hash="${"e".repeat(64)}" data-version="0x20000010" data-time="2026-07-27 12:00:00 UTC" data-ntx="4077">
+    Updated: 2026-07-27 12:01:00 UTC
+  `);
+
+  assert.equal(payload.blocks.length, 1);
+  assert.equal(payload.blocks[0].height, 959_859);
+  assert.equal(payload.blocks[0].signaling, true);
+  assert.equal(payload.updatedAt, "2026-07-27T12:01:00.000Z");
+});
+
+test("the backup classifier detects every BIP-110 rule category", () => {
+  const taprootPrevout = `5120${"33".repeat(32)}`;
+  const controlBlock = `c0${"44".repeat(32)}`;
+
+  assert.deepEqual(
+    bip110TransactionViolations(
+      decodedTransaction({ outputScript: "51".repeat(35) }),
+    ),
+    ["large-script-pubkey"],
+  );
+  assert.deepEqual(
+    bip110TransactionViolations(
+      decodedTransaction({ witness: ["55".repeat(257)] }),
+    ),
+    ["large-pushdata"],
+  );
+  assert.deepEqual(
+    bip110TransactionViolations(
+      decodedTransaction({ prevoutScript: "5202aabb" }),
+    ),
+    ["undefined-witness"],
+  );
+  assert.deepEqual(
+    bip110TransactionViolations(
+      decodedTransaction({
+        prevoutScript: taprootPrevout,
+        witness: ["51", controlBlock, "50"],
+      }),
+    ),
+    ["taproot-annex"],
+  );
+  assert.deepEqual(
+    bip110TransactionViolations(
+      decodedTransaction({
+        prevoutScript: taprootPrevout,
+        witness: ["51", `c0${"44".repeat(257)}`],
+      }),
+    ),
+    ["large-control-block"],
+  );
+  assert.deepEqual(
+    bip110TransactionViolations(
+      decodedTransaction({
+        prevoutScript: taprootPrevout,
+        witness: ["50", controlBlock],
+      }),
+    ),
+    ["op-success"],
+  );
+  assert.deepEqual(
+    bip110TransactionViolations(
+      decodedTransaction({
+        prevoutScript: taprootPrevout,
+        witness: ["63", controlBlock],
+      }),
+    ),
+    ["op-if-notif"],
+  );
+});
+
+test("the backup classifier counts a transaction once across multiple rules", () => {
+  const clean = decodedTransaction({ txid: "f".repeat(64) });
+  const violating = decodedTransaction({
+    outputScript: "51".repeat(35),
+    txid: "1".repeat(64),
+    witness: ["55".repeat(257)],
+  });
+
+  assert.equal(countBip110ViolatingTransactions([clean, violating]), 1);
+});
+
+test("the backup classifier accepts non-witness transaction inputs", () => {
+  const transaction = decodedTransaction();
+  delete transaction.vin[0].witness;
+
+  assert.deepEqual(bip110TransactionViolations(transaction), []);
 });
