@@ -73,11 +73,8 @@ import {
   violationPageHeights,
 } from "../src/worker/ViolationStoreModel.res.js";
 import {
-  bip110BlockGridHtml,
-  bip110FirstSignalLegendHtml,
   blockMinerLabel,
   dashboardBlockPresentation,
-  ursfBlockGridHtml,
 } from "../src/worker/BlockGrid.res.js";
 import {
   classifications as signalingClassifications,
@@ -102,14 +99,6 @@ import {
 } from "../src/worker/MonitorOgImageModel.res.js";
 import { fromExtracted as monitorBlocksFromExtracted } from "../src/worker/MonitorSourceModel.res.js";
 import {
-  activationProgressPercent,
-  monitorMetadataText,
-  monitorPageFields,
-  monitorSyncStatus,
-  periodSignalingChartHtml,
-  periodProgressPercent,
-} from "../src/worker/MonitorPageModel.res.js";
-import {
   historyTableRowsHtml as ursfHistoryTableRowsHtml,
   monitorFields as ursfMonitorFields,
   periodChartHtml as ursfPeriodChartHtml,
@@ -130,6 +119,8 @@ import {
   requestMethod as workerRequestMethod,
   route as workerRoute,
 } from "../src/worker/WorkerRouter.res.js";
+import { handleMonitorPageRequest } from "../src/worker/monitor-page.ts";
+import { handleUrsfMonitorPageRequest } from "../src/worker/ursf-monitor-page.ts";
 
 function monitorSnapshot(overrides = {}) {
   return {
@@ -164,6 +155,72 @@ test("Worker routing keeps application paths closed and explicit", () => {
   assert.equal(workerRequestMethod("HEAD"), "head");
   assert.equal(workerRequestMethod("POST"), "unsupported");
   assert.equal(workerRequestMethod("get"), "unsupported");
+});
+
+test("monitor page shells do not wait for live data APIs", async () => {
+  const originalCaches = globalThis.caches;
+  const originalFetch = globalThis.fetch;
+  const assetPaths = [];
+  let cacheReads = 0;
+  let networkRequests = 0;
+
+  globalThis.caches = {
+    default: {
+      async match() {
+        cacheReads += 1;
+        return undefined;
+      },
+    },
+  };
+  globalThis.fetch = async () => {
+    networkRequests += 1;
+    throw new Error("live APIs must not run while serving page HTML");
+  };
+
+  const env = {
+    ASSETS: {
+      async fetch(request) {
+        assetPaths.push(new URL(request.url).pathname);
+        return new Response("<!doctype html><title>Monitor</title>", {
+          headers: {
+            "content-type": "text/html; charset=utf-8",
+            etag: '"asset"',
+          },
+        });
+      },
+    },
+  };
+  const ctx = {
+    waitUntil() {
+      assert.fail("page responses must not start background API work");
+    },
+  };
+
+  try {
+    const monitorResponse = await handleMonitorPageRequest(
+      new Request("https://bip110.example/monitor?window=72"),
+      env,
+      ctx,
+    );
+    const ursfResponse = await handleUrsfMonitorPageRequest(
+      new Request("https://bip110.example/ursf-monitor"),
+      env,
+      ctx,
+    );
+
+    assert.deepEqual(assetPaths, ["/monitor/", "/ursf-monitor/"]);
+    assert.equal(cacheReads, 0);
+    assert.equal(networkRequests, 0);
+    assert.equal(monitorResponse.headers.get("x-bip110-monitor-og"), "static");
+    assert.equal(ursfResponse.headers.get("x-bip110-ursf-monitor"), "static");
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalCaches === undefined) {
+      delete globalThis.caches;
+    } else {
+      globalThis.caches = originalCaches;
+    }
+  }
 });
 
 function decodedTransaction({
@@ -379,67 +436,6 @@ test("monitor presentation keeps stable public number formatting", () => {
     ),
     "BIP-110 status: 66.67% of blocks signaling in difficulty adjustment period 476 (2 of 3 blocks). 55% needed to activate.",
   );
-});
-
-test("monitor page fields derive one consistent server-rendered view model", () => {
-  const data = monitorSnapshot({
-    tip: 961_058,
-    chainTip: 961_059,
-    periodStart: 961_056,
-    periodEnd: 963_071,
-    periodNum: 476,
-    totalBlocks: 3,
-    signalingCount: 2,
-    pct: 66.666,
-    synced: false,
-    updatedAt: "2026-07-25T12:00:00.000Z",
-  });
-  const fields = monitorPageFields(
-    data,
-    [],
-    48,
-    Date.parse("2026-07-25T12:01:01.000Z"),
-  );
-
-  assert.equal(fields["blocks-left"], "2,013");
-  assert.equal(fields["history-previous-period"], "previous");
-  assert.equal(fields["mandatory-seconds"], "59");
-  assert.equal(fields["recent-signaling-pct"], "N/A");
-  assert.equal(fields["sync-status"], "Monitor lagging by 1 block");
-  assert.equal(fields.threshold, "1,109");
-  assert.equal(monitorSyncStatus(data), fields["sync-status"]);
-  assert.equal(activationProgressPercent(data), 100);
-  assert.equal(periodProgressPercent(data), (3 / 2_016) * 100);
-  assert.deepEqual(monitorMetadataText(data), {
-    title: "BIP-110 Monitor: 66.67% signaling",
-    description:
-      "BIP-110 status: 66.67% of blocks signaling in difficulty adjustment period 476 (2 of 3 blocks). 55% needed to activate.",
-    imageAlt:
-      "BIP-110 signaling status: 66.67%, 2 of 3 blocks, in period 476, 55% activation target",
-  });
-});
-
-test("monitor period chart renders ordered history and marks the current period", () => {
-  const html = periodSignalingChartHtml(
-    monitorSnapshot({
-      periods: [
-        {
-          periodNum: 475,
-          startBlock: 959_040,
-          endBlock: 961_055,
-          signalingCount: 20,
-          totalBlocks: 2_016,
-          pct: 0.99,
-        },
-      ],
-    }),
-  );
-
-  assert.match(html, /Signaling % by period/);
-  assert.match(html, /Period 475: 0\.99%/);
-  assert.match(html, /Period 476: 66\.67%/);
-  assert.match(html, />current<\/text>/);
-  assert.match(html, /<path d="M /);
 });
 
 test("dashboard summaries use one current period and explicit cache time", () => {
@@ -1052,47 +1048,6 @@ test("dashboard block presentation keeps tooltip and accessibility labels consis
   assert.equal(ursf.violationCount == null, true);
   assert.equal(ursf.statusPrefix, "x ");
   assert.equal(ursf.statusLabel, "not signaling");
-});
-
-test("server block grids preserve signaling, first-signal, and placeholder states", () => {
-  const data = monitorSnapshot({
-    tip: 961_058,
-    periodStart: 961_056,
-    totalBlocks: 3,
-  });
-  const block = {
-    hash: "f".repeat(64),
-    height: 961_058,
-    nTx: 2_345,
-    signaling: true,
-    time: 1_774_441_200,
-    version: 0x20000010,
-    bip110Violations: { status: "known", count: 0 },
-    signalingMiner: {
-      status: "identified",
-      attribution: {
-        poolName: "OCEAN",
-        poolSlug: "ocean",
-        templateMinerName: 'Miner & "Friends"',
-      },
-      firstSignal: true,
-    },
-  };
-
-  const bip110Html = bip110BlockGridHtml(data, [block]);
-  assert.match(bip110Html, /SIGNALING BIP-110/);
-  assert.match(bip110Html, /2,345/);
-  assert.match(bip110Html, /Miner &amp; &quot;Friends&quot;/);
-  assert.match(bip110Html, /First-ever signal from OCEAN/);
-  assert.match(bip110Html, /Height 961,057/);
-  assert.match(
-    bip110FirstSignalLegendHtml(data, [block]),
-    /Miner's first-ever signal/,
-  );
-
-  const ursfHtml = ursfBlockGridHtml(data, [block]);
-  assert.match(ursfHtml, /ursf-block-cell/);
-  assert.doesNotMatch(ursfHtml, /SIGNALING BIP-110/);
 });
 
 test("provider fallbacks use the first successful provider", async () => {

@@ -9,14 +9,14 @@ const stats = [
   {
     label: "Indexed tip",
     value: "N/A",
-    detail: "Loading chain state",
+    detail: "Live data requires JavaScript",
     valueField: "indexed-tip",
     detailField: "indexed-tip-detail",
   },
   {
     label: "Chain tip",
     value: "N/A",
-    detail: "Loading chain state",
+    detail: "Live data requires JavaScript",
     valueField: "chain-tip",
     detailField: "chain-tip-detail",
   },
@@ -199,7 +199,7 @@ const historyRows = [
                   class="ursf-muted text-sm"
                   data-ursf-field="blocks-left-detail"
                 >
-                  Loading chain state
+                  Live data requires JavaScript
                 </p>
               </div>
               <div class="ursf-soft-card rounded-md p-4">
@@ -407,8 +407,8 @@ const historyRows = [
                 </a>
               </h2>
               <p class="ursf-muted mt-2 max-w-2xl text-sm">
-                Server-rendered Bitcoin block snapshot. Enable JavaScript for
-                live refreshes and interactive tooltips.
+                Live Bitcoin block data loads after JavaScript starts, with
+                automatic refreshes and interactive tooltips.
               </p>
             </div>
             <div
@@ -428,7 +428,7 @@ const historyRows = [
             data-ursf-block-grid
           >
             <p class="ursf-muted col-span-full text-sm">
-              Loading block snapshot
+              Enable JavaScript to load block data
             </p>
           </div>
         </section>

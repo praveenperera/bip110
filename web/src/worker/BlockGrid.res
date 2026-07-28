@@ -37,17 +37,7 @@ type dashboardBlockPresentation = {
   serverAttribution: Nullable.t<Monitor.blockMiningAttribution>,
 }
 
-type linkOptions = {
-  className: string,
-  clean: bool,
-  firstMinerSignal: bool,
-  showCleanliness: bool,
-  status: string,
-}
-
 @send external intToStringWithRadix: (int, int) => string = "toString"
-
-let mempoolBlockUrl = "https://mempool.guide/block"
 
 let fail = () => JsError.throwWithMessage("known monitor grid block is incomplete")
 
@@ -79,11 +69,6 @@ let fromWire = (block: Monitor.monitorGridBlockWire) => {
   }
 }
 
-let gridBlocksFor = (data, blocks) =>
-  Monitor.currentPeriodGrid(data, blocks->Nullable.make)
-  ->Array.slice(~start=0, ~end=Monitor.monitorGridVisibleBlocks)
-  ->Array.map(fromWire)
-
 let isFirstMinerSignal = block => {
   switch block {
   | Known({signaling: true, miner: Some({status: #identified, firstSignal: true})}) => true
@@ -111,14 +96,6 @@ let blockMinerLabel = attribution =>
   | Some(attribution) => formatBlockMiner(attribution)
   | None => "Unknown"
   }
-
-let minerName = block => {
-  switch block {
-  | Known({signaling: true, miner: Some({status: #identified, attribution})}) =>
-    Some(formatBlockMiner(attribution))
-  | Known(_) | Placeholder(_) => None
-  }
-}
 
 let formatBlockVersion = value =>
   `0x${value->intToStringWithRadix(16)->String.toUpperCase->String.padStart(8, "0")}`
@@ -225,128 +202,3 @@ let dashboardBlockPresentation = (wire, mode) => {
     serverAttribution: serverAttribution->Nullable.fromOption,
   }
 }
-
-let escapeAttribute = value =>
-  value
-  ->String.replaceAll("&", "&amp;")
-  ->String.replaceAll("\"", "&quot;")
-  ->String.replaceAll("<", "&lt;")
-  ->String.replaceAll(">", "&gt;")
-
-let blockHeight = block => {
-  switch block {
-  | Known(block) => block.height
-  | Placeholder(height) => height
-  }
-}
-
-let blockLinkHtml = (block, options) => {
-  let height = blockHeight(block)
-  let miner = minerName(block)
-  let violationCount = switch (options.showCleanliness, block) {
-  | (true, Known({violations: {status: #known, count}})) => Some(count)
-  | _ => None
-  }
-  let title = switch block {
-  | Placeholder(_) => `Height ${MonitorPresentation.formatInteger(height)}`
-  | Known(block) =>
-    let lines = [
-      `Height ${MonitorPresentation.formatInteger(block.height)}`,
-      `Hash ${block.hash}`,
-      `Version ${formatBlockVersion(block.version)}`,
-      `Time ${formatBlockTime(block.time)}`,
-      `Txs ${MonitorPresentation.formatInteger(block.nTx)}`,
-    ]
-    miner->Option.forEach(miner => lines->Array.push(`Miner ${miner}`)->ignore)
-    violationCount->Option.forEach(count => {
-      lines->Array.push(`Clean ${count === 0 ? "Yes" : "No"}`)->ignore
-      lines->Array.push(`Violations ${count->Int.toString}`)->ignore
-    })
-    lines->Array.push(options.status)->ignore
-    if options.firstMinerSignal {
-      miner->Option.forEach(miner => lines->Array.push(`First-ever signal from ${miner}`)->ignore)
-    }
-    lines->Array.join("\n")
-  }
-  let flare = options.firstMinerSignal
-    ? "<span aria-hidden=\"true\" class=\"pointer-events-none absolute right-1 top-0.5 text-xs text-primary motion-safe:animate-pulse\">✦</span>"
-    : ""
-
-  `<a href="${mempoolBlockUrl}/${height->Int.toString}" target="_blank" rel="noopener noreferrer" class="${options.className}" title="${escapeAttribute(
-      title,
-    )}">${flare}<span class="relative z-10">${MonitorPresentation.formatInteger(height)}</span></a>`
-}
-
-let bip110BlockLinkHtml = block => {
-  let firstMinerSignal = isFirstMinerSignal(block)
-  let clean = isClean(block)
-  let signaling = switch block {
-  | Known({signaling}) => signaling
-  | Placeholder(_) => false
-  }
-  let className =
-    [
-      "relative flex h-12 items-center justify-center overflow-hidden rounded-md border px-2 font-mono text-sm font-semibold tracking-normal transition-colors",
-      signaling
-        ? "bg-primary/10 text-primary shadow-[inset_0_-3px_0_var(--primary)]"
-        : "bg-background/80 text-muted-foreground",
-      clean ? "border-primary/30" : "border-border/60",
-      firstMinerSignal
-        ? "bg-primary/20 ring-2 ring-primary/60 shadow-[inset_0_-3px_0_var(--primary),0_0_18px_color-mix(in_oklab,var(--primary)_45%,transparent)]"
-        : "",
-    ]
-    ->Array.filter(value => value !== "")
-    ->Array.join(" ")
-
-  blockLinkHtml(
-    block,
-    {
-      className,
-      clean,
-      firstMinerSignal,
-      showCleanliness: true,
-      status: signaling ? "SIGNALING BIP-110" : "not signaling",
-    },
-  )
-}
-
-let ursfBlockLinkHtml = block =>
-  blockLinkHtml(
-    block,
-    {
-      className: "ursf-block-cell relative flex h-12 items-center justify-center overflow-hidden rounded-md border border-[var(--ursf-border)] bg-[var(--ursf-block)] px-2 font-mono text-sm font-semibold tracking-normal text-[var(--ursf-block-text)] transition-colors",
-      clean: false,
-      firstMinerSignal: false,
-      showCleanliness: false,
-      status: "not signaling",
-    },
-  )
-
-@genType
-let bip110BlockGridHtml = (data, blocks) => {
-  let gridBlocks = gridBlocksFor(data, blocks)
-  gridBlocks->Array.length === 0
-    ? "<p class=\"col-span-full text-sm text-muted-foreground\">No block snapshot available</p>"
-    : gridBlocks->Array.map(bip110BlockLinkHtml)->Array.join("")
-}
-
-@genType
-let ursfBlockGridHtml = (data, blocks) => {
-  let gridBlocks = gridBlocksFor(data, blocks)
-  gridBlocks->Array.length === 0
-    ? "<p class=\"ursf-muted col-span-full text-sm\">No block snapshot available</p>"
-    : gridBlocks->Array.map(ursfBlockLinkHtml)->Array.join("")
-}
-
-@genType
-let bip110FirstSignalLegendHtml = (data, blocks) =>
-  gridBlocksFor(data, blocks)->Array.some(isFirstMinerSignal)
-    ? [
-        "<span class=\"inline-flex items-center gap-2\">",
-        "<span class=\"relative size-3 rounded-sm border border-primary bg-primary/20 ring-1 ring-primary/60\" aria-hidden=\"true\">",
-        "<span class=\"absolute -right-1 -top-1 text-[0.625rem] leading-none text-primary\">✦</span>",
-        "</span>",
-        "Miner's first-ever signal",
-        "</span>",
-      ]->Array.join("")
-    : ""

@@ -34,15 +34,3 @@ let dashboardBlockPresentation: (
   Monitor.monitorGridBlockWire,
   dashboardBlockMode,
 ) => dashboardBlockPresentation
-
-/** Renders the BIP-110 current-period block grid */
-@genType
-let bip110BlockGridHtml: (Monitor.monitorData, array<Monitor.monitorBlockWire>) => string
-
-/** Renders the URSF current-period block grid */
-@genType
-let ursfBlockGridHtml: (Monitor.monitorData, array<Monitor.monitorBlockWire>) => string
-
-/** Renders a legend item when a visible block is a miner's first signal */
-@genType
-let bip110FirstSignalLegendHtml: (Monitor.monitorData, array<Monitor.monitorBlockWire>) => string

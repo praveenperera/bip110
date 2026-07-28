@@ -187,7 +187,7 @@ const historyRows = [
                   <p class="font-medium text-foreground/80">
                     Estimated start:
                     <span data-monitor-field="mandatory-expected-at"
-                      >Loading estimate</span
+                      >JavaScript required</span
                     >
                   </p>
                   <p class="text-muted-foreground">
@@ -271,7 +271,7 @@ const historyRows = [
                     class="text-sm text-muted-foreground"
                     data-monitor-field="blocks-left-detail"
                   >
-                    Loading chain state
+                    Live data requires JavaScript
                   </p>
                 </div>
                 <div class="rounded-lg bg-muted/50 p-4">
@@ -525,10 +525,14 @@ const historyRows = [
               <span data-monitor-field="recent-signaling-pct">N/A</span>
             </p>
             <p class="mt-3 max-w-2xl text-sm text-foreground/80">
-              <span data-monitor-field="recent-signaling-counts">Loading</span>
+              <span data-monitor-field="recent-signaling-counts"
+                >JavaScript required</span
+              >
             </p>
             <p class="mt-1 max-w-2xl text-sm text-muted-foreground">
-              <span data-monitor-field="recent-signaling-detail">Loading</span>
+              <span data-monitor-field="recent-signaling-detail"
+                >Enable JavaScript to load live data</span
+              >
             </p>
           </section>
 
@@ -559,8 +563,8 @@ const historyRows = [
                   </a>
                 </h2>
                 <p class="mt-2 max-w-2xl text-sm text-muted-foreground">
-                  A server-rendered snapshot of recent blocks. Enable JavaScript
-                  for live refreshes and interactive tooltips.
+                  Live block data loads after JavaScript starts, with automatic
+                  refreshes and interactive tooltips.
                 </p>
               </div>
               <div
@@ -592,7 +596,7 @@ const historyRows = [
               data-monitor-block-grid
             >
               <p class="col-span-full text-sm text-muted-foreground">
-                Loading block snapshot
+                Enable JavaScript to load block data
               </p>
             </div>
           </section>
