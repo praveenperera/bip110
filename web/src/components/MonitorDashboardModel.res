@@ -115,6 +115,14 @@ let monitorLagStatus = (data: Monitor.monitorData) => {
   }
 }
 
+@genType
+let chainTipDetail = (data: Monitor.monitorData) =>
+  if data.tip === data.chainTip {
+    data.synced ? "Monitor is indexed through the chain tip" : "Monitor index is catching up"
+  } else {
+    `Monitor indexed through #${formatNumber(data.tip)}`
+  }
+
 let formatDate = date =>
   date->Date.getTime->Float.isNaN ? "Unknown" : dateTimeFormatter->Intl.DateTimeFormat.format(date)
 

@@ -6,12 +6,6 @@ import { make as MonitorDashboard } from "@/components/MonitorDashboard.res.js";
 
 const stats = [
   {
-    label: "Indexed tip",
-    value: "N/A",
-    detail: "Highest block indexed by the monitor",
-    valueField: "indexed-tip",
-  },
-  {
     label: "Chain tip",
     value: "N/A",
     detail: "Latest Bitcoin chain height reported",
@@ -125,7 +119,7 @@ const historyRows = [
             </div>
           </div>
 
-          <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div class="grid gap-4 md:grid-cols-3">
             {
               stats.map((stat) => (
                 <article class="rounded-lg border border-border/50 bg-card/50 p-4">
@@ -190,12 +184,6 @@ const historyRows = [
                       >JavaScript required</span
                     >
                   </p>
-                  <p class="text-muted-foreground">
-                    starts at #<span data-monitor-field="mandatory-target"
-                      >961,632</span
-                    >
-                    · ~10 min/block
-                  </p>
                 </div>
               </div>
             </article>
@@ -218,7 +206,6 @@ const historyRows = [
                   until #<span data-monitor-field="mandatory-target"
                     >961,632</span
                   >
-                  · tip #<span data-monitor-field="mandatory-tip">N/A</span>
                 </p>
               </div>
             </article>

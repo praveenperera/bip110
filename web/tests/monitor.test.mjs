@@ -105,6 +105,7 @@ import {
   periodProgressPercent as ursfPeriodProgressPercent,
 } from "../src/worker/UrsfPageModel.res.js";
 import {
+  chainTipDetail,
   dashboardStats,
   formatCacheAge,
   highlightStats,
@@ -530,12 +531,24 @@ test("dashboard chart and mandatory countdown models are deterministic", () => {
 test("dashboard status and section targets preserve synchronization semantics", () => {
   assert.equal(monitorLagStatus(monitorSnapshot()), null);
   assert.equal(
+    chainTipDetail(monitorSnapshot()),
+    "Monitor is indexed through the chain tip",
+  );
+  assert.equal(
     monitorLagStatus(monitorSnapshot({ synced: false })),
     "Monitor index catching up",
   );
   assert.equal(
+    chainTipDetail(monitorSnapshot({ synced: false })),
+    "Monitor index is catching up",
+  );
+  assert.equal(
     monitorLagStatus(monitorSnapshot({ chainTip: 961_060, synced: false })),
     "Monitor lagging by 2 blocks",
+  );
+  assert.equal(
+    chainTipDetail(monitorSnapshot({ chainTip: 961_060, synced: false })),
+    "Monitor indexed through #961,058",
   );
   assert.equal(isMonitorSectionId("recent-signaling"), true);
   assert.equal(isMonitorSectionId("not-a-monitor-section"), false);

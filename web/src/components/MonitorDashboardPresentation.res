@@ -143,9 +143,6 @@ module MandatorySignalingCards = {
                 </time>
               }}
             </p>
-            <p className="text-muted-foreground">
-              {text(`starts at #${model.target} · ~10 min/block`)}
-            </p>
           </div>
         </Ui.CardContent>
       </Ui.Card>
@@ -160,7 +157,7 @@ module MandatorySignalingCards = {
             {number(model.blocksRemaining)}
           </p>
           <p className="mt-auto text-sm text-muted-foreground sm:text-base">
-            {text(`until #${model.target} · tip #${MonitorDashboardModel.formatNumber(data.tip)}`)}
+            {text(`until #${model.target}`)}
           </p>
         </Ui.CardContent>
       </Ui.Card>
@@ -393,16 +390,11 @@ let loadedDashboard = (
     | None => React.null
     }}
 
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <StatusCard
-        label="Indexed tip"
-        value={MonitorDashboardModel.formatNumber(data.tip)}
-        detail="Highest block indexed by the monitor"
-      />
+    <div className="grid gap-4 md:grid-cols-3">
       <StatusCard
         label="Chain tip"
         value={MonitorDashboardModel.formatNumber(data.chainTip)}
-        detail="Latest Bitcoin chain height reported"
+        detail={MonitorDashboardModel.chainTipDetail(data)}
       />
       <StatusCard
         label="Signal rate"

@@ -100,6 +100,10 @@ let formatChartPercent: float => string
 @genType
 let monitorLagStatus: Monitor.monitorData => Nullable.t<string>
 
+/** Describes the monitor index without repeating a synchronized chain height */
+@genType
+let chainTipDetail: Monitor.monitorData => string
+
 /** Formats an epoch-millisecond timestamp */
 @genType
 let formatDateTime: float => string
