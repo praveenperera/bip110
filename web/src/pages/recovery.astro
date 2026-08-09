@@ -191,8 +191,73 @@ const myNodeInvalidateCommand = `bitcoin-cli -datadir=/mnt/hdd/mynode/bitcoin in
             the existing data directory.
           </p>
 
+          <nav class="mt-6" aria-label="Platform instructions">
+            <p
+              class="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+            >
+              Table of contents
+            </p>
+            <ul class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <li>
+                <a
+                  href="#docker"
+                  class="group flex items-center justify-between rounded-lg border border-border/60 bg-card px-4 py-3 text-sm font-semibold transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  Docker
+                  <span aria-hidden="true" class="text-muted-foreground"
+                    >→</span
+                  >
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#startos"
+                  class="group flex items-center justify-between rounded-lg border border-border/60 bg-card px-4 py-3 text-sm font-semibold transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  StartOS
+                  <span aria-hidden="true" class="text-muted-foreground"
+                    >→</span
+                  >
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#umbrel"
+                  class="group flex items-center justify-between rounded-lg border border-border/60 bg-card px-4 py-3 text-sm font-semibold transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  Umbrel
+                  <span aria-hidden="true" class="text-muted-foreground"
+                    >→</span
+                  >
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#mynode"
+                  class="group flex items-center justify-between rounded-lg border border-border/60 bg-card px-4 py-3 text-sm font-semibold transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  myNode
+                  <span aria-hidden="true" class="text-muted-foreground"
+                    >→</span
+                  >
+                </a>
+              </li>
+              <li class="sm:col-span-2 lg:col-span-1">
+                <a
+                  href="#general"
+                  class="group flex items-center justify-between rounded-lg border border-border/60 bg-card px-4 py-3 text-sm font-semibold transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  General Bitcoin Knots
+                  <span aria-hidden="true" class="text-muted-foreground"
+                    >→</span
+                  >
+                </a>
+              </li>
+            </ul>
+          </nav>
+
           <aside
-            class="mt-6 rounded-xl border border-destructive/35 bg-destructive/6 p-5"
+            class="mt-6 rounded-xl border border-primary/30 bg-primary/5 p-5"
           >
             <p class="font-semibold text-foreground">
               Keep using Bitcoin Knots
@@ -211,10 +276,6 @@ const myNodeInvalidateCommand = `bitcoin-cli -datadir=/mnt/hdd/mynode/bitcoin in
               aria-labelledby="docker-heading"
             >
               <div class="flex flex-wrap items-center gap-3">
-                <span
-                  class="flex size-8 items-center justify-center rounded-full bg-primary/12 font-mono text-sm font-bold text-primary"
-                  >1</span
-                >
                 <h3 id="docker-heading" class="text-xl font-semibold">
                   Docker
                 </h3>
@@ -300,10 +361,6 @@ const myNodeInvalidateCommand = `bitcoin-cli -datadir=/mnt/hdd/mynode/bitcoin in
               aria-labelledby="startos-heading"
             >
               <div class="flex flex-wrap items-center gap-3">
-                <span
-                  class="flex size-8 items-center justify-center rounded-full bg-primary/12 font-mono text-sm font-bold text-primary"
-                  >2</span
-                >
                 <h3 id="startos-heading" class="text-xl font-semibold">
                   StartOS
                 </h3>
@@ -343,10 +400,6 @@ const myNodeInvalidateCommand = `bitcoin-cli -datadir=/mnt/hdd/mynode/bitcoin in
               aria-labelledby="umbrel-heading"
             >
               <div class="flex items-center gap-3">
-                <span
-                  class="flex size-8 items-center justify-center rounded-full bg-primary/12 font-mono text-sm font-bold text-primary"
-                  >3</span
-                >
                 <h3 id="umbrel-heading" class="text-xl font-semibold">
                   Umbrel
                 </h3>
@@ -388,10 +441,6 @@ const myNodeInvalidateCommand = `bitcoin-cli -datadir=/mnt/hdd/mynode/bitcoin in
               aria-labelledby="mynode-heading"
             >
               <div class="flex items-center gap-3">
-                <span
-                  class="flex size-8 items-center justify-center rounded-full bg-primary/12 font-mono text-sm font-bold text-primary"
-                  >4</span
-                >
                 <h3 id="mynode-heading" class="text-xl font-semibold">
                   myNode
                 </h3>
@@ -433,10 +482,6 @@ const myNodeInvalidateCommand = `bitcoin-cli -datadir=/mnt/hdd/mynode/bitcoin in
               aria-labelledby="general-heading"
             >
               <div class="flex items-center gap-3">
-                <span
-                  class="flex size-8 items-center justify-center rounded-full bg-primary/12 font-mono text-sm font-bold text-primary"
-                  >5</span
-                >
                 <h3 id="general-heading" class="text-xl font-semibold">
                   General Bitcoin Knots
                 </h3>
