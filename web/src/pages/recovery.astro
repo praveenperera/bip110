@@ -42,11 +42,11 @@ const startOsLegacyFinishCommand = `sudo docker exec bitcoind.embassy bitcoin-cl
 
 <Layout
   title="Recover from the BIP-110 Chain Split"
-  description="Use pre-RDTS Bitcoin Knots to leave the stopped two-block BIP-110 branch and return to the most-work Bitcoin chain."
+  description="Use pre-RDTS Bitcoin Knots to leave the stopped two-block BIP-110 branch and return to the most-work Core chain."
   ogImage="/images/bip110-og-recovery-dark.png"
   ogImageWidth="2400"
   ogImageHeight="1260"
-  ogImageAlt="Return to the Bitcoin chain with pre-RDTS Bitcoin Knots"
+  ogImageAlt="Return to the Core chain with pre-RDTS Bitcoin Knots"
 >
   <main class="min-h-screen">
     <Header />
@@ -60,12 +60,12 @@ const startOsLegacyFinishCommand = `sudo docker exec bitcoind.embassy bitcoin-cl
             BIP-110 chain recovery
           </p>
           <h1 class="max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl">
-            Move your node back to the Bitcoin chain
+            Move your node back to the Core chain
           </h1>
           <p class="mt-6 max-w-3xl text-lg leading-8 text-muted-foreground">
             Mandatory signaling started at height 961,632. The BIP-110 branch
             mined two blocks and stopped at height 961,633. The non-signaling
-            Bitcoin chain has much more accumulated proof of work.
+            Core chain has much more accumulated proof of work.
           </p>
           <p class="mt-4 text-sm text-muted-foreground">
             Checked against live chain data on August 9, 2026
@@ -124,7 +124,7 @@ const startOsLegacyFinishCommand = `sudo docker exec bitcoind.embassy bitcoin-cl
                 <p
                   class="text-xs font-semibold uppercase tracking-wide text-primary"
                 >
-                  Bitcoin chain
+                  Core chain
                 </p>
                 <p class="mt-2 font-semibold">961,632 and continuing</p>
                 <a
@@ -554,7 +554,7 @@ const startOsLegacyFinishCommand = `sudo docker exec bitcoind.embassy bitcoin-cl
               <p class="mt-5 text-sm leading-6 text-muted-foreground">
                 Complete the final checks below. If you used the invalidation
                 command, clear the temporary mark only after the node is fully
-                synced on the Bitcoin chain.
+                synced on the Core chain.
               </p>
               <div class="mt-3">
                 <CodeBlock
@@ -707,7 +707,7 @@ const startOsLegacyFinishCommand = `sudo docker exec bitcoind.embassy bitcoin-cl
             Verify before you restart other services
           </h2>
           <p class="mt-4 leading-7 text-muted-foreground">
-            Wait for peers to send the Bitcoin branch. Then run these commands
+            Wait for peers to send the Core chain. Then run these commands
             with the command prefix for your platform.
           </p>
           <div class="mt-5">
@@ -750,7 +750,7 @@ const startOsLegacyFinishCommand = `sudo docker exec bitcoind.embassy bitcoin-cl
             Do this only if you ran <code
               class="font-mono text-sm text-foreground">invalidateblock</code
             > and all final checks pass. This command removes the permanent local
-            invalid mark. The node stays on the Bitcoin chain because that chain has
+            invalid mark. The node stays on the Core chain because that chain has
             more accumulated proof of work.
           </p>
           <p class="mt-3 text-sm leading-6 text-muted-foreground">
@@ -766,7 +766,8 @@ const startOsLegacyFinishCommand = `sudo docker exec bitcoind.embassy bitcoin-cl
           </div>
           <p class="mt-4 text-sm leading-6 text-muted-foreground">
             Run <code class="font-mono text-xs">getblockhash 961632</code> one more
-            time. It must still return the Bitcoin block hash shown above.
+            time. It must still return the block hash shown above for the Core
+            chain.
           </p>
         </section>
 
