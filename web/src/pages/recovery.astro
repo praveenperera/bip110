@@ -1,0 +1,502 @@
+---
+import CodeBlock from "@/components/responses/CodeBlock.astro";
+import Footer from "@/components/Footer.astro";
+import Header from "@/components/Header.astro";
+import Layout from "@/layouts/Layout.astro";
+
+const commonBlock =
+  "00000000000000000000807f9dc917442a67910426d79ebb2f8aa2149327ce8a";
+const bitcoinFirstBlock =
+  "00000000000000000000d1e01392faa65ceeaed307f0a3159144b84146ff24ba";
+const bip110FirstBlock =
+  "0000000000000000000169eb6f811ddbd0daf343af7b62180cdb13e7c78dbc16";
+const bip110SecondBlock =
+  "0000000000000000000139eda19858a84b2ed80cb6056ba8449f0792d13d0968";
+
+const checkCommands = `bitcoin-cli getbestblockhash
+bitcoin-cli getblockhash 961632`;
+const invalidateCommand = `bitcoin-cli invalidateblock ${bip110FirstBlock}`;
+const verifyCommands = `bitcoin-cli getblockhash 961632
+bitcoin-cli getblockchaininfo`;
+const reconsiderCommand = `bitcoin-cli reconsiderblock ${bip110FirstBlock}`;
+const umbrelCheckCommands = `sudo docker exec bitcoin-knots_app_1 bitcoin-cli getbestblockhash
+sudo docker exec bitcoin-knots_app_1 bitcoin-cli getblockhash 961632`;
+const umbrelInvalidateCommand = `sudo docker exec bitcoin-knots_app_1 bitcoin-cli invalidateblock ${bip110FirstBlock}`;
+const myNodeCheckCommands = `bitcoin-cli -datadir=/mnt/hdd/mynode/bitcoin getbestblockhash
+bitcoin-cli -datadir=/mnt/hdd/mynode/bitcoin getblockhash 961632`;
+const myNodeInvalidateCommand = `bitcoin-cli -datadir=/mnt/hdd/mynode/bitcoin invalidateblock ${bip110FirstBlock}`;
+---
+
+<Layout
+  title="Recover from the BIP-110 Chain Split"
+  description="Change a BIP-110 node to pre-RDTS Bitcoin Knots, leave the stopped two-block branch, and verify that the node follows the most-work Bitcoin chain."
+  ogImage="/og.jpg"
+>
+  <main class="min-h-screen">
+    <Header />
+
+    <article class="px-6 pb-24 pt-28">
+      <div class="mx-auto max-w-4xl">
+        <header class="border-b border-border/60 pb-10">
+          <p
+            class="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-primary"
+          >
+            BIP-110 chain recovery
+          </p>
+          <h1 class="max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl">
+            Move your node back to the Bitcoin chain
+          </h1>
+          <p class="mt-6 max-w-3xl text-lg leading-8 text-muted-foreground">
+            Mandatory signaling started at height 961,632. The BIP-110 branch
+            mined two blocks and stopped at height 961,633. The non-signaling
+            Bitcoin chain has much more accumulated proof of work.
+          </p>
+          <p class="mt-4 text-sm text-muted-foreground">
+            Checked against live chain data on August 9, 2026
+          </p>
+        </header>
+
+        <aside
+          class="mt-8 rounded-xl border border-destructive/35 bg-destructive/6 p-6"
+          aria-labelledby="stop-first-title"
+        >
+          <h2 id="stop-first-title" class="text-lg font-semibold">
+            Stop dependent services first
+          </h2>
+          <p class="mt-2 leading-7 text-muted-foreground">
+            Stop mining, Lightning, Electrum servers, explorers, and other
+            services that use this node. Do not send or receive funds until
+            Bitcoin and all dependent services are fully synced again. Make a
+            current wallet backup and a current Lightning channel backup.
+          </p>
+        </aside>
+
+        <section class="mt-14" aria-labelledby="fork-heading">
+          <div class="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p
+                class="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+              >
+                What happened
+              </p>
+              <h2 id="fork-heading" class="text-3xl font-bold">
+                One fork point, two branches
+              </h2>
+            </div>
+            <span
+              class="rounded-full border border-border/70 bg-muted/50 px-3 py-1 text-xs font-medium text-muted-foreground"
+            >
+              Common block: 961,631
+            </span>
+          </div>
+
+          <div class="mt-6 rounded-xl border border-border/60 bg-card p-5">
+            <div class="flex items-center gap-3">
+              <span class="size-3 rounded-full bg-muted-foreground"></span>
+              <div class="min-w-0">
+                <p class="font-semibold">Height 961,631</p>
+                <p class="truncate font-mono text-xs text-muted-foreground">
+                  {commonBlock}
+                </p>
+              </div>
+            </div>
+
+            <div class="ml-[5px] h-8 w-px bg-border"></div>
+
+            <div class="grid gap-4 md:grid-cols-2">
+              <div class="rounded-lg border border-primary/35 bg-primary/6 p-4">
+                <p
+                  class="text-xs font-semibold uppercase tracking-wide text-primary"
+                >
+                  Bitcoin chain
+                </p>
+                <p class="mt-2 font-semibold">961,632 and continuing</p>
+                <a
+                  href={`https://mempool.space/block/${bitcoinFirstBlock}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="mt-2 block break-all font-mono text-xs text-muted-foreground transition-colors hover:text-primary hover:underline"
+                >
+                  {bitcoinFirstBlock}
+                </a>
+                <p class="mt-3 text-sm leading-6 text-muted-foreground">
+                  This branch has the most accumulated proof of work.
+                </p>
+              </div>
+
+              <div class="rounded-lg border border-border/70 bg-muted/35 p-4">
+                <p
+                  class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                >
+                  Stopped BIP-110 branch
+                </p>
+                <p class="mt-2 font-semibold">961,632 → 961,633</p>
+                <a
+                  href={`https://mempool.guide/block/${bip110FirstBlock}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="mt-2 block break-all font-mono text-xs text-muted-foreground transition-colors hover:text-foreground hover:underline"
+                >
+                  {bip110FirstBlock}
+                </a>
+                <a
+                  href={`https://mempool.guide/block/${bip110SecondBlock}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="mt-1 block break-all font-mono text-xs text-muted-foreground transition-colors hover:text-foreground hover:underline"
+                >
+                  {bip110SecondBlock}
+                </a>
+                <p class="mt-3 text-sm leading-6 text-muted-foreground">
+                  The second block is a child of the first block.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <aside
+          class="mt-8 rounded-xl border border-primary/30 bg-primary/5 p-6"
+        >
+          <h2 class="text-lg font-semibold">Invalidate only the first block</h2>
+          <p class="mt-2 leading-7 text-muted-foreground">
+            You do not need two <code class="font-mono text-sm text-foreground"
+              >invalidateblock</code
+            > calls. When you invalidate the BIP-110 block at height 961,632, Bitcoin
+            Knots also invalidates its child at height 961,633.
+          </p>
+        </aside>
+
+        <section class="mt-16 scroll-mt-24" id="instructions">
+          <p
+            class="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+          >
+            Recovery procedure
+          </p>
+          <h2 class="text-3xl font-bold">Choose your platform</h2>
+          <p class="mt-4 max-w-3xl leading-7 text-muted-foreground">
+            Use Bitcoin Knots <code class="font-mono text-sm text-foreground"
+              >v29.3.knots20260507</code
+            >. It is the last matching Knots release without RDTS. It can use
+            the existing data directory.
+          </p>
+
+          <div class="mt-8 space-y-6">
+            <section
+              id="startos"
+              class="scroll-mt-24 rounded-xl border border-border/60 bg-card p-6"
+              aria-labelledby="startos-heading"
+            >
+              <div class="flex flex-wrap items-center gap-3">
+                <span
+                  class="flex size-8 items-center justify-center rounded-full bg-primary/12 font-mono text-sm font-bold text-primary"
+                  >1</span
+                >
+                <h3 id="startos-heading" class="text-xl font-semibold">
+                  StartOS
+                </h3>
+                <span
+                  class="rounded-full border border-primary/30 bg-primary/6 px-2.5 py-1 text-xs font-medium text-primary"
+                >
+                  Automatic recovery
+                </span>
+              </div>
+              <ol
+                class="mt-5 list-decimal space-y-3 pl-5 leading-7 text-muted-foreground marker:font-semibold marker:text-foreground"
+              >
+                <li>Stop the services that depend on Bitcoin Knots.</li>
+                <li>
+                  Refresh the StartOS marketplace. Then install the current <strong
+                    class="text-foreground">Bitcoin Knots (pre-RDTS)</strong
+                  > flavor.
+                </li>
+                <li>Start Bitcoin Knots and wait for chain sync.</li>
+                <li>
+                  If StartOS finds stored invalid-chain verdicts, it clears them
+                  and shows a <strong class="text-foreground"
+                    >Chain Verdicts Reset</strong
+                  > notification. If it finds none, normal chain sync continues without
+                  this notification.
+                </li>
+              </ol>
+              <p class="mt-5 text-sm leading-6 text-muted-foreground">
+                Do not run the manual invalidation command on StartOS unless its
+                recovery notification reports a problem.
+              </p>
+            </section>
+
+            <section
+              id="umbrel"
+              class="scroll-mt-24 rounded-xl border border-border/60 bg-card p-6"
+              aria-labelledby="umbrel-heading"
+            >
+              <div class="flex items-center gap-3">
+                <span
+                  class="flex size-8 items-center justify-center rounded-full bg-primary/12 font-mono text-sm font-bold text-primary"
+                  >2</span
+                >
+                <h3 id="umbrel-heading" class="text-xl font-semibold">
+                  Umbrel
+                </h3>
+              </div>
+              <ol
+                class="mt-5 list-decimal space-y-3 pl-5 leading-7 text-muted-foreground marker:font-semibold marker:text-foreground"
+              >
+                <li>Stop apps that depend on Bitcoin Knots.</li>
+                <li>
+                  Open <strong class="text-foreground"
+                    >Bitcoin Knots → Settings → Version</strong
+                  >.
+                </li>
+                <li>
+                  Select <strong class="font-mono text-sm text-foreground"
+                    >v29.3.knots20260507</strong
+                  >, save the setting, and wait for the node to restart.
+                </li>
+                <li>Open the umbrelOS terminal and check the active chain.</li>
+              </ol>
+              <div class="mt-5">
+                <CodeBlock code={umbrelCheckCommands} label="Check the chain" />
+              </div>
+              <p class="mt-5 leading-7 text-muted-foreground">
+                If the node stays on the BIP-110 block at height 961,633, run
+                this one command:
+              </p>
+              <div class="mt-3">
+                <CodeBlock
+                  code={umbrelInvalidateCommand}
+                  label="Leave the BIP-110 branch"
+                />
+              </div>
+            </section>
+
+            <section
+              id="mynode"
+              class="scroll-mt-24 rounded-xl border border-border/60 bg-card p-6"
+              aria-labelledby="mynode-heading"
+            >
+              <div class="flex items-center gap-3">
+                <span
+                  class="flex size-8 items-center justify-center rounded-full bg-primary/12 font-mono text-sm font-bold text-primary"
+                  >3</span
+                >
+                <h3 id="mynode-heading" class="text-xl font-semibold">
+                  myNode
+                </h3>
+              </div>
+              <ol
+                class="mt-5 list-decimal space-y-3 pl-5 leading-7 text-muted-foreground marker:font-semibold marker:text-foreground"
+              >
+                <li>Stop services that depend on Bitcoin.</li>
+                <li>
+                  Open <strong class="text-foreground"
+                    >Settings → Custom Bitcoin Version</strong
+                  >.
+                </li>
+                <li>
+                  Select <strong class="text-foreground"
+                    >Bitcoin Knots (v29.3.knots20260507)</strong
+                  > and wait for the installation and restart.
+                </li>
+                <li>Open the Bitcoin CLI web terminal and check the chain.</li>
+              </ol>
+              <div class="mt-5">
+                <CodeBlock code={myNodeCheckCommands} label="Check the chain" />
+              </div>
+              <p class="mt-5 leading-7 text-muted-foreground">
+                If the node stays on the BIP-110 block at height 961,633, run
+                this one command:
+              </p>
+              <div class="mt-3">
+                <CodeBlock
+                  code={myNodeInvalidateCommand}
+                  label="Leave the BIP-110 branch"
+                />
+              </div>
+            </section>
+
+            <section
+              id="manual"
+              class="scroll-mt-24 rounded-xl border border-border/60 bg-card p-6"
+              aria-labelledby="manual-heading"
+            >
+              <div class="flex items-center gap-3">
+                <span
+                  class="flex size-8 items-center justify-center rounded-full bg-primary/12 font-mono text-sm font-bold text-primary"
+                  >4</span
+                >
+                <h3 id="manual-heading" class="text-xl font-semibold">
+                  Manual Bitcoin Knots
+                </h3>
+              </div>
+              <ol
+                class="mt-5 list-decimal space-y-3 pl-5 leading-7 text-muted-foreground marker:font-semibold marker:text-foreground"
+              >
+                <li>Stop <code class="font-mono text-sm">bitcoind</code>.</li>
+                <li>Back up the wallet and configuration files.</li>
+                <li>
+                  Remove <code class="font-mono text-sm text-foreground"
+                    >consensusrules=rdts</code
+                  > from <code class="font-mono text-sm text-foreground"
+                    >bitcoin.conf</code
+                  >. The pre-RDTS release does not start when this value is
+                  present.
+                </li>
+                <li>
+                  Download and verify <a
+                    href="https://github.com/bitcoinknots/bitcoin/releases/tag/v29.3.knots20260507"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="font-medium text-primary hover:underline"
+                    >Bitcoin Knots v29.3.knots20260507</a
+                  >. Install it without changing the data directory.
+                </li>
+                <li>Start the node and check the active chain.</li>
+              </ol>
+              <div class="mt-5">
+                <CodeBlock code={checkCommands} label="Check the chain" />
+              </div>
+              <p class="mt-5 leading-7 text-muted-foreground">
+                If the node stays on the BIP-110 block at height 961,633, run
+                this one command:
+              </p>
+              <div class="mt-3">
+                <CodeBlock
+                  code={invalidateCommand}
+                  label="Leave the BIP-110 branch"
+                />
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="mt-16" aria-labelledby="verify-heading">
+          <p
+            class="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+          >
+            Final checks
+          </p>
+          <h2 id="verify-heading" class="text-3xl font-bold">
+            Verify before you restart other services
+          </h2>
+          <p class="mt-4 leading-7 text-muted-foreground">
+            Wait for peers to send the Bitcoin branch. Then run these commands
+            with the command prefix for your platform.
+          </p>
+          <div class="mt-5">
+            <CodeBlock code={verifyCommands} label="Verify chain and sync" />
+          </div>
+
+          <div class="mt-6 grid gap-4 sm:grid-cols-3">
+            <div class="rounded-lg border border-border/60 bg-card p-4">
+              <p class="text-sm font-semibold">Block 961,632</p>
+              <p class="mt-2 break-all font-mono text-xs text-primary">
+                {bitcoinFirstBlock}
+              </p>
+            </div>
+            <div class="rounded-lg border border-border/60 bg-card p-4">
+              <p class="text-sm font-semibold">Sync state</p>
+              <p class="mt-2 text-sm leading-6 text-muted-foreground">
+                <code class="font-mono text-xs">blocks</code> equals <code
+                  class="font-mono text-xs">headers</code
+                > and <code class="font-mono text-xs">initialblockdownload</code
+                > is <code class="font-mono text-xs">false</code>.
+              </p>
+            </div>
+            <div class="rounded-lg border border-border/60 bg-card p-4">
+              <p class="text-sm font-semibold">Dependent services</p>
+              <p class="mt-2 text-sm leading-6 text-muted-foreground">
+                Wait for each index and Lightning service to report full sync.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="mt-12 rounded-xl border border-border/60 bg-muted/30 p-6"
+          aria-labelledby="cleanup-heading"
+        >
+          <h2 id="cleanup-heading" class="text-xl font-semibold">
+            Remove the temporary local override
+          </h2>
+          <p class="mt-3 leading-7 text-muted-foreground">
+            Do this only if you ran <code
+              class="font-mono text-sm text-foreground">invalidateblock</code
+            > and all final checks pass. This command removes the permanent local
+            invalid mark. The node stays on the Bitcoin chain because that chain has
+            more accumulated proof of work.
+          </p>
+          <p class="mt-3 text-sm leading-6 text-muted-foreground">
+            Use the same platform command as above. Replace
+            <code class="font-mono text-xs">invalidateblock</code> with
+            <code class="font-mono text-xs">reconsiderblock</code>.
+          </p>
+          <div class="mt-4">
+            <CodeBlock
+              code={reconsiderCommand}
+              label="Run only after full sync"
+            />
+          </div>
+          <p class="mt-4 text-sm leading-6 text-muted-foreground">
+            Run <code class="font-mono text-xs">getblockhash 961632</code> one more
+            time. It must still return the Bitcoin block hash shown above.
+          </p>
+        </section>
+
+        <section class="mt-16 border-t border-border/60 pt-10">
+          <h2 class="text-2xl font-bold">Do not start with a reindex</h2>
+          <ul class="mt-5 space-y-3 leading-7 text-muted-foreground">
+            <li>
+              • A normal switch keeps the existing blocks and chainstate. It
+              does not need a download from genesis.
+            </li>
+            <li>
+              • <code class="font-mono text-sm">-reindex-chainstate</code> does not
+              change the consensus rules and is not a chain selector.
+            </li>
+            <li>
+              • Use a full reindex only if the node reports damaged block-index
+              data, or if a platform recovery tool says that pruned data makes
+              an in-place recovery impossible.
+            </li>
+          </ul>
+        </section>
+
+        <nav
+          aria-label="Verification links"
+          class="mt-16 border-y border-border/60 py-6"
+        >
+          <p class="text-sm font-semibold">Check the procedure</p>
+          <div class="mt-3 flex flex-wrap gap-x-6 gap-y-3 text-sm">
+            <a
+              href="https://github.com/bitcoin/bitcoin/blob/v29.3/src/rpc/blockchain.cpp#L1634-L1698"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-primary hover:underline">Bitcoin Core RPC behavior</a
+            >
+            <a
+              href="https://github.com/Start9Labs/bitcoin-knots-startos#switching-flavors-during-a-chain-split"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-primary hover:underline">StartOS automatic recovery</a
+            >
+            <a
+              href="https://github.com/Retropex/umbrel-bitcoin/blob/master/libs/settings/settings.meta.ts"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-primary hover:underline">Umbrel version selector</a
+            >
+            <a
+              href="https://github.com/mynodebtc/mynode/blob/master/rootfs/standard/var/www/mynode/templates/settings.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-primary hover:underline">myNode version selector</a
+            >
+          </div>
+        </nav>
+      </div>
+    </article>
+
+    <Footer />
+  </main>
+</Layout>
