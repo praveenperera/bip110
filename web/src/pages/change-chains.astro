@@ -41,12 +41,12 @@ const startOsLegacyFinishCommand = `sudo docker exec bitcoind.embassy bitcoin-cl
 ---
 
 <Layout
-  title="How to Return to the Core Chain"
-  description="If you choose to leave the stopped two-block BIP-110 branch, this guide shows how to return to the most-work Core chain with pre-RDTS Bitcoin Knots."
-  ogImage="/images/bip110-og-recovery-dark.png"
+  title="How to Switch to the Core Chain"
+  description="If you choose to leave the stopped two-block BIP-110 branch, this guide shows how to switch to the most-work Core chain with pre-RDTS Bitcoin Knots."
+  ogImage="/images/bip110-og-change-chains-dark.png"
   ogImageWidth="2400"
   ogImageHeight="1260"
-  ogImageAlt="Recovery instructions for operators who choose to return to the Core chain"
+  ogImageAlt="Instructions for operators who choose to switch to the Core chain"
 >
   <main class="min-h-screen">
     <Header />
@@ -57,14 +57,14 @@ const startOsLegacyFinishCommand = `sudo docker exec bitcoind.embassy bitcoin-cl
           <p
             class="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-primary"
           >
-            BIP-110 chain recovery
+            Change chains
           </p>
           <h1 class="max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl">
-            Choosing the Core chain? Here is how to return
+            Choosing the Core chain? Here is how to switch
           </h1>
           <p class="mt-6 max-w-3xl text-lg leading-8 text-muted-foreground">
             This guide is for node operators who choose to leave the stopped
-            BIP-110 branch and return to the Core chain.
+            BIP-110 branch and switch to the Core chain.
           </p>
           <p class="mt-4 max-w-3xl text-lg leading-8 text-muted-foreground">
             Mandatory signaling started at height 961,632. The BIP-110 branch
@@ -191,7 +191,7 @@ const startOsLegacyFinishCommand = `sudo docker exec bitcoind.embassy bitcoin-cl
           <p
             class="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
           >
-            Recovery procedure
+            Switching procedure
           </p>
           <h2 class="text-3xl font-bold">Choose your platform</h2>
           <p class="mt-4 max-w-3xl leading-7 text-muted-foreground">
@@ -770,7 +770,7 @@ const startOsLegacyFinishCommand = `sudo docker exec bitcoind.embassy bitcoin-cl
           </div>
           <p class="mt-4 text-sm leading-6 text-muted-foreground">
             Run <code class="font-mono text-xs">getblockhash 961632</code> one more
-            time. It must still return the block hash shown above for the Core
+            time. It must still show the block hash shown above for the Core
             chain.
           </p>
         </section>
