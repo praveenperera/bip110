@@ -41,12 +41,12 @@ const startOsLegacyFinishCommand = `sudo docker exec bitcoind.embassy bitcoin-cl
 ---
 
 <Layout
-  title="Recover from the BIP-110 Chain Split"
-  description="Use pre-RDTS Bitcoin Knots to leave the stopped two-block BIP-110 branch and return to the most-work Core chain."
+  title="How to Return to the Core Chain"
+  description="If you choose to leave the stopped two-block BIP-110 branch, this guide shows how to return to the most-work Core chain with pre-RDTS Bitcoin Knots."
   ogImage="/images/bip110-og-recovery-dark.png"
   ogImageWidth="2400"
   ogImageHeight="1260"
-  ogImageAlt="Return to the Core chain with pre-RDTS Bitcoin Knots"
+  ogImageAlt="Recovery instructions for operators who choose to return to the Core chain"
 >
   <main class="min-h-screen">
     <Header />
@@ -60,9 +60,13 @@ const startOsLegacyFinishCommand = `sudo docker exec bitcoind.embassy bitcoin-cl
             BIP-110 chain recovery
           </p>
           <h1 class="max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl">
-            Move your node back to the Core chain
+            Choosing the Core chain? Here is how to return
           </h1>
           <p class="mt-6 max-w-3xl text-lg leading-8 text-muted-foreground">
+            This guide is for node operators who choose to leave the stopped
+            BIP-110 branch and return to the Core chain.
+          </p>
+          <p class="mt-4 max-w-3xl text-lg leading-8 text-muted-foreground">
             Mandatory signaling started at height 961,632. The BIP-110 branch
             mined two blocks and stopped at height 961,633. The non-signaling
             Core chain has much more accumulated proof of work.
