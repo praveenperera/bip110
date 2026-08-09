@@ -32,6 +32,12 @@ const umbrelInvalidateCommand = `sudo docker exec bitcoin-knots_app_1 bitcoin-cl
 const myNodeCheckCommands = `bitcoin-cli -datadir=/mnt/hdd/mynode/bitcoin getbestblockhash
 bitcoin-cli -datadir=/mnt/hdd/mynode/bitcoin getblockhash 961632`;
 const myNodeInvalidateCommand = `bitcoin-cli -datadir=/mnt/hdd/mynode/bitcoin invalidateblock ${bip110FirstBlock}`;
+const startOsLegacyChecksumCommand = `shasum -a 256 bitcoind.s9pk`;
+const startOsLegacySshCommand = `ssh start9@your-server-name.local`;
+const startOsLegacyCheckCommands = `sudo docker exec bitcoind.embassy bitcoin-cli getbestblockhash
+sudo docker exec bitcoind.embassy bitcoin-cli getblockhash 961632`;
+const startOsLegacyInvalidateCommand = `sudo docker exec bitcoind.embassy bitcoin-cli invalidateblock ${bip110FirstBlock}`;
+const startOsLegacyFinishCommand = `sudo docker exec bitcoind.embassy bitcoin-cli reconsiderblock ${bip110FirstBlock}`;
 ---
 
 <Layout
@@ -214,7 +220,18 @@ const myNodeInvalidateCommand = `bitcoin-cli -datadir=/mnt/hdd/mynode/bitcoin in
                   href="#startos"
                   class="group flex items-center justify-between rounded-lg border border-border/60 bg-card px-4 py-3 text-sm font-semibold transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 >
-                  StartOS
+                  StartOS 0.4
+                  <span aria-hidden="true" class="text-muted-foreground"
+                    >→</span
+                  >
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#startos-0351"
+                  class="group flex items-center justify-between rounded-lg border border-border/60 bg-card px-4 py-3 text-sm font-semibold transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  StartOS 0.3.5.1
                   <span aria-hidden="true" class="text-muted-foreground"
                     >→</span
                   >
@@ -362,7 +379,7 @@ const myNodeInvalidateCommand = `bitcoin-cli -datadir=/mnt/hdd/mynode/bitcoin in
             >
               <div class="flex flex-wrap items-center gap-3">
                 <h3 id="startos-heading" class="text-xl font-semibold">
-                  StartOS
+                  StartOS 0.4
                 </h3>
                 <span
                   class="rounded-full border border-primary/30 bg-primary/6 px-2.5 py-1 text-xs font-medium text-primary"
@@ -392,6 +409,159 @@ const myNodeInvalidateCommand = `bitcoin-cli -datadir=/mnt/hdd/mynode/bitcoin in
                 Do not run the manual invalidation command on StartOS unless its
                 recovery notification reports a problem.
               </p>
+            </section>
+
+            <section
+              id="startos-0351"
+              class="scroll-mt-24 rounded-xl border border-border/60 bg-card p-6"
+              aria-labelledby="startos-0351-heading"
+            >
+              <div class="flex flex-wrap items-center gap-3">
+                <h3 id="startos-0351-heading" class="text-xl font-semibold">
+                  StartOS 0.3.5.1
+                </h3>
+                <span
+                  class="rounded-full border border-border/70 bg-muted/50 px-2.5 py-1 text-xs font-medium text-muted-foreground"
+                >
+                  Legacy package
+                </span>
+              </div>
+
+              <aside
+                class="mt-5 rounded-lg border border-destructive/30 bg-destructive/5 p-5"
+              >
+                <p class="font-semibold text-foreground">
+                  Make a backup and do not uninstall
+                </p>
+                <p class="mt-2 leading-7 text-muted-foreground">
+                  Open <strong class="text-foreground"
+                    >System → Create Backup</strong
+                  >. Select Bitcoin Knots, Lightning, and related services. Wait
+                  for the backup to finish before you continue. Use a network
+                  folder or an EXT4 physical drive. See the <a
+                    href="https://docs.start9.com/0.3.5.x/user-manual/backups/backup-create.html"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="font-medium text-primary hover:underline"
+                    >StartOS 0.3.5.1 backup guide</a
+                  >. If you cannot complete the backup, do not continue. The
+                  Bitcoin Knots backup omits the blockchain, chainstate, and
+                  indexes, so a restore can require a blockchain resync.
+                </p>
+                <p class="mt-3 text-sm leading-6 text-muted-foreground">
+                  Do not uninstall Bitcoin Knots. The update uses the existing <code
+                    class="font-mono text-xs text-foreground">bitcoind</code
+                  > service and keeps its data volume.
+                </p>
+              </aside>
+
+              <p class="mt-5 leading-7 text-muted-foreground">
+                The current marketplace package requires StartOS 0.4. StartOS
+                0.3.5.1 needs the older <code
+                  class="font-mono text-sm text-foreground">.s9pk</code
+                > package format. The linked package contains Bitcoin Knots from before
+                RDTS and supports both Start9 processor types. It is a community package
+                from Retropex, not an official Start9 release.
+              </p>
+
+              <ol
+                class="mt-5 list-decimal space-y-3 pl-5 leading-7 text-muted-foreground marker:font-semibold marker:text-foreground"
+              >
+                <li>
+                  Download <a
+                    href="https://github.com/Retropex/knots-startos/releases/download/v29.3.knots20260507/bitcoind.s9pk"
+                    class="font-medium text-primary hover:underline"
+                    >bitcoind.s9pk</a
+                  > from the <a
+                    href="https://github.com/Retropex/knots-startos/releases/tag/v29.3.knots20260507"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="font-medium text-primary hover:underline"
+                    >v29.3.knots20260507 release</a
+                  >.
+                </li>
+                <li>
+                  Check that its SHA-256 value is <code
+                    class="break-all font-mono text-xs text-foreground"
+                    >3a57a796c5f211d810b44ee9e948ca84ac985fcca5af586f1ae1272c2f23f1dc</code
+                  >.
+                </li>
+                <li>Stop all services that depend on Bitcoin Knots.</li>
+                <li>Stop Bitcoin Knots.</li>
+                <li>
+                  Open <strong class="text-foreground"
+                    >System → Sideload Service</strong
+                  >, select <code class="font-mono text-sm text-foreground"
+                    >bitcoind.s9pk</code
+                  >, and select <strong class="text-foreground"
+                    >Upload &amp; Install</strong
+                  >. Install it as an update to the existing service.
+                </li>
+                <li>
+                  Open Bitcoin Knots. Select <strong class="text-foreground"
+                    >Configure</strong
+                  >, save the configuration, and start the service.
+                </li>
+                <li>Wait for Bitcoin Knots to accept RPC commands.</li>
+              </ol>
+
+              <div class="mt-5">
+                <CodeBlock
+                  code={startOsLegacyChecksumCommand}
+                  label="Check the downloaded package"
+                />
+              </div>
+
+              <p class="mt-5 leading-7 text-muted-foreground">
+                The legacy package does not have automatic chain recovery. If
+                the node does not resume sync, connect to StartOS with SSH.
+                Replace the example hostname with the name of your server. The
+                SSH user is <code class="font-mono text-sm text-foreground"
+                  >start9</code
+                >, not <code class="font-mono text-sm text-foreground"
+                  >root</code
+                >. See the <a
+                  href="https://docs.start9.com/0.3.5.x/user-manual/ssh/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="font-medium text-primary hover:underline"
+                  >StartOS SSH guide</a
+                > if SSH is not set up.
+              </p>
+              <div class="mt-3">
+                <CodeBlock
+                  code={startOsLegacySshCommand}
+                  label="Connect to StartOS"
+                />
+              </div>
+              <div class="mt-3">
+                <CodeBlock
+                  code={startOsLegacyCheckCommands}
+                  label="Check the active chain"
+                />
+              </div>
+              <p class="mt-5 leading-7 text-muted-foreground">
+                If block 961,632 has the stopped BIP-110 hash, invalidate its
+                first block. This one call also invalidates its child at height
+                961,633.
+              </p>
+              <div class="mt-3">
+                <CodeBlock
+                  code={startOsLegacyInvalidateCommand}
+                  label="Leave both stopped blocks"
+                />
+              </div>
+              <p class="mt-5 text-sm leading-6 text-muted-foreground">
+                Complete the final checks below. If you used the invalidation
+                command, clear the temporary mark only after the node is fully
+                synced on the Bitcoin chain.
+              </p>
+              <div class="mt-3">
+                <CodeBlock
+                  code={startOsLegacyFinishCommand}
+                  label="Clear the temporary override after sync"
+                />
+              </div>
             </section>
 
             <section
@@ -636,6 +806,26 @@ const myNodeInvalidateCommand = `bitcoin-cli -datadir=/mnt/hdd/mynode/bitcoin in
               target="_blank"
               rel="noopener noreferrer"
               class="text-primary hover:underline">StartOS automatic recovery</a
+            >
+            <a
+              href="https://github.com/Retropex/knots-startos/releases/tag/v29.3.knots20260507"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-primary hover:underline"
+              >StartOS 0.3.5.1 pre-RDTS package</a
+            >
+            <a
+              href="https://docs.start9.com/0.3.5.x/user-manual/backups/backup-create.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-primary hover:underline"
+              >StartOS 0.3.5.1 backup guide</a
+            >
+            <a
+              href="https://docs.start9.com/0.3.5.x/user-manual/ssh/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-primary hover:underline">StartOS SSH guide</a
             >
             <a
               href="https://github.com/Retropex/umbrel-bitcoin/blob/master/libs/settings/settings.meta.ts"
