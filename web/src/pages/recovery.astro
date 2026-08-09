@@ -19,6 +19,17 @@ const invalidateCommand = `bitcoin-cli invalidateblock ${bip110FirstBlock}`;
 const verifyCommands = `bitcoin-cli getblockhash 961632
 bitcoin-cli getblockchaininfo`;
 const reconsiderCommand = `bitcoin-cli reconsiderblock ${bip110FirstBlock}`;
+const dockerCheckCommands = `ssh root@bitcoin.local
+cd /opt/stack
+./bitcoin-cli getnetworkinfo
+./bitcoin-cli getbestblockhash
+./bitcoin-cli getblockhash 961632`;
+const dockerRestartCommands = `docker compose stop electrs backend mempool
+docker compose pull bitcoin
+docker compose up -d --no-deps --force-recreate bitcoin`;
+const dockerInvalidateCommand = `./bitcoin-cli invalidateblock ${bip110FirstBlock}`;
+const dockerFinishCommands = `./bitcoin-cli reconsiderblock ${bip110FirstBlock}
+docker compose up -d electrs backend mempool`;
 const umbrelCheckCommands = `sudo docker exec bitcoin-knots_app_1 bitcoin-cli getbestblockhash
 sudo docker exec bitcoin-knots_app_1 bitcoin-cli getblockhash 961632`;
 const umbrelInvalidateCommand = `sudo docker exec bitcoin-knots_app_1 bitcoin-cli invalidateblock ${bip110FirstBlock}`;
@@ -29,8 +40,11 @@ const myNodeInvalidateCommand = `bitcoin-cli -datadir=/mnt/hdd/mynode/bitcoin in
 
 <Layout
   title="Recover from the BIP-110 Chain Split"
-  description="Change a BIP-110 node to pre-RDTS Bitcoin Knots, leave the stopped two-block branch, and verify that the node follows the most-work Bitcoin chain."
-  ogImage="/og.jpg"
+  description="Use pre-RDTS Bitcoin Knots to leave the stopped two-block BIP-110 branch and return to the most-work Bitcoin chain."
+  ogImage="/images/bip110-og-recovery-dark.png"
+  ogImageWidth="2400"
+  ogImageHeight="1260"
+  ogImageAlt="Return to the Bitcoin chain with pre-RDTS Bitcoin Knots"
 >
   <main class="min-h-screen">
     <Header />
@@ -181,7 +195,107 @@ const myNodeInvalidateCommand = `bitcoin-cli -datadir=/mnt/hdd/mynode/bitcoin in
             the existing data directory.
           </p>
 
+          <aside
+            class="mt-6 rounded-xl border border-destructive/35 bg-destructive/6 p-5"
+          >
+            <p class="font-semibold text-foreground">
+              Use pre-RDTS Bitcoin Knots, not Bitcoin Core
+            </p>
+            <p class="mt-2 leading-7 text-muted-foreground">
+              Do not open this Knots data directory directly with Bitcoin Core
+              for this recovery. The matching pre-RDTS Knots release keeps the
+              same Knots configuration, wallet, and index behavior while it
+              removes the BIP-110 rules.
+            </p>
+          </aside>
+
           <div class="mt-8 space-y-6">
+            <section
+              id="docker-ssh"
+              class="scroll-mt-24 rounded-xl border border-primary/35 bg-primary/5 p-6"
+              aria-labelledby="docker-ssh-heading"
+            >
+              <div class="flex flex-wrap items-center gap-3">
+                <span
+                  class="flex size-8 items-center justify-center rounded-full bg-primary/12 font-mono text-sm font-bold text-primary"
+                  >1</span
+                >
+                <h3 id="docker-ssh-heading" class="text-xl font-semibold">
+                  Docker over SSH
+                </h3>
+                <span
+                  class="rounded-full border border-primary/30 bg-primary/6 px-2.5 py-1 text-xs font-medium text-primary"
+                >
+                  bitcoin.local
+                </span>
+              </div>
+              <p class="mt-5 leading-7 text-muted-foreground">
+                These commands match a Docker stack in <code
+                  class="font-mono text-sm text-foreground">/opt/stack</code
+                > with a <code class="font-mono text-sm text-foreground"
+                  >bitcoin</code
+                > container and a local <code
+                  class="font-mono text-sm text-foreground">bitcoin-cli</code
+                > wrapper.
+              </p>
+              <ol
+                class="mt-5 list-decimal space-y-3 pl-5 leading-7 text-muted-foreground marker:font-semibold marker:text-foreground"
+              >
+                <li>
+                  In <code class="font-mono text-sm text-foreground"
+                    >docker-compose.yml</code
+                  >, set the Bitcoin image to <code
+                    class="font-mono text-sm text-foreground"
+                    >ghcr.io/retropex/bitcoin:29.3.knots20260507</code
+                  >.
+                </li>
+                <li>
+                  Remove <code class="font-mono text-sm text-foreground"
+                    >consensusrules=rdts</code
+                  > from <code class="font-mono text-sm text-foreground"
+                    >bitcoin.conf</code
+                  >. The pre-RDTS release will not start with that value.
+                </li>
+                <li>
+                  Connect to the host and stop the services that depend on
+                  Bitcoin.
+                </li>
+              </ol>
+              <div class="mt-5">
+                <CodeBlock
+                  code={dockerCheckCommands}
+                  label="Connect and inspect the current chain"
+                />
+              </div>
+              <div class="mt-5">
+                <CodeBlock
+                  code={dockerRestartCommands}
+                  label="Start pre-RDTS Bitcoin Knots"
+                />
+              </div>
+              <p class="mt-5 leading-7 text-muted-foreground">
+                Wait for Bitcoin Knots to accept RPC commands. If block 961,632
+                still has the BIP-110 hash, invalidate the first stopped block.
+                This one call also invalidates its child at height 961,633.
+              </p>
+              <div class="mt-3">
+                <CodeBlock
+                  code={dockerInvalidateCommand}
+                  label="Leave both stopped blocks"
+                />
+              </div>
+              <p class="mt-5 text-sm leading-6 text-muted-foreground">
+                After the final checks pass, clear the temporary local mark.
+                Then start the dependent services.
+              </p>
+              <div class="mt-3">
+                <CodeBlock
+                  code={dockerFinishCommands}
+                  label="Clear the override and restart services"
+                />
+              </div>
+            </section>
+
             <section
               id="startos"
               class="scroll-mt-24 rounded-xl border border-border/60 bg-card p-6"
@@ -190,7 +304,7 @@ const myNodeInvalidateCommand = `bitcoin-cli -datadir=/mnt/hdd/mynode/bitcoin in
               <div class="flex flex-wrap items-center gap-3">
                 <span
                   class="flex size-8 items-center justify-center rounded-full bg-primary/12 font-mono text-sm font-bold text-primary"
-                  >1</span
+                  >2</span
                 >
                 <h3 id="startos-heading" class="text-xl font-semibold">
                   StartOS
@@ -233,7 +347,7 @@ const myNodeInvalidateCommand = `bitcoin-cli -datadir=/mnt/hdd/mynode/bitcoin in
               <div class="flex items-center gap-3">
                 <span
                   class="flex size-8 items-center justify-center rounded-full bg-primary/12 font-mono text-sm font-bold text-primary"
-                  >2</span
+                  >3</span
                 >
                 <h3 id="umbrel-heading" class="text-xl font-semibold">
                   Umbrel
@@ -278,7 +392,7 @@ const myNodeInvalidateCommand = `bitcoin-cli -datadir=/mnt/hdd/mynode/bitcoin in
               <div class="flex items-center gap-3">
                 <span
                   class="flex size-8 items-center justify-center rounded-full bg-primary/12 font-mono text-sm font-bold text-primary"
-                  >3</span
+                  >4</span
                 >
                 <h3 id="mynode-heading" class="text-xl font-semibold">
                   myNode
@@ -323,7 +437,7 @@ const myNodeInvalidateCommand = `bitcoin-cli -datadir=/mnt/hdd/mynode/bitcoin in
               <div class="flex items-center gap-3">
                 <span
                   class="flex size-8 items-center justify-center rounded-full bg-primary/12 font-mono text-sm font-bold text-primary"
-                  >4</span
+                  >5</span
                 >
                 <h3 id="manual-heading" class="text-xl font-semibold">
                   Manual Bitcoin Knots
@@ -469,10 +583,10 @@ const myNodeInvalidateCommand = `bitcoin-cli -datadir=/mnt/hdd/mynode/bitcoin in
           <p class="text-sm font-semibold">Check the procedure</p>
           <div class="mt-3 flex flex-wrap gap-x-6 gap-y-3 text-sm">
             <a
-              href="https://github.com/bitcoin/bitcoin/blob/v29.3/src/rpc/blockchain.cpp#L1634-L1698"
+              href="https://github.com/bitcoinknots/bitcoin/blob/v29.3.knots20260507/src/rpc/blockchain.cpp"
               target="_blank"
               rel="noopener noreferrer"
-              class="text-primary hover:underline">Bitcoin Core RPC behavior</a
+              class="text-primary hover:underline">Bitcoin Knots RPC behavior</a
             >
             <a
               href="https://github.com/Start9Labs/bitcoin-knots-startos#switching-flavors-during-a-chain-split"
