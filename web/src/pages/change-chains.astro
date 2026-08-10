@@ -22,9 +22,11 @@ const dockerRestartCommands = `docker compose pull bitcoin
 docker compose up -d --no-deps --force-recreate bitcoin`;
 const dockerInvalidateCommand = `docker exec bitcoin bitcoin-cli -datadir=/data/.bitcoin invalidateblock ${bip110FirstBlock}`;
 const dockerFinishCommand = `docker exec bitcoin bitcoin-cli -datadir=/data/.bitcoin reconsiderblock ${bip110FirstBlock}`;
-const umbrelCheckCommands = `sudo docker exec bitcoin-knots_app_1 bitcoin-cli getbestblockhash
-sudo docker exec bitcoin-knots_app_1 bitcoin-cli getblockhash 961632`;
-const umbrelInvalidateCommand = `sudo docker exec bitcoin-knots_app_1 bitcoin-cli invalidateblock ${bip110FirstBlock}`;
+const umbrelBitcoinCliCommand =
+  "sudo docker exec bitcoin-knots_app_1 bitcoin-cli -rpcport=9332";
+const umbrelCheckCommands = `${umbrelBitcoinCliCommand} getbestblockhash
+${umbrelBitcoinCliCommand} getblockhash 961632`;
+const umbrelInvalidateCommand = `${umbrelBitcoinCliCommand} invalidateblock ${bip110FirstBlock}`;
 const myNodeCheckCommands = `bitcoin-cli -datadir=/mnt/hdd/mynode/bitcoin getbestblockhash
 bitcoin-cli -datadir=/mnt/hdd/mynode/bitcoin getblockhash 961632`;
 const myNodeInvalidateCommand = `bitcoin-cli -datadir=/mnt/hdd/mynode/bitcoin invalidateblock ${bip110FirstBlock}`;
