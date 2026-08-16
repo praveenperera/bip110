@@ -7,6 +7,30 @@
 > **The content on [bip110.org](https://bip110.org) is no longer controlled by
 > this repository.** Changes made here have no effect on the live site.
 
+---
+
+---
+
+---
+
+---
+
+---
+
+# ⬇️ Everything below this line is OUTDATED ⬇️
+
+**The content below is kept only for history. Do not rely on it.**
+
+---
+
+---
+
+---
+
+---
+
+---
+
 Website for BIP-110: Protecting Bitcoin's Purpose
 
 ## Development
