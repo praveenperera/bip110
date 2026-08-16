@@ -1,8 +1,13 @@
 # BIP-110
 
-Website for BIP-110: Protecting Bitcoin's Purpose
+> # ⚠️ DEPRECATED ⚠️
+>
+> **This repository is deprecated.**
+>
+> **The content on [bip110.org](https://bip110.org) is no longer controlled by
+> this repository.** Changes made here have no effect on the live site.
 
-**Live at:** [bip110.org](https://bip110.org)
+Website for BIP-110: Protecting Bitcoin's Purpose
 
 ## Development
 
